@@ -19,7 +19,7 @@ export function Chart({
 }) {
   if (loading) {
     return (
-      <div className={classNames('flex items-center justify-center text-[11px] uppercase tracking-[0.14em] text-[#74847a]', className)} style={{ height }}>
+      <div className={classNames('flex items-center justify-center text-[11px] uppercase tracking-[0.14em] text-[#66766b]', className)} style={{ height }}>
         Loading chart…
       </div>
     );
@@ -27,8 +27,8 @@ export function Chart({
   if (empty) {
     return (
       <div className={classNames('flex flex-col items-center justify-center gap-2 text-center', className)} style={{ height }}>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#74847a]">{emptyLabel}</span>
-        <span className="max-w-xs text-[11px] leading-relaxed text-[#6d7d72]">No reliable series is available for this view. Missing data is not filled or invented.</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#66766b]">{emptyLabel}</span>
+        <span className="max-w-xs text-[11px] leading-relaxed text-[#5f7065]">No reliable series is available for this view. Missing data is not filled or invented.</span>
       </div>
     );
   }
@@ -60,7 +60,7 @@ export const chartGrid = {
 export const chartAxis = {
   axisLine: { lineStyle: { color: '#dce5d8' } },
   axisTick: { show: false },
-  axisLabel: { color: '#6d7d72', fontSize: 10 },
+  axisLabel: { color: '#5f7065', fontSize: 10 },
   splitLine: { lineStyle: { color: '#e8eee4' } },
 };
 

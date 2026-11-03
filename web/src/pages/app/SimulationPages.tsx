@@ -129,15 +129,15 @@ export function SimulationPage() {
                 <Input type="number" min={1} max={1000000} value={seed} onChange={(e) => setSeed(e.target.value)} className="mt-1 h-9 text-[11px]" />
               </div>
               {selected ? (
-                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#68786d]">
+                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#5a6a5f]">
                   <p className="font-semibold text-[#26362a]">{selected.name}</p>
                   <p className="mt-1">{selected.description}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">{selected.demonstrates.map((item) => <Badge key={item} tone="neutral">{item}</Badge>)}</div>
-                  <p className="mt-2 text-[9px] text-[#7b8a80]">{selected.steps} steps · {selected.category}</p>
+                  <p className="mt-2 text-[9px] text-[#66766b]">{selected.steps} steps · {selected.category}</p>
                 </div>
               ) : null}
               <Button variant="lime" size="sm" className="w-full" onClick={create} disabled={creating}><Play className="h-3.5 w-3.5" /> {creating ? 'Creating…' : 'Create simulation session'}</Button>
-              <p className="text-[9px] leading-relaxed text-[#7b8a80]">Only configured demonstration recipients can receive replay emails. No real mailing list is used.</p>
+              <p className="text-[9px] leading-relaxed text-[#66766b]">Only configured demonstration recipients can receive replay emails. No real mailing list is used.</p>
             </div>
           </Card>
 
@@ -146,9 +146,9 @@ export function SimulationPage() {
             <div className="grid gap-2 p-3 sm:grid-cols-2">
               {scenarios.map((item) => (
                 <button key={item.id} onClick={() => setScenario(item.id)} className={`rounded-xl border p-3 text-left transition ${scenario === item.id ? 'border-[#5b9e46]/40 bg-[#5b9e46]/[0.05]' : 'border-[#dfe6db] bg-[#f5f8f2] hover:border-[#c3d0bf]'}`}>
-                  <div className="flex items-center justify-between"><Badge tone={item.category === 'air' ? 'lime' : 'neutral'}>{item.category}</Badge><span className="text-[9px] text-[#7b8a80]">{item.steps} steps</span></div>
+                  <div className="flex items-center justify-between"><Badge tone={item.category === 'air' ? 'lime' : 'neutral'}>{item.category}</Badge><span className="text-[9px] text-[#66766b]">{item.steps} steps</span></div>
                   <p className="mt-2 text-[11px] font-semibold text-[#26362a]">{item.name}</p>
-                  <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-[#74847a]">{item.description}</p>
+                  <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-[#66766b]">{item.description}</p>
                 </button>
               ))}
             </div>
@@ -165,9 +165,9 @@ export function SimulationPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5"><Badge tone="amber">Simulation</Badge><Badge tone="neutral">{session.scenario}</Badge><Badge tone={session.status === 'COMPLETED' ? 'green' : 'amber'}>{session.status}</Badge></div>
                   <p className="mt-1 text-[11px] font-medium text-[#26362a]">{session.station_name} · {session.locality_name ?? 'Mumbai'}</p>
-                  <p className="mt-0.5 text-[9px] text-[#74847a]">Seed {session.seed} · step {session.current_step}/{session.total_steps - 1} · {formatDate(session.created_at)}</p>
+                  <p className="mt-0.5 text-[9px] text-[#66766b]">Seed {session.seed} · step {session.current_step}/{session.total_steps - 1} · {formatDate(session.created_at)}</p>
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-[#7b8a80]" />
+                <ArrowUpRight className="h-4 w-4 text-[#66766b]" />
               </Link>
             ))}
           </div>
@@ -308,7 +308,7 @@ export function SimulationSessionPage() {
               <div className="h-2 w-full overflow-hidden rounded-full bg-[#eaf2e4]">
                 <div className="h-full rounded-full bg-[#5b9e46] transition-all" style={{ width: `${(data.session.current_step / Math.max(1, data.session.total_steps - 1)) * 100}%` }} />
               </div>
-              <div className="mt-1 flex justify-between text-[8px] text-[#7b8a80]"><span>Step 0</span><span>Step {data.session.total_steps - 1}</span></div>
+              <div className="mt-1 flex justify-between text-[8px] text-[#66766b]"><span>Step 0</span><span>Step {data.session.total_steps - 1}</span></div>
             </div>
           </Card>
 
@@ -321,7 +321,7 @@ export function SimulationSessionPage() {
                     <div key={code} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                       <DataLabel>{code.toUpperCase()}</DataLabel>
                       <p className="mt-1 text-lg font-semibold">{number(value.value)} <span className="text-[10px] font-normal text-[#6f7f74]">{value.unit}</span></p>
-                      <p className={`mt-1 text-[9px] ${value.qualityState === 'SUSPECT' ? 'text-amber-600' : 'text-[#74847a]'}`}>{value.qualityState}</p>
+                      <p className={`mt-1 text-[9px] ${value.qualityState === 'SUSPECT' ? 'text-amber-600' : 'text-[#66766b]'}`}>{value.qualityState}</p>
                     </div>
                   ))}
                 </div>
@@ -331,13 +331,13 @@ export function SimulationSessionPage() {
                   <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                     <DataLabel>Risk assessment</DataLabel>
                     <p className="mt-1 text-sm font-semibold">{latest.risk.riskScore ?? '—'}/100 · {latest.risk.riskLevel}</p>
-                    <p className="mt-1 text-[9px] text-[#74847a]">{latest.risk.method}</p>
+                    <p className="mt-1 text-[9px] text-[#66766b]">{latest.risk.method}</p>
                     {latest.risk.missingInputs.length ? <p className="mt-1 text-[9px] text-amber-600/70">Missing: {latest.risk.missingInputs.join('; ')}</p> : null}
                   </div>
                   <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                     <DataLabel>Confidence</DataLabel>
                     <p className="mt-1 text-sm font-semibold">{latest.risk.confidenceScore ?? '—'}/100 · {latest.risk.confidenceLevel}</p>
-                    <p className="mt-1 text-[9px] text-[#74847a]">Confidence is separate from severity. {latest.suppressAlert ? 'Alert suppressed due to data quality.' : ''}</p>
+                    <p className="mt-1 text-[9px] text-[#66766b]">Confidence is separate from severity. {latest.suppressAlert ? 'Alert suppressed due to data quality.' : ''}</p>
                   </div>
                 </div>
               </div>
@@ -350,10 +350,10 @@ export function SimulationSessionPage() {
               {data.events.map((event) => (
                 <div key={event.step} className="border-b border-[#e7ece3] px-4 py-2.5 last:border-0">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2"><span className="text-[9px] font-semibold text-[#3f7d2a]">STEP {event.payload.step}</span><RiskBadge level={event.payload.risk.alertState} /><span className="text-[8px] text-[#7b8a80]">{formatDate(event.payload.observedAt)}</span></div>
+                    <div className="flex items-center gap-2"><span className="text-[9px] font-semibold text-[#3f7d2a]">STEP {event.payload.step}</span><RiskBadge level={event.payload.risk.alertState} /><span className="text-[8px] text-[#66766b]">{formatDate(event.payload.observedAt)}</span></div>
                     {event.payload.suppressAlert ? <Badge tone="amber">Alert suppressed</Badge> : null}
                   </div>
-                  <p className="mt-1 text-[10px] leading-relaxed text-[#68786d]">{event.payload.note}</p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-[#5a6a5f]">{event.payload.note}</p>
                 </div>
               ))}
             </div>
@@ -368,10 +368,10 @@ export function SimulationSessionPage() {
                 <div key={alert.id} className="p-3">
                   <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><Badge tone="neutral">{alert.trigger_type}</Badge></div>
                   <p className="mt-1 text-[10px] font-medium text-[#26362a]">{alert.title}</p>
-                  <p className="mt-0.5 text-[8px] text-[#7b8a80]">{alert.public_ref} · {formatDate(alert.triggered_at)}</p>
+                  <p className="mt-0.5 text-[8px] text-[#66766b]">{alert.public_ref} · {formatDate(alert.triggered_at)}</p>
                 </div>
               ))}
-              {data.alerts.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No simulated alert yet. Advance the replay until an alert transition occurs.</p> : null}
+              {data.alerts.length === 0 ? <p className="p-4 text-[10px] text-[#66766b]">No simulated alert yet. Advance the replay until an alert transition occurs.</p> : null}
             </div>
           </Card>
 
@@ -380,7 +380,7 @@ export function SimulationSessionPage() {
             <div className="space-y-2 p-4">
               <Button variant="dark" size="sm" className="w-full" onClick={previewEmail} disabled={data.alerts.length === 0}><Mail className="h-3.5 w-3.5" /> Preview early-warning / critical email</Button>
               <Button variant="lime" size="sm" className="w-full" onClick={createIncident} disabled={working || data.alerts.length === 0}><ShieldAlert className="h-3.5 w-3.5" /> Create simulated incident</Button>
-              <p className="text-[9px] leading-relaxed text-[#7b8a80]">Incident creation uses the real incident service but writes only simulation-labelled records with this session id.</p>
+              <p className="text-[9px] leading-relaxed text-[#66766b]">Incident creation uses the real incident service but writes only simulation-labelled records with this session id.</p>
             </div>
           </Card>
 
@@ -390,10 +390,10 @@ export function SimulationSessionPage() {
               {data.notifications.slice(0, 6).map((notification) => (
                 <div key={notification.id} className="px-3 py-2">
                   <div className="flex items-center justify-between gap-2"><span className="text-[9px] text-[#5a6a5f]">{notification.audience} · {notification.template.replace(/_/g, ' ')}</span><Badge tone={notification.status === 'SIMULATED' ? 'amber' : 'neutral'}>{notification.status}</Badge></div>
-                  <p className="mt-0.5 truncate text-[8px] text-[#7b8a80]">{notification.subject}</p>
+                  <p className="mt-0.5 truncate text-[8px] text-[#66766b]">{notification.subject}</p>
                 </div>
               ))}
-              {data.notifications.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No simulated notifications yet.</p> : null}
+              {data.notifications.length === 0 ? <p className="p-4 text-[10px] text-[#66766b]">No simulated notifications yet.</p> : null}
             </div>
           </Card>
 
@@ -402,11 +402,11 @@ export function SimulationSessionPage() {
             <div className="divide-y divide-[#e7ece3]">
               {data.incidents.map((incident) => (
                 <Link key={incident.id} to={`/incidents/${incident.id}`} className="block px-3 py-2 hover:bg-[#f3f7f0]">
-                  <div className="flex items-center justify-between gap-2"><RiskBadge level={incident.risk_level} /><span className="text-[8px] text-[#7b8a80]">{incident.status.replace(/_/g, ' ')}</span></div>
+                  <div className="flex items-center justify-between gap-2"><RiskBadge level={incident.risk_level} /><span className="text-[8px] text-[#66766b]">{incident.status.replace(/_/g, ' ')}</span></div>
                   <p className="mt-1 text-[10px] text-[#26362a]">{incident.title}</p>
                 </Link>
               ))}
-              {data.incidents.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No simulated incident created.</p> : null}
+              {data.incidents.length === 0 ? <p className="p-4 text-[10px] text-[#66766b]">No simulated incident created.</p> : null}
             </div>
           </Card>
         </div>
@@ -416,8 +416,8 @@ export function SimulationSessionPage() {
         <DialogContent title="Replay email preview" description="Simulation-generated email. Not sent to a real mailing list." className="max-w-4xl">
           {preview ? (
             <div className="grid gap-3 lg:grid-cols-2">
-              <div><DataLabel>Public email</DataLabel><p className="mt-1 text-[10px] text-[#68786d]">{preview.public.subject}</p><iframe title="Public email preview" srcDoc={preview.public.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#dfe6db] bg-white" /></div>
-              <div><DataLabel>Authority email</DataLabel><p className="mt-1 text-[10px] text-[#68786d]">{preview.authority.subject}</p><iframe title="Authority email preview" srcDoc={preview.authority.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#dfe6db] bg-white" /></div>
+              <div><DataLabel>Public email</DataLabel><p className="mt-1 text-[10px] text-[#5a6a5f]">{preview.public.subject}</p><iframe title="Public email preview" srcDoc={preview.public.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#dfe6db] bg-white" /></div>
+              <div><DataLabel>Authority email</DataLabel><p className="mt-1 text-[10px] text-[#5a6a5f]">{preview.authority.subject}</p><iframe title="Authority email preview" srcDoc={preview.authority.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#dfe6db] bg-white" /></div>
             </div>
           ) : null}
         </DialogContent>

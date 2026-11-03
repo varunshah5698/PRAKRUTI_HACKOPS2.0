@@ -119,15 +119,15 @@ function KpiCell({
           <Icon className="h-4 w-4" />
         </span>
         {kpi.trendPct !== null ? (
-          <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold ${kpi.trendPct > 0 ? 'text-amber-600' : kpi.trendPct < 0 ? 'text-emerald-600' : 'text-[#74847a]'}`}>
+          <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold ${kpi.trendPct > 0 ? 'text-amber-600' : kpi.trendPct < 0 ? 'text-emerald-600' : 'text-[#66766b]'}`}>
             {kpi.trendPct > 0 ? <ArrowUpRight className="h-3 w-3" /> : kpi.trendPct < 0 ? <ArrowDownRight className="h-3 w-3" /> : null}
             {kpi.trendPct > 0 ? '+' : ''}{kpi.trendPct}%
           </span>
         ) : null}
       </div>
       <p className="display mt-3 text-[28px] font-bold leading-none tracking-[-0.04em] text-[#142016]">{number(kpi.value, 0)}</p>
-      <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#74847a]">{label}</p>
-      <p className="mt-1 line-clamp-1 text-[9px] text-[#8a988e]">{kpi.window}</p>
+      <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#66766b]">{label}</p>
+      <p className="mt-1 line-clamp-1 text-[9px] text-[#66766b]">{kpi.window}</p>
     </Link>
   );
 }
@@ -150,14 +150,14 @@ function ConditionCell({
   return (
     <div className={`p-3.5 ${className}`}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#74847a]">{label}</p>
+        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#66766b]">{label}</p>
         <Icon className="h-4 w-4 text-[#8aa083]" />
       </div>
       <p className="display mt-2 text-[24px] font-bold leading-none tracking-[-0.03em] text-[#142016]">
         {value}
-        {unit ? <span className="ml-1 text-[10px] font-medium tracking-normal text-[#74847a]">{unit}</span> : null}
+        {unit ? <span className="ml-1 text-[10px] font-medium tracking-normal text-[#66766b]">{unit}</span> : null}
       </p>
-      {note ? <p className="mt-1.5 text-[9px] text-[#8a988e]">{note}</p> : null}
+      {note ? <p className="mt-1.5 text-[9px] text-[#66766b]">{note}</p> : null}
     </div>
   );
 }
@@ -266,8 +266,8 @@ function AqiGauge({ value, category }: { value: number | null; category?: string
       <text x="100" y="98" textAnchor="middle" fontFamily="Inter Variable, sans-serif" fontSize="9" fontWeight="600" fill={color}>
         {(category ?? 'No data').toUpperCase()}
       </text>
-      <text x="24" y="114" textAnchor="middle" fontSize="8" fill="#8a988e">0</text>
-      <text x="176" y="114" textAnchor="middle" fontSize="8" fill="#8a988e">300+</text>
+      <text x="24" y="114" textAnchor="middle" fontSize="8" fill="#66766b">0</text>
+      <text x="176" y="114" textAnchor="middle" fontSize="8" fill="#66766b">300+</text>
     </svg>
   );
 }
@@ -411,7 +411,7 @@ export function DashboardPage() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-[15px] font-semibold tracking-[-0.01em] text-[#142016]">Mumbai now</p>
-                <p className="mt-0.5 text-[10px] text-[#74847a]">Live weather · Open-Meteo</p>
+                <p className="mt-0.5 text-[10px] text-[#66766b]">Live weather · Open-Meteo</p>
               </div>
               <span className="flex items-center gap-1 rounded-full border border-white/80 bg-white/65 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.1em] text-[#3f7d2a]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5da341]" /> Live
@@ -429,7 +429,7 @@ export function DashboardPage() {
               </div>
             </div>
             <p className="mt-3 text-[12px] font-medium text-[#3f5045]">{weatherCondition(weather)}</p>
-            <p className="mt-1 text-[9px] leading-relaxed text-[#8a988e]">
+            <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">
               {weather ? `${number(weather.wind_direction_deg, 0)}° wind · ${formatDate(weather.observed_at)}` : 'No current weather observation.'}
             </p>
             <div className="mt-3 min-h-[94px] flex-1">
@@ -437,16 +437,16 @@ export function DashboardPage() {
             </div>
             <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
               <div className="rounded-2xl border border-white/75 bg-white/55 p-2.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#74847a]">
+                <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#66766b]">
                   <CloudRain className="h-3.5 w-3.5 text-[#5f8fb4]" /> Rain
                 </div>
-                <p className="display mt-1.5 text-lg font-bold text-[#142016]">{weather ? number(weather.precipitation_mm, 1) : '—'}<span className="ml-1 text-[9px] font-medium text-[#74847a]">mm</span></p>
+                <p className="display mt-1.5 text-lg font-bold text-[#142016]">{weather ? number(weather.precipitation_mm, 1) : '—'}<span className="ml-1 text-[9px] font-medium text-[#66766b]">mm</span></p>
               </div>
               <div className="rounded-2xl border border-white/75 bg-white/55 p-2.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#74847a]">
+                <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#66766b]">
                   <Wind className="h-3.5 w-3.5 text-[#5f8f79]" /> Wind
                 </div>
-                <p className="display mt-1.5 text-lg font-bold text-[#142016]">{weather ? number(weather.wind_speed_kmh) : '—'}<span className="ml-1 text-[9px] font-medium text-[#74847a]">km/h</span></p>
+                <p className="display mt-1.5 text-lg font-bold text-[#142016]">{weather ? number(weather.wind_speed_kmh) : '—'}<span className="ml-1 text-[9px] font-medium text-[#66766b]">km/h</span></p>
               </div>
             </div>
           </div>
@@ -456,9 +456,9 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Particulate trend</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Hourly city mean PM2.5 over the last 48 hours</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Hourly city mean PM2.5 over the last 48 hours</p>
             </div>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/60 text-[#74847a]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/60 text-[#66766b]">
               <Waves className="h-4 w-4" />
             </span>
           </CardHeader>
@@ -468,15 +468,15 @@ export function DashboardPage() {
                 <DataLabel>Latest hourly mean</DataLabel>
                 <p className="display mt-1 text-[32px] font-bold leading-none tracking-[-0.04em] text-[#142016]">
                   {latestPm !== null ? number(latestPm, 0) : '—'}
-                  <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#74847a]">µg/m³</span>
+                  <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#66766b]">µg/m³</span>
                 </p>
               </div>
               <div className="text-right">
-                <p className={`inline-flex items-center gap-1 text-[10px] font-semibold ${pmDelta === null ? 'text-[#74847a]' : pmDelta > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                <p className={`inline-flex items-center gap-1 text-[10px] font-semibold ${pmDelta === null ? 'text-[#66766b]' : pmDelta > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                   {pmDelta !== null && pmDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : pmDelta !== null && pmDelta < 0 ? <ArrowDownRight className="h-3 w-3" /> : null}
                   {pmDelta !== null ? `${pmDelta > 0 ? '+' : ''}${number(pmDelta, 1)} vs previous hour` : 'No previous hour'}
                 </p>
-                <p className="mt-1 text-[9px] text-[#8a988e]">48h average {pmAverage !== null ? number(pmAverage, 0) : '—'} · peak {pmPeak !== null ? number(pmPeak, 0) : '—'}</p>
+                <p className="mt-1 text-[9px] text-[#66766b]">48h average {pmAverage !== null ? number(pmAverage, 0) : '—'} · peak {pmPeak !== null ? number(pmPeak, 0) : '—'}</p>
               </div>
             </div>
 
@@ -492,7 +492,7 @@ export function DashboardPage() {
                     >
                       {number(point.value, 0)}
                     </span>
-                    <span className={`text-[8px] font-semibold ${active ? 'text-[#3f7d2a]' : 'text-[#8a988e]'}`}>{waveLabel(point.bucket)}</span>
+                    <span className={`text-[8px] font-semibold ${active ? 'text-[#3f7d2a]' : 'text-[#66766b]'}`}>{waveLabel(point.bucket)}</span>
                   </div>
                 );
               })}
@@ -501,13 +501,13 @@ export function DashboardPage() {
             <div className="mt-4 border-t border-dashed border-[#dbe5d6] pt-2">
               <div className="flex items-center justify-between">
                 <DataLabel>48 hour shape</DataLabel>
-                <span className="text-[8px] uppercase tracking-[0.1em] text-[#8a988e]">Hourly mean</span>
+                <span className="text-[8px] uppercase tracking-[0.1em] text-[#66766b]">Hourly mean</span>
               </div>
               <Sparkline values={pm25Series.slice(-24).map((point) => point.value)} />
             </div>
 
             <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-[#dbe5d6] pt-3">
-              <span className="text-[9px] text-[#74847a]">24h NAAQS screening reference 60 µg/m³ · missing periods not filled</span>
+              <span className="text-[9px] text-[#66766b]">24h NAAQS screening reference 60 µg/m³ · missing periods not filled</span>
               <Link to="/intelligence/predictions" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
                 Open predictions <ArrowRight className="h-3 w-3" />
               </Link>
@@ -519,9 +519,9 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Current conditions</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Weather and pollutant snapshot</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Weather and pollutant snapshot</p>
             </div>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/60 text-[#74847a]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/60 text-[#66766b]">
               <ActivityIcon />
             </span>
           </CardHeader>
@@ -536,7 +536,7 @@ export function DashboardPage() {
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <DataLabel>Pollutant snapshot</DataLabel>
-                <span className="text-[8px] uppercase tracking-[0.1em] text-[#8a988e]">Latest city mean</span>
+                <span className="text-[8px] uppercase tracking-[0.1em] text-[#66766b]">Latest city mean</span>
               </div>
               {pollutantRows.map((pollutant) => {
                 const ratio = pollutant.threshold ? pollutant.value / pollutant.threshold : 0.35;
@@ -545,7 +545,7 @@ export function DashboardPage() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-semibold text-[#34463a]">{pollutant.pollutant.replace('PM25', 'PM2.5')}</span>
                       <span className="text-[10px] text-[#5d6e63]">
-                        {number(pollutant.value)} <span className="text-[8px] text-[#8a988e]">{pollutant.unit}</span>
+                        {number(pollutant.value)} <span className="text-[8px] text-[#66766b]">{pollutant.unit}</span>
                       </span>
                     </div>
                     <div className="mt-1.5">
@@ -554,7 +554,7 @@ export function DashboardPage() {
                   </div>
                 );
               })}
-              {pollutantRows.length === 0 ? <p className="text-[10px] text-[#8a988e]">No comparable pollutant values available.</p> : null}
+              {pollutantRows.length === 0 ? <p className="text-[10px] text-[#66766b]">No comparable pollutant values available.</p> : null}
             </div>
           </div>
         </Card>
@@ -572,7 +572,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Daily outlook</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Daily mean PM2.5 · available days</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Daily mean PM2.5 · available days</p>
             </div>
             <Badge tone="neutral">Demo series</Badge>
           </CardHeader>
@@ -582,10 +582,10 @@ export function DashboardPage() {
                 <DataLabel>Week average</DataLabel>
                 <p className="display mt-1 text-[28px] font-bold leading-none tracking-[-0.04em] text-[#142016]">
                   {dayAverage !== null ? number(dayAverage, 0) : '—'}
-                  <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#74847a]">µg/m³</span>
+                  <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#66766b]">µg/m³</span>
                 </p>
               </div>
-              <p className="text-[9px] text-[#8a988e]">Peak {dayMax ? number(dayMax, 0) : '—'} · NAAQS 60</p>
+              <p className="text-[9px] text-[#66766b]">Peak {dayMax ? number(dayMax, 0) : '—'} · NAAQS 60</p>
             </div>
             <div className="mt-5 space-y-3.5">
               {dailyTrend.map((day) => {
@@ -604,9 +604,9 @@ export function DashboardPage() {
                   </div>
                 );
               })}
-              {dailyTrend.length === 0 ? <p className="text-[10px] text-[#8a988e]">No daily series available.</p> : null}
+              {dailyTrend.length === 0 ? <p className="text-[10px] text-[#66766b]">No daily series available.</p> : null}
             </div>
-            <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#8a988e]">Indicative city mean, not a forecast. Forecast output remains labelled until a model is trained.</p>
+            <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#66766b]">Indicative city mean, not a forecast. Forecast output remains labelled until a model is trained.</p>
             <div className="mt-auto grid grid-cols-3 gap-2 pt-4">
               <div><DataLabel>Days</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{dailyTrend.length}</p></div>
               <div><DataLabel>Samples</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{daySamples}</p></div>
@@ -619,14 +619,14 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>City air quality</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Highest indicative AQI</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Highest indicative AQI</p>
             </div>
           </CardHeader>
           <div className="flex flex-1 flex-col items-center px-4 pb-5 pt-4">
             <AqiGauge value={maxAqi} category={dominant?.aqiCategory} />
             <div className="mt-1 w-full rounded-2xl border border-white/80 bg-white/55 px-3 py-2.5 text-center">
               <p className="text-[10px] font-semibold text-[#34463a]">{dominant?.name.replace(' demo air monitor', '') ?? 'No station reporting'}</p>
-              <p className="mt-0.5 text-[9px] text-[#8a988e]">{dominant?.pm25 ? `PM2.5 ${number(dominant.pm25)} µg/m³ · ${timeAgo(dominant.latestObservedAt)}` : 'No current station value'}</p>
+              <p className="mt-0.5 text-[9px] text-[#66766b]">{dominant?.pm25 ? `PM2.5 ${number(dominant.pm25)} µg/m³ · ${timeAgo(dominant.latestObservedAt)}` : 'No current station value'}</p>
             </div>
             <Link to="/map" className="mt-3 inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               View stations <ArrowUpRight className="h-3 w-3" />
@@ -643,7 +643,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Active alerts</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">{data.alerts.length} open · highest first</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">{data.alerts.length} open · highest first</p>
             </div>
             <Link to="/alerts" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               View all <ArrowRight className="h-3 w-3" />
@@ -656,10 +656,10 @@ export function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <RiskBadge level={alert.level} />
-                    <span className="text-[8px] uppercase tracking-[0.08em] text-[#8a988e]">{alert.trigger_type.replace(/_/g, ' ')}</span>
+                    <span className="text-[8px] uppercase tracking-[0.08em] text-[#66766b]">{alert.trigger_type.replace(/_/g, ' ')}</span>
                   </div>
                   <p className="mt-1.5 truncate text-[11px] font-semibold text-[#223328]">{alert.title}</p>
-                  <p className="mt-0.5 truncate text-[9px] text-[#8a988e]">{alert.locality_name ?? 'Mumbai'} · {timeAgo(alert.triggered_at)}</p>
+                  <p className="mt-0.5 truncate text-[9px] text-[#66766b]">{alert.locality_name ?? 'Mumbai'} · {timeAgo(alert.triggered_at)}</p>
                 </div>
                 {alert.is_simulated ? <span className="mt-0.5 text-[8px] uppercase tracking-[0.08em] text-amber-600">Sim</span> : null}
               </Link>
@@ -673,7 +673,7 @@ export function DashboardPage() {
         <CardHeader>
           <div>
             <CardTitle>Category watch</CardTitle>
-            <p className="mt-1 text-[10px] text-[#74847a]">Evidence-bound categories · select one to inspect</p>
+            <p className="mt-1 text-[10px] text-[#66766b]">Evidence-bound categories · select one to inspect</p>
           </div>
           <Link to="/alerts" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
             All alerts <ArrowRight className="h-3 w-3" />
@@ -698,13 +698,13 @@ export function DashboardPage() {
                   <RiskBadge level={category.status} />
                 </div>
                 <p className="mt-3 text-[12px] font-semibold text-[#223328]">{category.label}</p>
-                <div className="mt-2 flex items-center justify-between text-[9px] text-[#74847a]">
+                <div className="mt-2 flex items-center justify-between text-[9px] text-[#66766b]">
                   <span>Stations</span><span className="font-semibold text-[#34463a]">{category.monitoringStations}</span>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-[9px] text-[#74847a]">
+                <div className="mt-1 flex items-center justify-between text-[9px] text-[#66766b]">
                   <span>Alerts · critical</span><span className="font-semibold text-[#34463a]">{category.activeAlerts} · {category.criticalAlerts}</span>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-[9px] text-[#74847a]">
+                <div className="mt-1 flex items-center justify-between text-[9px] text-[#66766b]">
                   <span>Reports · 7d</span><span className="font-semibold text-[#34463a]">{category.reports7d}</span>
                 </div>
               </button>
@@ -712,7 +712,7 @@ export function DashboardPage() {
           })}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-[#dbe5d6] px-4 py-3">
-          <p className="text-[9px] leading-relaxed text-[#8a988e]">
+          <p className="text-[9px] leading-relaxed text-[#66766b]">
             {selected?.coverageNote ?? 'Category-specific evidence and thresholds are used. Air scoring is never applied to water, waste or industrial records.'}
           </p>
           <Link to="/alerts" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
@@ -726,7 +726,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Mumbai monitoring network</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">3D buildings use OpenMapTiles render heights · demo stations</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">3D buildings use OpenMapTiles render heights · demo stations</p>
             </div>
             <Link to="/map" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               Full map <ArrowUpRight className="h-3 w-3" />
@@ -746,24 +746,24 @@ export function DashboardPage() {
             <div className="rounded-2xl border border-white/80 bg-white/45 p-3">
               <DataLabel>Highest AQI</DataLabel>
               <p className="mt-1 text-lg font-semibold" style={{ color: AQI_COLORS[dominant?.aqiCategory ?? 'INSUFFICIENT DATA'] }}>{maxAqi ?? '—'}</p>
-              <p className="text-[9px] text-[#8a988e]">{dominant?.name.replace(' demo air monitor', '') ?? 'No station'}</p>
+              <p className="text-[9px] text-[#66766b]">{dominant?.name.replace(' demo air monitor', '') ?? 'No station'}</p>
             </div>
             <div className="rounded-2xl border border-white/80 bg-white/45 p-3">
               <DataLabel>Dominant pollutant</DataLabel>
               <p className="mt-1 text-lg font-semibold text-[#223328]">{dominant?.pm25 && dominant.pm25 > 60 ? 'PM2.5' : 'PM10'}</p>
-              <p className="text-[9px] text-[#8a988e]">Indicative sub-index</p>
+              <p className="text-[9px] text-[#66766b]">Indicative sub-index</p>
             </div>
             <div className="rounded-2xl border border-white/80 bg-white/45 p-3">
               <DataLabel>Station data</DataLabel>
               <p className={`mt-1 text-lg font-semibold ${data.dataMode.stationObservations === 'SIMULATION' ? 'text-amber-600' : 'text-emerald-600'}`}>
                 {data.dataMode.stationObservations === 'SIMULATION' ? 'Simulated' : data.dataMode.stationObservations === 'MIXED' ? 'Mixed' : 'Connected'}
               </p>
-              <p className="text-[9px] text-[#8a988e]">{data.dataMode.stationObservations === 'SIMULATION' ? 'Not CPCB readings' : 'Per-station labels'}</p>
+              <p className="text-[9px] text-[#66766b]">{data.dataMode.stationObservations === 'SIMULATION' ? 'Not CPCB readings' : 'Per-station labels'}</p>
             </div>
             <div className="rounded-2xl border border-white/80 bg-white/45 p-3">
               <DataLabel>Forecast</DataLabel>
               <p className="mt-1 text-lg font-semibold text-amber-600">Baseline</p>
-              <p className="text-[9px] text-[#8a988e]">LightGBM not trained</p>
+              <p className="text-[9px] text-[#66766b]">LightGBM not trained</p>
             </div>
           </div>
         </Card>
@@ -772,7 +772,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Source health</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Connected services and evidence registry</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Connected services and evidence registry</p>
             </div>
             <Link to="/data-sources" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               Registry <ArrowRight className="h-3 w-3" />
@@ -783,15 +783,15 @@ export function DashboardPage() {
               <div key={source.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-[11px] font-medium text-[#223328]">{source.name}</p>
-                  <p className="mt-0.5 truncate text-[9px] text-[#8a988e]">{source.lastSuccessAt ? `Last success ${formatDate(source.lastSuccessAt)}` : source.notes?.slice(0, 80) ?? 'Status not reported'}</p>
+                  <p className="mt-0.5 truncate text-[9px] text-[#66766b]">{source.lastSuccessAt ? `Last success ${formatDate(source.lastSuccessAt)}` : source.notes?.slice(0, 80) ?? 'Status not reported'}</p>
                 </div>
                 <SourceBadge status={source.status} />
               </div>
             ))}
-            {sources.length === 0 ? <p className="px-4 py-6 text-center text-[10px] text-[#8a988e]">No registered sources.</p> : null}
+            {sources.length === 0 ? <p className="px-4 py-6 text-center text-[10px] text-[#66766b]">No registered sources.</p> : null}
           </div>
           <div className="border-t border-dashed border-[#dbe5d6] px-4 py-3">
-            <p className="flex items-center gap-1.5 text-[9px] leading-relaxed text-[#8a988e]">
+            <p className="flex items-center gap-1.5 text-[9px] leading-relaxed text-[#66766b]">
               <Database className="h-3 w-3 shrink-0" /> Demo station readings stay labelled. Weather and CAMS remain contextual, not station evidence.
             </p>
           </div>
@@ -803,7 +803,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Recent citizen reports</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Evidence submitted by the public</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Evidence submitted by the public</p>
             </div>
             <Link to="/reports" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               All <ArrowRight className="h-3 w-3" />
@@ -813,11 +813,11 @@ export function DashboardPage() {
             {data.reports.slice(0, 5).map((report) => (
               <Link key={report.id} to={`/reports/${report.id}`} className="block px-4 py-3 transition hover:bg-white/45">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74847a]">{categoryLabel(report.category)}</span>
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#66766b]">{categoryLabel(report.category)}</span>
                   <Badge tone={report.verification_state === 'VERIFIED' ? 'green' : 'neutral'}>{report.verification_state}</Badge>
                 </div>
                 <p className="mt-1 truncate text-[11px] font-medium text-[#223328]">{report.incident_type.replace(/_/g, ' ')}</p>
-                <p className="mt-0.5 text-[9px] text-[#8a988e]">{report.locality_name ?? 'Mumbai'} · {timeAgo(report.submitted_at)}</p>
+                <p className="mt-0.5 text-[9px] text-[#66766b]">{report.locality_name ?? 'Mumbai'} · {timeAgo(report.submitted_at)}</p>
               </Link>
             ))}
             {data.reports.length === 0 ? <EmptyState title="No reports" description="No citizen reports have been submitted." /> : null}
@@ -828,7 +828,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Recent incidents</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Open and recently updated cases</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Open and recently updated cases</p>
             </div>
             <Link to="/incidents" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               All <ArrowRight className="h-3 w-3" />
@@ -839,10 +839,10 @@ export function DashboardPage() {
               <Link key={incident.id} to={`/incidents/${incident.id}`} className="block px-4 py-3 transition hover:bg-white/45">
                 <div className="flex items-center justify-between gap-2">
                   <RiskBadge level={incident.risk_level} />
-                  <span className="text-[8px] uppercase tracking-[0.08em] text-[#8a988e]">{incident.status.replace(/_/g, ' ')}</span>
+                  <span className="text-[8px] uppercase tracking-[0.08em] text-[#66766b]">{incident.status.replace(/_/g, ' ')}</span>
                 </div>
                 <p className="mt-1 truncate text-[11px] font-medium text-[#223328]">{incident.title}</p>
-                <p className="mt-0.5 text-[9px] text-[#8a988e]">{incident.locality_name ?? 'Mumbai'} · {timeAgo(incident.detected_at)}</p>
+                <p className="mt-0.5 text-[9px] text-[#66766b]">{incident.locality_name ?? 'Mumbai'} · {timeAgo(incident.detected_at)}</p>
               </Link>
             ))}
             {data.incidents.length === 0 ? <EmptyState title="No incidents" description="No open incidents." /> : null}
@@ -855,7 +855,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>City PM2.5 · last 48 hours</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Hourly mean of demo stations · µg/m³ · missing periods not filled</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Hourly mean of demo stations · µg/m³ · missing periods not filled</p>
             </div>
             <Badge tone="amber">Simulation</Badge>
           </CardHeader>
@@ -867,7 +867,7 @@ export function DashboardPage() {
                 grid: { ...chartGrid, top: 30 },
                 tooltip: chartTooltip,
                 xAxis: { type: 'category', data: pm25Series.map((p) => p.bucket.slice(5)), ...chartAxis, axisLabel: { ...chartAxis.axisLabel, interval: 5 } },
-                yAxis: { type: 'value', name: 'µg/m³', nameTextStyle: { color: '#6d7d72', fontSize: 10 }, ...chartAxis },
+                yAxis: { type: 'value', name: 'µg/m³', nameTextStyle: { color: '#5f7065', fontSize: 10 }, ...chartAxis },
                 series: [
                   {
                     name: 'PM2.5',
@@ -901,7 +901,7 @@ export function DashboardPage() {
               }}
             />
           </div>
-          <div className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] leading-relaxed text-[#8a988e]">
+          <div className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] leading-relaxed text-[#66766b]">
             {data.aqiMethod.caveat}
           </div>
         </Card>
@@ -910,7 +910,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>AQI distribution</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Stations by indicative category</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Stations by indicative category</p>
             </div>
             <Badge tone="neutral">Indicative</Badge>
           </CardHeader>
@@ -941,7 +941,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Pollutant comparison</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Latest station mean vs NAAQS screening reference · units differ</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Latest station mean vs NAAQS screening reference · units differ</p>
             </div>
           </CardHeader>
           <div className="px-2 pb-3">
@@ -957,11 +957,11 @@ export function DashboardPage() {
                   { name: 'Latest mean', type: 'bar', data: data.charts.pollutantComparison.map((p) => p.value), itemStyle: { color: '#2f8f84', borderRadius: [8, 8, 0, 0] }, barWidth: '34%' },
                   { name: 'Reference', type: 'bar', data: data.charts.pollutantComparison.map((p) => p.threshold), itemStyle: { color: '#cdd9c9', borderRadius: [8, 8, 0, 0] }, barWidth: '34%' },
                 ],
-                legend: { textStyle: { color: '#6d7d72', fontSize: 10 }, top: 0 },
+                legend: { textStyle: { color: '#5f7065', fontSize: 10 }, top: 0 },
               }}
             />
           </div>
-          <p className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] leading-relaxed text-[#8a988e]">
+          <p className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] leading-relaxed text-[#66766b]">
             CO (mg/m³) is excluded from this shared µg/m³ axis; see latest readings. A bar comparison is not a compliance determination. Averaging periods matter.
           </p>
         </Card>
@@ -970,7 +970,7 @@ export function DashboardPage() {
           <CardHeader>
             <div>
               <CardTitle>Station comparison</CardTitle>
-              <p className="mt-1 text-[10px] text-[#74847a]">Indicative AQI and PM2.5 by demo station</p>
+              <p className="mt-1 text-[10px] text-[#66766b]">Indicative AQI and PM2.5 by demo station</p>
             </div>
           </CardHeader>
           <div className="px-2 pb-3">
@@ -1006,13 +1006,13 @@ export function DashboardPage() {
         <CardHeader>
           <div>
             <CardTitle>Latest readings</CardTitle>
-            <p className="mt-1 text-[10px] text-[#74847a]">Newest station values across pollutants</p>
+            <p className="mt-1 text-[10px] text-[#66766b]">Newest station values across pollutants</p>
           </div>
           <Badge tone="amber">Demo</Badge>
         </CardHeader>
         <div className="scrollbar-thin max-h-[320px] overflow-auto">
           <table className="w-full text-left text-[11px]">
-            <thead className="sticky top-0 bg-[#f7faf4]/95 text-[9px] uppercase tracking-[0.1em] text-[#74847a] backdrop-blur">
+            <thead className="sticky top-0 bg-[#f7faf4]/95 text-[9px] uppercase tracking-[0.1em] text-[#66766b] backdrop-blur">
               <tr><th className="px-4 py-2.5">Station</th><th className="px-4 py-2.5">Pollutant</th><th className="px-4 py-2.5">Value</th><th className="px-4 py-2.5">Observed</th><th className="px-4 py-2.5">Source</th></tr>
             </thead>
             <tbody className="divide-y divide-dashed divide-[#e7ece3]">
@@ -1020,7 +1020,7 @@ export function DashboardPage() {
                 <tr key={`${reading.station_name}-${reading.pollutant_code}-${index}`} className="text-[#5a6a5f] transition hover:bg-white/45">
                   <td className="px-4 py-2.5">{reading.station_name.replace(' demo air monitor', '')}</td>
                   <td className="px-4 py-2.5 font-medium text-[#223328]">{reading.pollutant_code.toUpperCase()}</td>
-                  <td className="px-4 py-2.5">{number(reading.value)} <span className="text-[#8a988e]">{reading.unit}</span></td>
+                  <td className="px-4 py-2.5">{number(reading.value)} <span className="text-[#66766b]">{reading.unit}</span></td>
                   <td className="px-4 py-2.5">{formatDate(reading.observed_at)}</td>
                   <td className="px-4 py-2.5"><span className={`text-[9px] ${reading.is_simulated ? 'text-amber-600' : 'text-emerald-600'}`}>{reading.is_simulated ? 'SIMULATION' : reading.source_id}</span></td>
                 </tr>

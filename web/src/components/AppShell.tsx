@@ -125,7 +125,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
         </Link>
         {visibleGroups.map((group) => (
           <div key={group.label} className="mb-3 border-t border-white/70 pt-3 first:border-0 first:pt-0">
-            <p className="mb-1 text-center text-[8px] font-semibold uppercase tracking-[0.2em] text-[#8a988e]">{group.label}</p>
+            <p className="mb-1 text-center text-[8px] font-semibold uppercase tracking-[0.2em] text-[#66766b]">{group.label}</p>
             <div className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -201,7 +201,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
         </Link>
         {visibleGroups.map((group) => (
           <div key={group.label} className="mb-4">
-            <p className="mb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#8a988e]">{group.label}</p>
+            <p className="mb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#66766b]">{group.label}</p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -235,7 +235,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-[#142016]">{user?.name}</p>
-            <p className="truncate text-[9px] uppercase tracking-[0.08em] text-[#74847a]">{user?.role.replace(/_/g, ' ')}</p>
+            <p className="truncate text-[9px] uppercase tracking-[0.08em] text-[#66766b]">{user?.role.replace(/_/g, ' ')}</p>
           </div>
           <button onClick={handleLogout} aria-label="Sign out" className="rounded-full p-1.5 text-[#a05a5e] hover:bg-[#fdeeee]">
             <LogOut className="h-4 w-4" />
@@ -272,7 +272,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-[11.5px] font-semibold leading-tight text-[#223328]">{title}</p>
-                  <p className="hidden text-[8px] font-semibold uppercase tracking-[0.16em] text-[#8a988e] sm:block">Greater Mumbai · Asia/Kolkata</p>
+                  <p className="hidden text-[8px] font-semibold uppercase tracking-[0.16em] text-[#66766b] sm:block">Greater Mumbai · Asia/Kolkata</p>
                 </div>
               </div>
 
@@ -280,7 +280,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                 <div className="hidden items-center gap-2 rounded-full border border-white/80 bg-white/65 px-3 py-2 md:flex">
                   <CloudSun className="h-4 w-4 text-[#c49a1c]" />
                   <span className="text-[10px] font-semibold text-[#223328]">Mumbai</span>
-                  <span className="text-[10px] text-[#74847a]">
+                  <span className="text-[10px] text-[#66766b]">
                     {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                   </span>
                 </div>
@@ -303,13 +303,13 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                       {user?.name?.slice(0, 1).toUpperCase() ?? 'U'}
                     </span>
                     <span className="hidden max-w-[110px] truncate text-[10px] font-semibold md:block">{user?.name?.split(' ')[0]}</span>
-                    <ChevronDown className="h-3.5 w-3.5 text-[#74847a]" />
+                    <ChevronDown className="h-3.5 w-3.5 text-[#66766b]" />
                   </button>
                   {userMenu ? (
                     <div className="absolute right-0 top-12 z-30 w-60 rounded-[20px] border border-white/85 bg-[#fbfdf9] p-1.5 shadow-2xl backdrop-blur-2xl">
                       <div className="px-3 py-2">
                         <p className="text-xs font-semibold text-[#142016]">{user?.name}</p>
-                        <p className="truncate text-[10px] text-[#74847a]">{user?.email}</p>
+                        <p className="truncate text-[10px] text-[#66766b]">{user?.email}</p>
                         {user?.department ? <p className="mt-1 text-[10px] text-[#5d6e63]">{user.department}</p> : null}
                       </div>
                       <div className="my-1 h-px bg-[#e8eee4]" />

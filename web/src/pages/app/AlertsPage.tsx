@@ -84,15 +84,15 @@ export function AlertsPage() {
                     {alert.forecast_horizon_hours ? <Badge tone="teal">+{alert.forecast_horizon_hours}h</Badge> : null}
                   </div>
                   <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{alert.title}</p>
-                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{alert.summary}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-[#74847a]">
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#5a6a5f]">{alert.summary}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-[#66766b]">
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {alert.locality_name ?? alert.station_name ?? 'Mumbai'}</span>
                     <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(alert.triggered_at)}</span>
                     {alert.model_name ? <span>{alert.model_name} {alert.model_version}</span> : null}
                     {alert.linked_incidents ? <span>{alert.linked_incidents} linked incident(s)</span> : null}
                   </div>
                 </div>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#7b8a80] group-hover:text-[#3f7d2a]" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#66766b] group-hover:text-[#3f7d2a]" />
               </div>
             </Link>
           ))}
@@ -202,13 +202,13 @@ export function AlertDetailPage() {
                 <div key={assessment.id} className="p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2"><RiskBadge level={assessment.risk_level} /><Badge tone="neutral">{assessment.alert_state.replace(/_/g, ' ')}</Badge>{assessment.is_simulated ? <Badge tone="amber">Sim</Badge> : null}</div>
-                    <span className="text-[9px] text-[#74847a]">{formatDate(assessment.calculated_at)}</span>
+                    <span className="text-[9px] text-[#66766b]">{formatDate(assessment.calculated_at)}</span>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-3 text-[10px]">
                     <div><DataLabel>Risk</DataLabel><p className="mt-1 text-sm font-semibold">{assessment.risk_score ?? '—'}/100</p></div>
                     <div><DataLabel>Confidence</DataLabel><p className="mt-1 text-sm font-semibold">{assessment.confidence_score ?? '—'}/100 · {assessment.confidence_level}</p></div>
                   </div>
-                  <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">{assessment.method} · {assessment.ruleset_version}</p>
+                  <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">{assessment.method} · {assessment.ruleset_version}</p>
                   {assessment.missing_inputs.length ? <p className="mt-1 text-[9px] text-amber-600/70">Missing inputs: {assessment.missing_inputs.join('; ')}</p> : null}
                 </div>
               ))}
@@ -226,10 +226,10 @@ export function AlertDetailPage() {
                     <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border border-[#f5f8f2] bg-[#5b9e46]" />
                     <p className="text-[10px] font-semibold text-[#26362a]">{event.from_state ?? 'NEW'} → {event.to_state}</p>
                     <p className="mt-0.5 text-[9px] text-[#6f7f74]">{event.reason}</p>
-                    <p className="mt-0.5 text-[8px] text-[#7b8a80]">{formatDate(event.created_at)}{event.actor_name ? ` · ${event.actor_name}` : ''}</p>
+                    <p className="mt-0.5 text-[8px] text-[#66766b]">{formatDate(event.created_at)}{event.actor_name ? ` · ${event.actor_name}` : ''}</p>
                   </div>
                 ))}
-                {data.history.length === 0 ? <p className="text-[10px] text-[#74847a]">No history recorded.</p> : null}
+                {data.history.length === 0 ? <p className="text-[10px] text-[#66766b]">No history recorded.</p> : null}
               </div>
             </div>
           </Card>
@@ -239,12 +239,12 @@ export function AlertDetailPage() {
             <div className="divide-y divide-[#e7ece3]">
               {data.linkedIncidents.map((incident) => (
                 <Link key={incident.id} to={`/incidents/${incident.id}`} className="block px-4 py-3 hover:bg-[#f3f7f0]">
-                  <div className="flex items-center justify-between gap-2"><RiskBadge level={incident.risk_level} /><span className="text-[9px] text-[#74847a]">{incident.status.replace(/_/g, ' ')}</span></div>
+                  <div className="flex items-center justify-between gap-2"><RiskBadge level={incident.risk_level} /><span className="text-[9px] text-[#66766b]">{incident.status.replace(/_/g, ' ')}</span></div>
                   <p className="mt-1 text-[11px] font-medium text-[#26362a]">{incident.title}</p>
-                  <p className="mt-0.5 text-[9px] text-[#74847a]">{incident.public_ref}</p>
+                  <p className="mt-0.5 text-[9px] text-[#66766b]">{incident.public_ref}</p>
                 </Link>
               ))}
-              {data.linkedIncidents.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No linked incident.</p> : null}
+              {data.linkedIncidents.length === 0 ? <p className="p-4 text-[10px] text-[#66766b]">No linked incident.</p> : null}
             </div>
           </Card>
 
@@ -254,12 +254,12 @@ export function AlertDetailPage() {
               {data.notifications.slice(0, 8).map((notification) => (
                 <div key={notification.id} className="px-4 py-2.5">
                   <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#5a6a5f]">{notification.audience} · {notification.template.replace(/_/g, ' ')}</span><Badge tone={notification.status === 'DELIVERED' ? 'green' : notification.status === 'FAILED' ? 'red' : 'amber'}>{notification.status}</Badge></div>
-                  <p className="mt-1 text-[8px] text-[#7b8a80]">{formatDate(notification.created_at)} {notification.sent_at ? `· sent ${formatDate(notification.sent_at)}` : ''}</p>
+                  <p className="mt-1 text-[8px] text-[#66766b]">{formatDate(notification.created_at)} {notification.sent_at ? `· sent ${formatDate(notification.sent_at)}` : ''}</p>
                 </div>
               ))}
-              {data.notifications.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No notifications generated.</p> : null}
+              {data.notifications.length === 0 ? <p className="p-4 text-[10px] text-[#66766b]">No notifications generated.</p> : null}
             </div>
-            <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] leading-relaxed text-[#7b8a80]">SENT means the provider accepted the message. DELIVERED is only recorded from a provider webhook.</p>
+            <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] leading-relaxed text-[#66766b]">SENT means the provider accepted the message. DELIVERED is only recorded from a provider webhook.</p>
           </Card>
         </div>
       </div>

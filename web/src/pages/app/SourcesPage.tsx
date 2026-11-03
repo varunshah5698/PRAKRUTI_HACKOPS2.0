@@ -65,17 +65,17 @@ export function SourcesPage() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-semibold text-[#1b2a1f]">{source.name}</p>
-                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#74847a]">{source.provider} · {source.category}</p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#66766b]">{source.provider} · {source.category}</p>
                 </div>
                 <SourceBadge status={source.status} />
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-[#68786d]">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-[#5a6a5f]">
                 <div><DataLabel>Last attempt</DataLabel><p className="mt-1">{source.lastAttemptAt ? timeAgo(source.lastAttemptAt) : '—'}</p></div>
                 <div><DataLabel>Last success</DataLabel><p className="mt-1">{source.lastSuccessAt ? formatDate(source.lastSuccessAt) : '—'}</p></div>
                 <div><DataLabel>Records</DataLabel><p className="mt-1">{source.recordCount ?? 0}</p></div>
                 <div><DataLabel>Attribution</DataLabel><p className="mt-1 truncate">{source.attribution ?? '—'}</p></div>
               </div>
-              {source.notes ? <p className="mt-3 text-[9px] leading-relaxed text-[#74847a]">{source.notes}</p> : null}
+              {source.notes ? <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{source.notes}</p> : null}
               {source.errorMessage ? <p className="mt-2 rounded-lg border border-red-500/25 bg-red-500/10 p-2 text-[9px] text-red-700">{source.errorMessage}</p> : null}
               {source.documentationUrl ? <a href={source.documentationUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[9px] text-[#3f7d2a] underline">Documentation <ExternalLink className="h-3 w-3" /></a> : null}
             </div>
@@ -88,7 +88,7 @@ export function SourcesPage() {
         {jobs.length === 0 ? <EmptyState title="No ingestion jobs" description="Trigger ingestion or wait for a scheduled job." /> : (
           <div className="scrollbar-thin max-h-[400px] overflow-auto">
             <table className="w-full text-left text-[10px]">
-              <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#74847a]"><tr><th className="px-4 py-2">Source</th><th className="px-4 py-2">Started</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Records</th><th className="px-4 py-2">Error</th></tr></thead>
+              <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#66766b]"><tr><th className="px-4 py-2">Source</th><th className="px-4 py-2">Started</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Records</th><th className="px-4 py-2">Error</th></tr></thead>
               <tbody className="divide-y divide-[#e7ece3]">
                 {jobs.map((job) => (
                   <tr key={job.id} className="text-[#5a6a5f]">

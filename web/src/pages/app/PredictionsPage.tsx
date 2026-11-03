@@ -180,7 +180,7 @@ export function PredictionsPage() {
               <div className="flex items-center justify-between"><DataLabel>Current observed PM2.5</DataLabel><Badge tone={detail.station.isSimulated ? 'amber' : 'green'}>{detail.station.isSimulated ? 'Demo' : 'Source'}</Badge></div>
               <p className="display mt-3 text-[34px] font-bold">{detail.current ? number(detail.current.value) : '—'} <span className="text-sm font-normal text-[#6f7f74]">µg/m³</span></p>
               <p className="mt-1 text-[10px] text-[#6f7f74]">{formatDate(detail.current?.observedAt)} · {detail.current?.qualityState}</p>
-              <p className="mt-2 text-[9px] text-[#74847a]">{detail.current?.isSimulated ? 'SIMULATION DATA — not a CPCB reading' : `Connected source · ${detail.current?.sourceId ?? ''}`}</p>
+              <p className="mt-2 text-[9px] text-[#66766b]">{detail.current?.isSimulated ? 'SIMULATION DATA — not a CPCB reading' : `Connected source · ${detail.current?.sourceId ?? ''}`}</p>
             </Card>
             {[1, 3, 6].map((horizon) => {
               const forecast = detail.forecasts.find((f) => f.horizonHours === horizon);
@@ -190,7 +190,7 @@ export function PredictionsPage() {
                   <p className="display mt-3 text-[30px] font-bold">{forecast ? number(forecast.predictedValue) : '—'} <span className="text-sm font-normal text-[#6f7f74]">µg/m³</span></p>
                   <p className="mt-1 text-[10px] text-[#6f7f74]">{trained ? 'Quantile 10–90' : '80% band'} {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : 'unavailable'}</p>
                   <div className="mt-3"><ProgressBar value={forecast ? Math.min(100, (forecast.predictedValue / 100) * 100) : 0} tone={forecast && forecast.predictedValue >= 60 ? '#cf7227' : '#2f8f84'} /></div>
-                  <p className="mt-2 text-[9px] text-[#74847a]">{forecast?.method ?? 'FORECAST UNAVAILABLE'}</p>
+                  <p className="mt-2 text-[9px] text-[#66766b]">{forecast?.method ?? 'FORECAST UNAVAILABLE'}</p>
                 </Card>
               );
             })}
@@ -199,7 +199,7 @@ export function PredictionsPage() {
           <div className="grid gap-4 xl:grid-cols-[1.4fr_0.6fr]">
             <Card>
               <CardHeader>
-                <div><CardTitle>Historical observations vs baseline forecast</CardTitle><p className="mt-1 text-[10px] text-[#74847a]">Stored demo observations · dashed median · dotted empirical band · not a calibrated prediction interval</p></div>
+                <div><CardTitle>Historical observations vs baseline forecast</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">Stored demo observations · dashed median · dotted empirical band · not a calibrated prediction interval</p></div>
                 <Badge tone="amber">Not trained</Badge>
               </CardHeader>
               <div className="px-2 pb-2 pt-3"><Chart height={320} empty={detail.history.length === 0} option={chartOption} /></div>
@@ -224,7 +224,7 @@ export function PredictionsPage() {
                     {detail.criteria.predictiveWarningMet ? 'Configured baseline criteria are met. This is an analytical early warning, not a confirmed future condition or a violation.' : 'Configured baseline criteria are not met. No predictive warning is raised from this method.'}
                   </div>
                 </div>
-                <p className="mt-3 text-[9px] leading-relaxed text-[#7b8a80]">{detail.criteria.note}</p>
+                <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{detail.criteria.note}</p>
               </div>
             </Card>
             <Card>
@@ -233,17 +233,17 @@ export function PredictionsPage() {
                 {detail.risk ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
-                      <div><DataLabel>Risk score</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.risk_score ?? '—'}</p><p className="text-[9px] text-[#74847a]">out of 100</p></div>
-                      <div><DataLabel>Confidence</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.confidence_score ?? '—'}</p><p className="text-[9px] text-[#74847a]">{detail.risk.confidence_level}</p></div>
+                      <div><DataLabel>Risk score</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.risk_score ?? '—'}</p><p className="text-[9px] text-[#66766b]">out of 100</p></div>
+                      <div><DataLabel>Confidence</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.confidence_score ?? '—'}</p><p className="text-[9px] text-[#66766b]">{detail.risk.confidence_level}</p></div>
                     </div>
                     <p className="mt-3 text-[10px] leading-relaxed text-[#6f7f74]">{detail.risk.method}</p>
-                    <p className="mt-2 text-[9px] text-[#74847a]">Calculated {formatDate(detail.risk.calculated_at)}. Confidence is separate from severity.</p>
+                    <p className="mt-2 text-[9px] text-[#66766b]">Calculated {formatDate(detail.risk.calculated_at)}. Confidence is separate from severity.</p>
                   </>
                 ) : <p className="text-[11px] text-[#6f7f74]">No risk assessment available.</p>}
                 <div className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                   <DataLabel>Anomaly check</DataLabel>
                   <p className="mt-1 text-sm font-semibold">{detail.anomaly.status}</p>
-                  <p className="mt-1 text-[9px] text-[#74847a]">z = {detail.anomaly.zScore ?? '—'} · {detail.anomaly.method}</p>
+                  <p className="mt-1 text-[9px] text-[#66766b]">z = {detail.anomaly.zScore ?? '—'} · {detail.anomaly.method}</p>
                 </div>
               </div>
             </Card>
@@ -261,11 +261,11 @@ export function PredictionsPage() {
                         </div>
                       ))}
                     </div>
-                    <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">SHAP contribution to the +3h prediction. Positive values push the forecast higher.</p>
+                    <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">SHAP contribution to the +3h prediction. Positive values push the forecast higher.</p>
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 text-[#7b8a80]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#5f6f64]">SHAP is unavailable</p></div>
+                    <div className="flex items-center gap-2 text-[#66766b]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#5f6f64]">SHAP is unavailable</p></div>
                     <p className="mt-2 text-[10px] leading-relaxed text-[#6f7f74]">
                       SHAP values can only be computed by a trained model. No trained LightGBM artifact is active for this deployment. Generic feature
                       importance is not shown in place of SHAP.
@@ -285,11 +285,11 @@ export function PredictionsPage() {
               <CardHeader><CardTitle>Model registry</CardTitle><Badge tone="neutral">{data.models.length} entries</Badge></CardHeader>
               <div className="scrollbar-thin max-h-[360px] overflow-auto">
                 <table className="w-full text-left text-[10px]">
-                  <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#74847a]"><tr><th className="px-4 py-2">Model</th><th className="px-4 py-2">Target</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Metrics</th></tr></thead>
+                  <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#66766b]"><tr><th className="px-4 py-2">Model</th><th className="px-4 py-2">Target</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Metrics</th></tr></thead>
                   <tbody className="divide-y divide-[#e7ece3]">
                     {data.models.map((model) => (
                       <tr key={model.id} className="text-[#5a6a5f]">
-                        <td className="px-4 py-2"><p className="font-medium text-[#26362a]">{model.name}</p><p className="text-[9px] text-[#74847a]">{model.version}</p></td>
+                        <td className="px-4 py-2"><p className="font-medium text-[#26362a]">{model.name}</p><p className="text-[9px] text-[#66766b]">{model.version}</p></td>
                         <td className="px-4 py-2">{model.target}{model.horizon_hours ? ` · ${model.horizon_hours}h` : ''}</td>
                         <td className="px-4 py-2"><Badge tone={model.status === 'BASELINE' ? 'teal' : model.status === 'TRAINED' ? 'green' : 'amber'}>{model.status.replace(/_/g, ' ')}</Badge></td>
                         <td className="px-4 py-2 text-[9px]">{model.metrics ? 'Available' : 'None — not evaluated'}</td>
@@ -308,9 +308,9 @@ export function PredictionsPage() {
                     <span className="text-[#1b2a1f]">{number(row.value)} {row.unit}</span>
                   </div>
                 ))}
-                {data.externalContext.cams.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">CAMS context unavailable.</p> : null}
+                {data.externalContext.cams.length === 0 ? <p className="p-4 text-[10px] text-[#66766b]">CAMS context unavailable.</p> : null}
               </div>
-              <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] leading-relaxed text-[#74847a]">
+              <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] leading-relaxed text-[#66766b]">
                 CAMS is a regional atmospheric model, not a Mumbai monitoring station. It is shown as context only and is never used as a CPCB reading or official AQI.
               </p>
             </Card>

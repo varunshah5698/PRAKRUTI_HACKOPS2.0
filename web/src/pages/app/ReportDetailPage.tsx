@@ -157,7 +157,7 @@ export function ReportDetailPage() {
                   {data.evidence.map((item) => (
                     <div key={item.id} className="overflow-hidden rounded-xl border border-[#dfe6db] bg-[#f5f8f2]">
                       <img src={`/api/v1/evidence/${item.id}`} alt="Citizen evidence" className="h-52 w-full object-cover" />
-                      <div className="p-3 text-[9px] leading-relaxed text-[#74847a]">
+                      <div className="p-3 text-[9px] leading-relaxed text-[#66766b]">
                         <p className="font-semibold text-[#5a6a5f]">{item.original_name ?? 'Evidence photograph'}</p>
                         <p className="mt-1">{item.mime_type} · {item.size_bytes < 1024 ? `${item.size_bytes} B` : `${(item.size_bytes / 1024).toFixed(1)} KB`} · GPS {item.gps_consistency}</p>
                         <p className="mt-1">Malware scan: {item.malware_scan_status.replace(/_/g, ' ')} · private by default</p>
@@ -166,7 +166,7 @@ export function ReportDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="mt-4 rounded-xl border border-dashed border-[#dfe6db] p-6 text-center text-[10px] text-[#74847a]">
+                <div className="mt-4 rounded-xl border border-dashed border-[#dfe6db] p-6 text-center text-[10px] text-[#66766b]">
                   <Camera className="mx-auto mb-2 h-5 w-5" /> No photograph attached. The report relies on the description and location.
                 </div>
               )}
@@ -177,7 +177,7 @@ export function ReportDetailPage() {
             <CardHeader><CardTitle>AI assessment</CardTitle><Badge tone={data.aiAssessments.some((a) => a.status === 'COMPLETED') ? 'green' : 'amber'}>{data.evidence.length === 0 ? 'NO PHOTO' : data.aiAssessments[0]?.status ?? 'NOT_CONFIGURED'}</Badge></CardHeader>
             <div className="space-y-3 p-4">
               {data.evidence.length === 0 ? (
-                <p className="text-[11px] text-[#74847a]">No photograph attached, so no visual assessment was performed.</p>
+                <p className="text-[11px] text-[#66766b]">No photograph attached, so no visual assessment was performed.</p>
               ) : null}
               {data.evidence.length > 0 ? data.aiAssessments.map((assessment) => {
                 const output = assessment.output as {
@@ -194,7 +194,7 @@ export function ReportDetailPage() {
                   ? output.limitations.filter((limitation): limitation is string => typeof limitation === 'string')
                   : [];
                 return (
-                  <div key={assessment.id} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#68786d]">
+                  <div key={assessment.id} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#5a6a5f]">
                     <div className="flex items-center justify-between"><span className="font-semibold text-[#26362a]">{assessment.assessment_type.replace(/_/g, ' ')}</span><span>{assessment.provider} · {assessment.status}</span></div>
                     {assessment.status === 'COMPLETED' && typeof output.description === 'string' ? (
                       <div className="mt-2 space-y-2">
@@ -202,13 +202,13 @@ export function ReportDetailPage() {
                         {features.length ? (
                           <div className="flex flex-wrap gap-1">
                             {features.map((feature) => (
-                              <span key={feature} className="rounded-full border border-[#dfe6db] px-2 py-0.5 text-[9px] text-[#68786d]">{feature}</span>
+                              <span key={feature} className="rounded-full border border-[#dfe6db] px-2 py-0.5 text-[9px] text-[#5a6a5f]">{feature}</span>
                             ))}
                           </div>
                         ) : null}
-                        {typeof output.confidence === 'string' ? <p className="text-[9px] text-[#7b8a80]">Confidence: {output.confidence}</p> : null}
+                        {typeof output.confidence === 'string' ? <p className="text-[9px] text-[#66766b]">Confidence: {output.confidence}</p> : null}
                         {limitations.length ? (
-                          <ul className="space-y-0.5 text-[9px] text-[#7b8a80]">
+                          <ul className="space-y-0.5 text-[9px] text-[#66766b]">
                             {limitations.map((limitation) => <li key={limitation}>— {limitation}</li>)}
                           </ul>
                         ) : null}
@@ -216,11 +216,11 @@ export function ReportDetailPage() {
                     ) : (
                       <p className="mt-2 whitespace-pre-wrap">{String(output.reason ?? JSON.stringify(assessment.output))}</p>
                     )}
-                    <p className="mt-2 text-[9px] text-[#7b8a80]">A photograph cannot establish chemical composition, toxicity, concentration or legal responsibility.</p>
+                    <p className="mt-2 text-[9px] text-[#66766b]">A photograph cannot establish chemical composition, toxicity, concentration or legal responsibility.</p>
                   </div>
                 );
               }) : null}
-              {data.evidence.length > 0 && data.aiAssessments.length === 0 ? <p className="text-[11px] text-[#74847a]">No AI assessment record.</p> : null}
+              {data.evidence.length > 0 && data.aiAssessments.length === 0 ? <p className="text-[11px] text-[#66766b]">No AI assessment record.</p> : null}
             </div>
           </Card>
 
@@ -233,10 +233,10 @@ export function ReportDetailPage() {
                   {data.enrichment.stations.map((station) => (
                     <div key={station.id} className="text-[10px] text-[#5a6a5f]">
                       <p className="font-medium text-[#26362a]">{station.name.replace(' demo air monitor', '')} · {Math.round(station.distance_m)} m</p>
-                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#74847a]">{Object.entries(station.latest_readings).slice(0, 3).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
+                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#66766b]">{Object.entries(station.latest_readings).slice(0, 3).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
                     </div>
                   ))}
-                  {data.enrichment.stations.length === 0 ? <p className="text-[10px] text-[#74847a]">No monitoring station within 3 km.</p> : null}
+                  {data.enrichment.stations.length === 0 ? <p className="text-[10px] text-[#66766b]">No monitoring station within 3 km.</p> : null}
                 </div>
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
@@ -245,9 +245,9 @@ export function ReportDetailPage() {
                   <div className="mt-2 text-[10px] text-[#5a6a5f]">
                     <p>{number(data.enrichment.weather.temperature_c)}°C · {number(data.enrichment.weather.relative_humidity, 0)}% RH</p>
                     <p>Wind {number(data.enrichment.weather.wind_speed_kmh)} km/h · {number(data.enrichment.weather.wind_direction_deg, 0)}°</p>
-                    <p className="mt-1 text-[9px] text-[#74847a]">{formatDate(data.enrichment.weather.observed_at)} · {data.enrichment.weather.source_id}</p>
+                    <p className="mt-1 text-[9px] text-[#66766b]">{formatDate(data.enrichment.weather.observed_at)} · {data.enrichment.weather.source_id}</p>
                   </div>
-                ) : <p className="mt-2 text-[10px] text-[#74847a]">No nearby weather observation.</p>}
+                ) : <p className="mt-2 text-[10px] text-[#66766b]">No nearby weather observation.</p>}
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                 <DataLabel>Nearby reports · 500 m</DataLabel>
@@ -257,7 +257,7 @@ export function ReportDetailPage() {
                       {report.public_ref} · {report.incident_type.replace(/_/g, ' ')} · {Math.round(report.distance_m)} m
                     </Link>
                   ))}
-                  {data.enrichment.nearbyReports.length === 0 ? <p className="text-[10px] text-[#74847a]">No other reports within 500 m.</p> : null}
+                  {data.enrichment.nearbyReports.length === 0 ? <p className="text-[10px] text-[#66766b]">No other reports within 500 m.</p> : null}
                 </div>
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
@@ -269,7 +269,7 @@ export function ReportDetailPage() {
                   {data.enrichment.incidents.slice(0, 3).map((incident) => (
                     <Link key={incident.id} to={`/incidents/${incident.id}`} className="block text-[10px] text-[#5a6a5f] hover:text-[#142016]">{incident.public_ref} · {incident.status.replace(/_/g, ' ')}</Link>
                   ))}
-                  {!data.enrichment.alerts.length && !data.enrichment.incidents.length ? <p className="text-[10px] text-[#74847a]">No related alerts or incidents.</p> : null}
+                  {!data.enrichment.alerts.length && !data.enrichment.incidents.length ? <p className="text-[10px] text-[#66766b]">No related alerts or incidents.</p> : null}
                 </div>
               </div>
             </div>
@@ -282,7 +282,7 @@ export function ReportDetailPage() {
             <MumbaiMap stations={marker} className="h-[260px] w-full" compact theme="light" initialZoom={13.4} initialPitch={20} overlayLabel="Report location" autoFit={false} />
             <div className="p-3 text-[10px] text-[#6f7f74]">
               <p className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {data.report.locality_name ?? 'Mumbai'} · {data.report.lat.toFixed(5)}, {data.report.lng.toFixed(5)}</p>
-              <p className="mt-1 text-[9px] text-[#7b8a80]">Location validated inside the Greater Mumbai boundary.</p>
+              <p className="mt-1 text-[9px] text-[#66766b]">Location validated inside the Greater Mumbai boundary.</p>
             </div>
           </Card>
 
@@ -292,7 +292,7 @@ export function ReportDetailPage() {
               <div className="space-y-3 p-4">
                 {data.report.status === 'VERIFIED' ? (
                   <>
-                    <p className="text-[10px] leading-relaxed text-[#68786d]">This report is verified. Link it to a matching incident to preserve the investigation chain.</p>
+                    <p className="text-[10px] leading-relaxed text-[#5a6a5f]">This report is verified. Link it to a matching incident to preserve the investigation chain.</p>
                     <Select value={incidentId} onChange={(e) => setIncidentId(e.target.value)} className="h-9 text-[11px]">
                       <option value="">Select incident</option>
                       {incidents.map((incident) => <option key={incident.id} value={incident.id}>{incident.public_ref} · {incident.title.slice(0, 50)}</option>)}
@@ -300,9 +300,9 @@ export function ReportDetailPage() {
                     <Button variant="lime" size="sm" className="w-full" onClick={linkIncident} disabled={!incidentId || working}><Link2 className="h-3.5 w-3.5" /> Link report to incident</Button>
                   </>
                 ) : data.report.status === 'LINKED_TO_INVESTIGATION' ? (
-                  <p className="text-[10px] leading-relaxed text-[#68786d]">This report is linked to an investigation. No further report action is available. The incident workspace holds the investigation record.</p>
+                  <p className="text-[10px] leading-relaxed text-[#5a6a5f]">This report is linked to an investigation. No further report action is available. The incident workspace holds the investigation record.</p>
                 ) : (
-                  <p className="text-[10px] leading-relaxed text-[#68786d]">Verify or reject the report first. Only a verified report can be linked to an incident. Every status change is audited.</p>
+                  <p className="text-[10px] leading-relaxed text-[#5a6a5f]">Verify or reject the report first. Only a verified report can be linked to an incident. Every status change is audited.</p>
                 )}
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-3 text-[9px] leading-relaxed text-amber-700/70">
                   <ShieldAlert className="mb-1 h-3.5 w-3.5" /> A report is not an official violation. Official determinations are recorded only in the incident workflow by an authorised administrator.
@@ -313,11 +313,11 @@ export function ReportDetailPage() {
 
           <Card>
             <CardHeader><CardTitle>Contact</CardTitle><UserRound className="h-4 w-4 text-[#6f7f74]" /></CardHeader>
-            <div className="p-4 text-[10px] leading-relaxed text-[#68786d]">
+            <div className="p-4 text-[10px] leading-relaxed text-[#5a6a5f]">
               <p>Name: {data.report.contact_name || 'Not supplied'}</p>
               <p>Email: {data.report.contact_email || 'Not supplied'}</p>
               <p>Phone: {data.report.contact_phone || 'Not supplied'}</p>
-              <p className="mt-2 text-[9px] text-[#7b8a80]">Private contact information. Do not share outside authorised review.</p>
+              <p className="mt-2 text-[9px] text-[#66766b]">Private contact information. Do not share outside authorised review.</p>
             </div>
           </Card>
 
@@ -325,13 +325,13 @@ export function ReportDetailPage() {
             <CardHeader><CardTitle>Audit history</CardTitle><FileSearch className="h-4 w-4 text-[#6f7f74]" /></CardHeader>
             <div className="space-y-2 p-4">
               {data.audit.map((event, index) => (
-                <div key={index} className="rounded-lg border border-[#e7ece3] bg-[#f5f8f2] p-2.5 text-[9px] leading-relaxed text-[#68786d]">
+                <div key={index} className="rounded-lg border border-[#e7ece3] bg-[#f5f8f2] p-2.5 text-[9px] leading-relaxed text-[#5a6a5f]">
                   <p className="font-semibold uppercase tracking-[0.08em] text-[#3f7d2a]">{event.action.replace(/_/g, ' ')}</p>
                   <p className="mt-1">{formatDate(event.created_at)}</p>
-                  {event.after ? <p className="mt-1 text-[#7b8a80]">{JSON.stringify(event.after).slice(0, 180)}</p> : null}
+                  {event.after ? <p className="mt-1 text-[#66766b]">{JSON.stringify(event.after).slice(0, 180)}</p> : null}
                 </div>
               ))}
-              {data.audit.length === 0 ? <p className="text-[10px] text-[#74847a]">No audit events recorded.</p> : null}
+              {data.audit.length === 0 ? <p className="text-[10px] text-[#66766b]">No audit events recorded.</p> : null}
             </div>
           </Card>
         </div>

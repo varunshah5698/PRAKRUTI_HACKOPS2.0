@@ -250,6 +250,7 @@ export function LandingPage() {
                 className="landing-map h-[440px] w-full sm:h-[520px]"
                 compact
                 theme="light"
+                overlayLabel=""
                 initialZoom={10.9}
                 initialPitch={26}
               />
@@ -351,6 +352,7 @@ export function LandingPage() {
                 className="landing-map h-[430px] w-full sm:h-[500px]"
                 compact
                 theme="light"
+                overlayLabel=""
                 initialZoom={11.2}
                 initialPitch={34}
               />

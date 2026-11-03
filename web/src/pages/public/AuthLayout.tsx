@@ -37,7 +37,7 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
         <div className="relative flex h-full flex-col justify-between p-12">
           <div className="flex items-center justify-between">
             <PublicBadge tone="lime">Mumbai intelligence</PublicBadge>
-            <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#74847a]">
+            <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#66766b]">
               <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-[#5da341]" /> Demo environment
             </span>
           </div>
@@ -73,13 +73,13 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
               ))}
               <g transform="translate(90, 90)">
                 <rect width="230" height="82" rx="14" fill="rgba(255,255,255,0.84)" stroke="rgba(255,255,255,0.95)" />
-                <text x="16" y="25" fill="#6d7d72" fontSize="9" letterSpacing="1.4" fontFamily="Inter, sans-serif">CHEMBUR · PM2.5</text>
+                <text x="16" y="25" fill="#5f7065" fontSize="9" letterSpacing="1.4" fontFamily="Inter, sans-serif">CHEMBUR · PM2.5</text>
                 <text x="16" y="52" fill="#142016" fontSize="22" fontWeight="700" fontFamily="Space Grotesk, sans-serif">69.7 µg/m³</text>
                 <text x="16" y="68" fill="#b3860f" fontSize="9" fontFamily="Inter, sans-serif">SIMULATION · 24H SCREENING</text>
               </g>
               <g transform="translate(360, 92)">
                 <rect width="170" height="58" rx="12" fill="rgba(253,245,223,0.9)" stroke="rgba(237,222,174,1)" />
-                <text x="14" y="23" fill="#6d7d72" fontSize="9" letterSpacing="1.2" fontFamily="Inter, sans-serif">CPCB CONNECTOR</text>
+                <text x="14" y="23" fill="#5f7065" fontSize="9" letterSpacing="1.2" fontFamily="Inter, sans-serif">CPCB CONNECTOR</text>
                 <text x="14" y="42" fill="#8a6710" fontSize="11" fontWeight="600" fontFamily="Inter, sans-serif">NOT CONFIGURED</text>
               </g>
             </svg>
@@ -96,12 +96,12 @@ export function AuthLayout({ children, title, subtitle }: { children: React.Reac
                 <div key={String(title)} className="rounded-2xl border border-white/80 bg-white/45 p-3 shadow-pill backdrop-blur">
                   <Component className="h-4 w-4 text-[#3f7d2a]" />
                   <p className="mt-2 text-[11px] font-semibold text-[#223328]">{String(title)}</p>
-                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#74847a]">{String(copy)}</p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#66766b]">{String(copy)}</p>
                 </div>
               );
             })}
           </div>
-          <div className="flex items-center gap-3 text-[10px] text-[#74847a]">
+          <div className="flex items-center gap-3 text-[10px] text-[#66766b]">
             <Wind className="h-3.5 w-3.5" /> Forecasts are decision support, not confirmed future conditions.
             <Activity className="ml-auto h-3.5 w-3.5" />
           </div>

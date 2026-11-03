@@ -1,8 +1,9 @@
 """Build a real Mumbai training extract from OpenAQ v3 + Open-Meteo.
 
 Source data:
-  * Air quality: OpenAQ v3 precomputed hourly measurements for CPCB/MPCB/BMC/
-    IITM stations inside the Greater Mumbai boundary.
+  * Air quality: OpenAQ v3 hourly API (default) or the public OpenAQ S3 daily
+    archive (`--source archive`) for CPCB/MPCB/BMC/IITM stations inside the
+    Greater Mumbai boundary.
   * Weather: Open-Meteo ERA5 archive (reanalysis, not a station measurement).
 
 The script never invents missing observations. Gaps stay NaN, units are
@@ -30,12 +31,14 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import requests
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 CACHE = HERE / "data" / "raw"
 BOUNDARY = ROOT / "server" / "data" / "mumbai-boundary.geojson"
 OPENAQ = "https://api.openaq.org/v3"
+_thread_local = threading.local()
 
 POLLUTANTS = ("pm25", "pm10", "no2", "so2", "co", "o3")
 # ppb -> ug/m3 at 25 C, 101.325 kPa (molar volume 24.45 L/mol).
@@ -212,15 +215,23 @@ def fetch_archive_location(location_id: int, start: str, end: str, workers: int)
         path = cache_dir / f"{day.isoformat()}.csv.gz"
         if path.exists():
             return path
-        try:
-            with urllib.request.urlopen(archive_url(location_id, day), timeout=90) as response:
-                payload = response.read()
-        except urllib.error.HTTPError as error:
-            if error.code == 404:
-                path.write_bytes(b"")
+        session = getattr(_thread_local, "session", None)
+        if session is None:
+            session = requests.Session()
+            _thread_local.session = session
+        for attempt in range(5):
+            try:
+                response = session.get(archive_url(location_id, day), timeout=90)
+                if response.status_code == 404:
+                    path.write_bytes(b"")
+                    return path
+                response.raise_for_status()
+                path.write_bytes(response.content)
                 return path
-            raise
-        path.write_bytes(payload)
+            except requests.RequestException:
+                if attempt == 4:
+                    raise
+                time.sleep(1 + attempt * 2)
         return path
 
     frames = []
@@ -265,7 +276,8 @@ def archive_series(frame: pd.DataFrame, sensor_id: int, code: str, unit: str) ->
             quality["out_of_bounds"] += 1
             continue
         normalised.append(converted)
-    quality[f"method_{method}"] = int(np.isfinite(normalised).sum()) if method else 0
+    if method:
+        quality[f"method_{method}"] = int(np.isfinite(normalised).sum())
     hourly = pd.DataFrame({"hour": rows["datetime"].dt.floor("h"), "value": normalised}).dropna()
     if hourly.empty:
         return pd.Series(dtype=float, index=pd.DatetimeIndex([], tz="UTC")), quality
@@ -470,44 +482,67 @@ def main() -> None:
 
     print(f"{len(selected)} stations with an active PM2.5 sensor")
 
-    archive_frames: dict[int, pd.DataFrame] = {}
-    if args.source == "archive":
-        for item in selected:
-            location_id = item["location"]["id"]
-            print(f"  archive download {location_id} {item['location']['name'][:48]}")
-            archive_frames[location_id] = fetch_archive_location(location_id, start, end, args.archive_workers)
-
-    # First pass: fetch PM2.5 so weak stations can be dropped before spending
-    # rate limit on the other pollutants.
     expected = len(pd.date_range(start, end, freq="h", inclusive="left"))
+    station_data: dict[int, dict] = {}
 
-    def pm25_task(item: dict) -> tuple[int, dict]:
-        location = item["location"]
-        sensor = item["sensors"]["pm25"]
-        if args.source == "archive":
-            series, quality = archive_series(
-                archive_frames[location["id"]], sensor["id"], "pm25", sensor["parameter"]["units"]
+    if args.source == "archive":
+        # Process one location at a time and keep only the small hourly series.
+        # Holding every raw daily frame in memory is enough to OOM on 23 stations.
+        for item in selected:
+            location = item["location"]
+            location_id = location["id"]
+            print(f"  archive download {location_id} {location['name'][:48]}")
+            frame = None
+            for attempt in range(2):
+                try:
+                    frame = fetch_archive_location(location_id, start, end, args.archive_workers)
+                    break
+                except Exception as error:  # A single S3 failure must not discard the whole extract.
+                    print(f"    attempt {attempt + 1} failed: {error}")
+            if frame is None:
+                frame = pd.DataFrame(columns=["sensors_id", "datetime", "parameter", "units", "value"])
+            data = {
+                "location": location,
+                "sensors": item["sensors"],
+                "series": {},
+                "quality": {},
+                "coverage": {},
+            }
+            for code, sensor in item["sensors"].items():
+                series, quality = archive_series(frame, sensor["id"], code, sensor["parameter"]["units"])
+                data["series"][code] = series
+                data["quality"][code] = quality
+                data["coverage"][code] = len(series) / expected if expected else 0.0
+            station_data[location_id] = data
+            print(
+                f"  {location_id} {location['name'][:48]:48s} pm25 "
+                f"{len(data['series'].get('pm25', [])):6d} rows ({data['coverage'].get('pm25', 0):5.1%})"
             )
-        else:
+            del frame
+    else:
+        # First pass: fetch PM2.5 so weak stations can be dropped before spending
+        # rate limit on the other pollutants.
+        def pm25_task(item: dict) -> tuple[int, dict]:
+            location = item["location"]
+            sensor = item["sensors"]["pm25"]
             rows = fetch_hours(client, sensor["id"], start, end)
             series, quality = series_from_hours(rows, "pm25", sensor["parameter"]["units"])
-        coverage = len(series) / expected if expected else 0.0
-        return location["id"], {
-            "location": location,
-            "sensors": item["sensors"],
-            "series": {"pm25": series},
-            "quality": {"pm25": quality},
-            "coverage": {"pm25": coverage},
-        }
+            coverage = len(series) / expected if expected else 0.0
+            return location["id"], {
+                "location": location,
+                "sensors": item["sensors"],
+                "series": {"pm25": series},
+                "quality": {"pm25": quality},
+                "coverage": {"pm25": coverage},
+            }
 
-    station_data: dict[int, dict] = {}
-    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
-        for station_id, data in executor.map(pm25_task, selected):
-            station_data[station_id] = data
-            location = data["location"]
-            series = data["series"]["pm25"]
-            coverage = data["coverage"]["pm25"]
-            print(f"  {location['id']} {location['name'][:48]:48s} pm25 {len(series):6d} rows ({coverage:5.1%})")
+        with ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
+            for station_id, data in executor.map(pm25_task, selected):
+                station_data[station_id] = data
+                location = data["location"]
+                series = data["series"]["pm25"]
+                coverage = data["coverage"]["pm25"]
+                print(f"  {location['id']} {location['name'][:48]:48s} pm25 {len(series):6d} rows ({coverage:5.1%})")
 
     keep = {
         station_id
@@ -521,33 +556,29 @@ def main() -> None:
     if not keep:
         raise SystemExit("No station passed the PM2.5 coverage gate; refusing to write an empty extract.")
 
-    tasks = [
-        (station_id, code, sensor)
-        for station_id in sorted(keep)
-        for code, sensor in station_data[station_id]["sensors"].items()
-        if code != "pm25"
-    ]
+    if args.source == "api":
+        tasks = [
+            (station_id, code, sensor)
+            for station_id in sorted(keep)
+            for code, sensor in station_data[station_id]["sensors"].items()
+            if code != "pm25"
+        ]
 
-    def pollutant_task(task: tuple[int, str, dict]) -> tuple[int, str, pd.Series, dict, float]:
-        station_id, code, sensor = task
-        if args.source == "archive":
-            series, quality = archive_series(
-                archive_frames[station_id], sensor["id"], code, sensor["parameter"]["units"]
-            )
-        else:
+        def pollutant_task(task: tuple[int, str, dict]) -> tuple[int, str, pd.Series, dict, float]:
+            station_id, code, sensor = task
             rows = fetch_hours(client, sensor["id"], start, end)
             series, quality = series_from_hours(rows, code, sensor["parameter"]["units"])
-        coverage = len(series) / expected if expected else 0.0
-        return station_id, code, series, quality, coverage
+            coverage = len(series) / expected if expected else 0.0
+            return station_id, code, series, quality, coverage
 
-    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
-        for station_id, code, series, quality, coverage in executor.map(pollutant_task, tasks):
-            data = station_data[station_id]
-            location = data["location"]
-            data["series"][code] = series
-            data["quality"][code] = quality
-            data["coverage"][code] = coverage
-            print(f"  {location['id']} {code:5s} {len(series):6d} rows ({coverage:5.1%})")
+        with ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
+            for station_id, code, series, quality, coverage in executor.map(pollutant_task, tasks):
+                data = station_data[station_id]
+                location = data["location"]
+                data["series"][code] = series
+                data["quality"][code] = quality
+                data["coverage"][code] = coverage
+                print(f"  {location['id']} {code:5s} {len(series):6d} rows ({coverage:5.1%})")
 
     index = pd.date_range(start, end, freq="h", inclusive="left", tz="UTC")
     frames = []

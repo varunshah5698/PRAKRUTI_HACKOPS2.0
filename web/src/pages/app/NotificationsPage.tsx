@@ -130,10 +130,10 @@ export function NotificationsPage() {
                         {notification.is_simulated && notification.status !== 'SIMULATED' ? <Badge tone="amber">Simulated</Badge> : null}
                       </div>
                       <p className="mt-2 text-[12px] font-semibold text-[#1b2a1f]">{notification.subject}</p>
-                      <p className="mt-1 text-[9px] text-[#74847a]">
+                      <p className="mt-1 text-[9px] text-[#66766b]">
                         {notification.alert_ref ?? '—'} · {notification.alert_category ? categoryLabel(notification.alert_category) : '—'} · {notification.locality_name ?? 'Mumbai'} · {timeAgo(notification.created_at)}
                       </p>
-                      <p className="mt-1 text-[8px] text-[#7b8a80]">
+                      <p className="mt-1 text-[8px] text-[#66766b]">
                         {notification.sent_at ? `Sent ${formatDate(notification.sent_at)}` : 'Not sent'} · {notification.delivered_at ? `Delivered ${formatDate(notification.delivered_at)}` : 'Delivery not confirmed'}
                         {notification.error ? ` · ${notification.error}` : ''}
                       </p>
@@ -164,7 +164,7 @@ export function NotificationsPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Email provider</CardTitle><Badge tone={provider?.configured ? 'green' : 'amber'}>{provider?.configured ? 'Configured' : 'Not configured'}</Badge></CardHeader>
-            <div className="p-4 text-[10px] leading-relaxed text-[#68786d]">
+            <div className="p-4 text-[10px] leading-relaxed text-[#5a6a5f]">
               <p>{provider?.note}</p>
               <div className="mt-3 space-y-1.5 border-t border-[#e7ece3] pt-3">
                 <div className="flex justify-between"><span>Mode</span><span className="text-[#26362a]">{provider?.mode}</span></div>
@@ -211,7 +211,7 @@ export function NotificationsPage() {
                 I consent to notification processing
               </label>
               <Button variant="lime" size="sm" className="w-full" onClick={save} disabled={saving}><Save className="h-3.5 w-3.5" /> {saving ? 'Saving…' : 'Save preferences'}</Button>
-              <p className="text-[9px] leading-relaxed text-[#7b8a80]">Consent is required for email. Preferences are applied to future alerts; no retroactive sends are made.</p>
+              <p className="text-[9px] leading-relaxed text-[#66766b]">Consent is required for email. Preferences are applied to future alerts; no retroactive sends are made.</p>
             </div>
           </Card>
         </div>

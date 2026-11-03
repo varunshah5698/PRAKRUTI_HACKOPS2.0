@@ -114,7 +114,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={classNames(
-        'h-11 w-full rounded-xl border border-[#d9e3d5] bg-white/80 px-3.5 text-sm text-[#142016] placeholder:text-[#8a988e] focus:border-[#8fc47a] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b9e0a8]/40 disabled:opacity-50',
+        'h-11 w-full rounded-xl border border-[#d9e3d5] bg-white/80 px-3.5 text-sm text-[#142016] placeholder:text-[#66766b] focus:border-[#8fc47a] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b9e0a8]/40 disabled:opacity-50',
         className,
       )}
       {...props}
@@ -174,7 +174,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
     <textarea
       ref={ref}
       className={classNames(
-        'w-full rounded-xl border border-[#d9e3d5] bg-white/80 px-3.5 py-3 text-sm text-[#142016] placeholder:text-[#8a988e] focus:border-[#8fc47a] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b9e0a8]/40',
+        'w-full rounded-xl border border-[#d9e3d5] bg-white/80 px-3.5 py-3 text-sm text-[#142016] placeholder:text-[#66766b] focus:border-[#8fc47a] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b9e0a8]/40',
         className,
       )}
       {...props}
@@ -246,9 +246,9 @@ export function EmptyState({
 }) {
   return (
     <div className={classNames('flex flex-col items-center justify-center px-6 py-12 text-center', className)}>
-      {icon ? <div className="mb-3 text-[#8a988e]">{icon}</div> : null}
+      {icon ? <div className="mb-3 text-[#66766b]">{icon}</div> : null}
       <p className="text-sm font-semibold text-[#26362a]">{title}</p>
-      <p className="mt-1 max-w-sm text-xs leading-relaxed text-[#6d7d72]">{description}</p>
+      <p className="mt-1 max-w-sm text-xs leading-relaxed text-[#5f7065]">{description}</p>
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
@@ -256,7 +256,7 @@ export function EmptyState({
 
 export function DataLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={classNames('text-[10px] font-semibold uppercase tracking-[0.14em] text-[#74847a]', className)}>
+    <span className={classNames('text-[10px] font-semibold uppercase tracking-[0.14em] text-[#66766b]', className)}>
       {children}
     </span>
   );
@@ -301,7 +301,7 @@ export function Tabs({
           )}
         >
           {tab.label}
-          {tab.count !== undefined ? <span className={classNames('ml-1.5', value === tab.id ? 'text-white/65' : 'text-[#8a988e]')}>{tab.count}</span> : null}
+          {tab.count !== undefined ? <span className={classNames('ml-1.5', value === tab.id ? 'text-white/65' : 'text-[#66766b]')}>{tab.count}</span> : null}
         </button>
       ))}
     </div>
@@ -374,7 +374,7 @@ export function Sheet({
           <div className="flex items-start justify-between gap-4 border-b border-dashed border-[#dbe5d6] px-5 py-4">
             <div>
               <DialogPrimitive.Title className="text-base font-semibold text-[#142016]">{title}</DialogPrimitive.Title>
-              {description ? <DialogPrimitive.Description className="mt-0.5 text-xs text-[#6d7d72]">{description}</DialogPrimitive.Description> : null}
+              {description ? <DialogPrimitive.Description className="mt-0.5 text-xs text-[#5f7065]">{description}</DialogPrimitive.Description> : null}
             </div>
             <DialogPrimitive.Close className="rounded-full p-1.5 text-[#66766b] hover:bg-[#edf2e9] hover:text-[#142016]">
               <X className="h-4 w-4" />

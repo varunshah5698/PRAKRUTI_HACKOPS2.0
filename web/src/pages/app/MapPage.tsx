@@ -249,7 +249,7 @@ function StationDrawer({
             <Badge tone={detail.station.isSimulated ? 'amber' : 'green'} dot>{detail.station.isSimulated ? 'Simulation data' : 'Source record'}</Badge>
             <Badge tone={detail.station.healthStatus === 'ONLINE' ? 'green' : 'amber'}>{detail.station.healthStatus}</Badge>
             {detail.station.aqi?.aqi !== null && detail.station.aqi?.aqi !== undefined ? <Badge tone="neutral">Indicative AQI {detail.station.aqi.aqi}</Badge> : null}
-            <span className="ml-auto flex items-center gap-2 text-[9px] text-[#74847a]">
+            <span className="ml-auto flex items-center gap-2 text-[9px] text-[#66766b]">
               {refreshing ? (
                 <span className="flex items-center gap-1 text-[#3f7d2a]">
                   <Spinner className="h-3 w-3" /> updating
@@ -287,13 +287,13 @@ function StationDrawer({
                   <div key={code} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                     <DataLabel>{code.toUpperCase()}</DataLabel>
                     <p className="mt-1 text-lg font-semibold text-[#142016]">{number(value.value)} <span className="text-[10px] font-normal text-[#6f7f74]">{value.unit}</span></p>
-                    <p className="mt-1 text-[9px] text-[#74847a]">{value.qualityState} · {value.sourceId}</p>
+                    <p className="mt-1 text-[9px] text-[#66766b]">{value.qualityState} · {value.sourceId}</p>
                   </div>
                 ))}
                 {Object.keys(detail.station.values).length === 0 ? <p className="col-span-full text-xs text-[#6f7f74]">No recent values available.</p> : null}
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
-                <div className="flex items-center justify-between"><DataLabel>Station identity</DataLabel><span className="text-[9px] text-[#74847a]">{detail.station.provider}</span></div>
+                <div className="flex items-center justify-between"><DataLabel>Station identity</DataLabel><span className="text-[9px] text-[#66766b]">{detail.station.provider}</span></div>
                 <div className="mt-3 grid gap-2 text-[11px] text-[#5a6a5f] sm:grid-cols-2">
                   <p>Identifier <span className="text-[#1b2a1f]">{detail.station.code}</span></p>
                   <p>Type <span className="text-[#1b2a1f]">{detail.station.stationType}</span></p>
@@ -308,7 +308,7 @@ function StationDrawer({
                   <div className="flex items-center justify-between"><DataLabel>Indicative AQI</DataLabel><RiskBadge level={detail.station.aqi.category === 'Good' || detail.station.aqi.category === 'Satisfactory' ? 'LOW' : detail.station.aqi.category === 'Moderate' ? 'MODERATE' : detail.station.aqi.category === 'Poor' ? 'HIGH' : 'CRITICAL'} /></div>
                   <p className="display mt-2 text-4xl font-bold" style={{ color: AQI_COLORS[detail.station.aqi.category] }}>{detail.station.aqi.aqi}</p>
                   <p className="mt-1 text-xs font-medium text-[#26362a]">{detail.station.aqi.category} · dominant {detail.station.aqi.dominantPollutant?.toUpperCase()}</p>
-                  <p className="mt-2 text-[10px] leading-relaxed text-[#74847a]">{detail.station.aqi.caveat}</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-[#66766b]">{detail.station.aqi.caveat}</p>
                 </div>
               ) : null}
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
@@ -319,9 +319,9 @@ function StationDrawer({
                     <p>Humidity <span className="text-[#1b2a1f]">{number(detail.weather.relative_humidity, 0)}%</span></p>
                     <p>Wind <span className="text-[#1b2a1f]">{number(detail.weather.wind_speed_kmh)} km/h · {number(detail.weather.wind_direction_deg, 0)}°</span></p>
                     <p>Rain <span className="text-[#1b2a1f]">{number(detail.weather.precipitation_mm)} mm</span></p>
-                    <p className="col-span-2 text-[9px] text-[#74847a]">Observed {formatDate(detail.weather.observed_at)} · source {detail.weather.source_id} · weather is context, not evidence of causation.</p>
+                    <p className="col-span-2 text-[9px] text-[#66766b]">Observed {formatDate(detail.weather.observed_at)} · source {detail.weather.source_id} · weather is context, not evidence of causation.</p>
                   </div>
-                ) : <p className="mt-2 text-[11px] text-[#74847a]">No weather observation available.</p>}
+                ) : <p className="mt-2 text-[11px] text-[#66766b]">No weather observation available.</p>}
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
                 <DataLabel>Nearby context</DataLabel>
@@ -329,12 +329,12 @@ function StationDrawer({
                   {detail.nearbyStations.slice(0, 4).map((station) => (
                     <div key={station.id} className="flex items-center justify-between gap-2 text-[11px]">
                       <span className="text-[#405246]">{station.name.replace(' demo air monitor', '')}</span>
-                      <span className="text-[#74847a]">{Math.round(station.distance_m)} m · PM2.5 {station.latest_pm25 ?? '—'}</span>
+                      <span className="text-[#66766b]">{Math.round(station.distance_m)} m · PM2.5 {station.latest_pm25 ?? '—'}</span>
                     </div>
                   ))}
-                  {detail.nearbyStations.length === 0 ? <p className="text-[11px] text-[#74847a]">No nearby stations within 6 km.</p> : null}
+                  {detail.nearbyStations.length === 0 ? <p className="text-[11px] text-[#66766b]">No nearby stations within 6 km.</p> : null}
                 </div>
-                <p className="mt-2 text-[9px] text-[#74847a]">Proximity is not evidence of a common source.</p>
+                <p className="mt-2 text-[9px] text-[#66766b]">Proximity is not evidence of a common source.</p>
               </div>
               {detail.nearbyReports.length ? (
                 <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
@@ -355,7 +355,7 @@ function StationDrawer({
                     <div><DataLabel>Risk score</DataLabel><p className="mt-1 text-lg font-semibold">{detail.risk.risk_score ?? '—'}/100</p></div>
                     <div><DataLabel>Confidence</DataLabel><p className="mt-1 text-lg font-semibold">{detail.risk.confidence_score ?? '—'}/100 · {detail.risk.confidence_level}</p></div>
                   </div>
-                  <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">{detail.risk.method} · {detail.risk.ruleset_version}</p>
+                  <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">{detail.risk.method} · {detail.risk.ruleset_version}</p>
                   {detail.risk.missing_inputs.length ? <p className="mt-2 text-[9px] text-amber-600/70">Missing: {detail.risk.missing_inputs.join('; ')}</p> : null}
                 </div>
               ) : null}
@@ -373,14 +373,14 @@ function StationDrawer({
                 </Select>
               </div>
               <Chart height={250} empty={!detail.seriesAll.some((row) => row.pollutant_code === pollutant)} option={seriesOption} />
-              <p className="text-[9px] leading-relaxed text-[#74847a]">Stored observations only. Missing periods are not interpolated. Simulation-labelled values are not official monitoring records.</p>
+              <p className="text-[9px] leading-relaxed text-[#66766b]">Stored observations only. Missing periods are not interpolated. Simulation-labelled values are not official monitoring records.</p>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
                 <DataLabel>Anomaly check</DataLabel>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-sm font-semibold">{detail.anomaly.status}</span>
                   <Badge tone={detail.anomaly.status === 'UNUSUAL' ? 'amber' : 'neutral'}>z = {detail.anomaly.zScore ?? '—'}</Badge>
                 </div>
-                <p className="mt-2 text-[10px] leading-relaxed text-[#74847a]">{detail.anomaly.method}. This is an analytical check, not a trained anomaly model.</p>
+                <p className="mt-2 text-[10px] leading-relaxed text-[#66766b]">{detail.anomaly.method}. This is an analytical check, not a trained anomaly model.</p>
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
                 <DataLabel>Pollutant breakdown</DataLabel>
@@ -407,7 +407,7 @@ function StationDrawer({
                     <div key={forecast.horizonHours} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                       <DataLabel>+{forecast.horizonHours} hour</DataLabel>
                       <p className="mt-1 text-xl font-semibold text-[#142016]">{forecast.predictedValue} <span className="text-[10px] font-normal text-[#6f7f74]">µg/m³</span></p>
-                      <p className="mt-1 text-[9px] text-[#74847a]">{detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? 'Quantile 10–90' : 'Empirical band'} {forecast.lowerBound}–{forecast.upperBound}</p>
+                      <p className="mt-1 text-[9px] text-[#66766b]">{detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? 'Quantile 10–90' : 'Empirical band'} {forecast.lowerBound}–{forecast.upperBound}</p>
                       <p className="mt-2 text-[8px] uppercase tracking-[0.08em] text-amber-600/70">{forecast.method}</p>
                     </div>
                   ))}
@@ -423,9 +423,9 @@ function StationDrawer({
                   <DataLabel>Linked alerts</DataLabel>
                   {detail.alerts.map((alert) => (
                     <div key={alert.id} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                      <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><span className="text-[8px] uppercase text-[#74847a]">{alert.trigger_type}</span></div>
+                      <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><span className="text-[8px] uppercase text-[#66766b]">{alert.trigger_type}</span></div>
                       <p className="mt-1 text-[11px] font-medium text-[#26362a]">{alert.title}</p>
-                      <p className="mt-0.5 text-[9px] text-[#74847a]">{formatDate(alert.triggered_at)}</p>
+                      <p className="mt-0.5 text-[9px] text-[#66766b]">{formatDate(alert.triggered_at)}</p>
                     </div>
                   ))}
                 </div>
@@ -448,7 +448,7 @@ function StationDrawer({
                     className={`rounded-xl border p-3 text-left transition ${aiType === type ? 'border-[#5b9e46]/45 bg-[#5b9e46]/[0.06]' : 'border-[#dfe6db] bg-[#f5f8f2] hover:border-[#c3d0bf]'}`}
                   >
                     <p className="text-[11px] font-semibold text-[#1b2a1f]">{label}</p>
-                    <p className="mt-1 text-[9px] leading-relaxed text-[#74847a]">{copy}</p>
+                    <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">{copy}</p>
                   </button>
                 ))}
               </div>
@@ -472,7 +472,7 @@ function StationDrawer({
                     <div key={String(label)} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                       <Badge tone={tone as never}>{String(label)}</Badge>
                       <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                        {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#74847a]">—</span>{item}</li>)}
+                        {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
                       </ul>
                     </div>
                   ) : null)}
@@ -486,7 +486,7 @@ function StationDrawer({
                       </ul>
                     </div>
                   ) : null}
-                  <p className="text-[9px] leading-relaxed text-[#7b8a80]">{ai.disclaimer}</p>
+                  <p className="text-[9px] leading-relaxed text-[#66766b]">{ai.disclaimer}</p>
                 </div>
               ) : !aiLoading ? (
                 <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4 text-[10px] leading-relaxed text-[#6f7f74]">
@@ -672,11 +672,11 @@ export function MapPage() {
               <input type="checkbox" checked={includeForecast} onChange={(e) => setIncludeForecast(e.target.checked)} className="h-3.5 w-3.5 accent-[#5b9e46]" />
               Forecast layer
             </label>
-            <label className="flex items-center gap-2 text-[10px] text-[#7b8a80]" title="No interpolated surface is produced.">
+            <label className="flex items-center gap-2 text-[10px] text-[#66766b]" title="No interpolated surface is produced.">
               <input type="checkbox" disabled className="h-3.5 w-3.5" />
               Estimated zones (unavailable)
             </label>
-            <span className="ml-auto text-[9px] text-[#7b8a80]">{selectedLocality ? `${selectedLocality.name} filter active` : 'Greater Mumbai · all localities'}</span>
+            <span className="ml-auto text-[9px] text-[#66766b]">{selectedLocality ? `${selectedLocality.name} filter active` : 'Greater Mumbai · all localities'}</span>
           </div>
         </div>
       ) : null}
@@ -684,10 +684,10 @@ export function MapPage() {
       <div className="grid gap-3 xl:grid-cols-[1fr_360px]">
         <div className="relative overflow-hidden rounded-2xl border border-[#dfe6db] bg-[#ffffff]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e7ece3] px-3 py-2">
-            <div className="flex items-center gap-2 text-[10px] text-[#68786d]">
+            <div className="flex items-center gap-2 text-[10px] text-[#5a6a5f]">
               <Clock className="h-3.5 w-3.5 text-[#3f7d2a]" />
               <span className="font-semibold text-[#26362a]">{formatDate(current.date.toISOString())}</span>
-              <span className="text-[#7b8a80]">Asia/Kolkata</span>
+              <span className="text-[#66766b]">Asia/Kolkata</span>
               {data?.mode === 'FUTURE' ? <Badge tone="teal">Forecast · {data.forecastMeta?.method as string ?? 'unavailable'}</Badge> : null}
             </div>
             <div className="flex items-center gap-1">
@@ -715,7 +715,7 @@ export function MapPage() {
             />
             <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-wrap gap-2">
               <div className="pointer-events-auto rounded-xl border border-[#dfe6db] bg-[#f5f8f2]/90 px-3 py-2 text-[9px] backdrop-blur">
-                <p className="font-semibold uppercase tracking-[0.1em] text-[#68786d]">Marker legend</p>
+                <p className="font-semibold uppercase tracking-[0.1em] text-[#5a6a5f]">Marker legend</p>
                 <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[#5a6a5f]">
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5b9e46]" /> Measured</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#2f8f84]" /> Predicted</span>
@@ -723,7 +723,7 @@ export function MapPage() {
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#c94a50]" /> Incident</span>
                 </div>
               </div>
-              <div className="pointer-events-auto rounded-xl border border-[#dfe6db] bg-[#f5f8f2]/90 px-3 py-2 text-[9px] text-[#68786d] backdrop-blur">
+              <div className="pointer-events-auto rounded-xl border border-[#dfe6db] bg-[#f5f8f2]/90 px-3 py-2 text-[9px] text-[#5a6a5f] backdrop-blur">
                 <p className="font-semibold uppercase tracking-[0.1em]">3D buildings</p>
                 <p className="mt-1 max-w-[190px] leading-relaxed">OpenMapTiles render heights — visual context, not surveyed data.</p>
               </div>
@@ -731,7 +731,7 @@ export function MapPage() {
             {loading ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#f5f8f2]/40 backdrop-blur-[1px]"><Spinner className="text-[#3f7d2a]" /></div> : null}
           </div>
           <div className="border-t border-[#e7ece3] px-3 py-2">
-            <div className="flex items-center justify-between text-[9px] text-[#74847a]">
+            <div className="flex items-center justify-between text-[9px] text-[#66766b]">
               <span>{current.label} · {data?.stations.length ?? 0} stations · {data?.reports.length ?? 0} reports · {data?.incidents.length ?? 0} incidents</span>
               <span>{data?.mode === 'FUTURE' ? 'Forecast values are not confirmed future conditions.' : data?.mode === 'PAST' ? 'Archived observations · ±90 minute match' : 'Latest valid observations · stale values flagged'}</span>
             </div>
@@ -744,7 +744,7 @@ export function MapPage() {
               className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-[#eaf2e4] accent-[#5b9e46]"
               aria-label="Map timeline"
             />
-            <div className="mt-1 flex justify-between text-[8px] uppercase tracking-[0.08em] text-[#7b8a80]">
+            <div className="mt-1 flex justify-between text-[8px] uppercase tracking-[0.08em] text-[#66766b]">
               {timeline.map((item) => <span key={item.label} className={item.label === current.label ? 'text-[#3f7d2a]' : ''}>{item.label}</span>)}
             </div>
           </div>
@@ -761,18 +761,18 @@ export function MapPage() {
             <div className="mt-2 space-y-2">
               {data?.alerts.slice(0, 5).map((alert) => (
                 <button key={alert.id} onClick={() => navigate(`/alerts/${alert.id}`)} className="block w-full rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-left hover:border-[#5b9e46]/30">
-                  <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><span className="text-[8px] uppercase text-[#74847a]">{alert.trigger_type}</span></div>
+                  <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><span className="text-[8px] uppercase text-[#66766b]">{alert.trigger_type}</span></div>
                   <p className="mt-1 text-[11px] font-medium text-[#26362a]">{alert.title}</p>
-                  <p className="mt-0.5 text-[9px] text-[#74847a]">{alert.locality_name ?? 'Mumbai'} · {timeAgo(alert.triggered_at)}</p>
+                  <p className="mt-0.5 text-[9px] text-[#66766b]">{alert.locality_name ?? 'Mumbai'} · {timeAgo(alert.triggered_at)}</p>
                 </button>
               ))}
-              {data && data.alerts.length === 0 ? <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4 text-center text-[10px] text-[#74847a]">No active alerts at this time.</p> : null}
+              {data && data.alerts.length === 0 ? <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4 text-center text-[10px] text-[#66766b]">No active alerts at this time.</p> : null}
             </div>
           </div>
           <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
             <DataLabel>Coverage & uncertainty</DataLabel>
             <p className="mt-2 text-[10px] leading-relaxed text-[#6f7f74]">{data?.estimatedZoneNote}</p>
-            <div className="mt-3 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#74847a]">
+            <div className="mt-3 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#66766b]">
               <p><strong className="text-[#5a6a5f]">Boundary:</strong> {data?.boundary.note}</p>
               <p className="mt-1"><strong className="text-[#5a6a5f]">Attribution:</strong> {data?.mapAttribution}</p>
             </div>
@@ -780,12 +780,12 @@ export function MapPage() {
           {data?.forecastMeta ? (
             <div className="rounded-2xl border border-[#2f8f84]/20 bg-[#2f8f84]/[0.04] p-4">
               <div className="flex items-center justify-between"><DataLabel>Forecast metadata</DataLabel><Badge tone="teal">Baseline</Badge></div>
-              <div className="mt-2 space-y-1 text-[10px] text-[#68786d]">
+              <div className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
                 <p>Method: {String(data.forecastMeta.method ?? '—')}</p>
                 <p>Status: {String(data.forecastMeta.status ?? '—')}</p>
                 <p>Horizon: {String(data.forecastMeta.horizonHours ?? '—')} h</p>
               </div>
-              <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">{String(data.forecastMeta.note ?? '')}</p>
+              <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">{String(data.forecastMeta.note ?? '')}</p>
             </div>
           ) : null}
           <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
@@ -797,7 +797,7 @@ export function MapPage() {
                   <ChevronRight className="h-3 w-3 shrink-0" />
                 </button>
               ))}
-              {data && data.reports.length === 0 ? <p className="text-[10px] text-[#74847a]">No reports in this view.</p> : null}
+              {data && data.reports.length === 0 ? <p className="text-[10px] text-[#66766b]">No reports in this view.</p> : null}
             </div>
           </div>
         </div>

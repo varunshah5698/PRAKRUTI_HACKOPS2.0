@@ -115,12 +115,12 @@ function Tracker({ report }: { report: ReportRow }) {
             {report.is_simulated ? <Badge tone="amber">Demo record</Badge> : null}
           </div>
           <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{report.incident_type.replace(/_/g, ' ')}</p>
-          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{report.description}</p>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#5a6a5f]">{report.description}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[#74847a]">Reference</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#66766b]">Reference</p>
           <p className="font-mono text-[11px] text-[#26362a]">{report.public_ref}</p>
-          <p className="mt-1 text-[9px] text-[#74847a]">{timeAgo(report.submitted_at)}</p>
+          <p className="mt-1 text-[9px] text-[#66766b]">{timeAgo(report.submitted_at)}</p>
         </div>
       </div>
 
@@ -132,7 +132,7 @@ function Tracker({ report }: { report: ReportRow }) {
           return (
             <li key={step} className="flex-1">
               <div className={`h-1 rounded-full ${tone}`} />
-              <p className={`mt-1.5 text-[8px] uppercase tracking-[0.1em] ${reached ? 'text-[#5a6a5f]' : 'text-[#7b8a80]'}`}>
+              <p className={`mt-1.5 text-[8px] uppercase tracking-[0.1em] ${reached ? 'text-[#5a6a5f]' : 'text-[#66766b]'}`}>
                 {rejected && isFinal ? 'Not verified' : step.replace(/_/g, ' ')}
               </p>
             </li>
@@ -140,7 +140,7 @@ function Tracker({ report }: { report: ReportRow }) {
         })}
       </ol>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#e7ece3] pt-3 text-[9px] text-[#74847a]">
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#e7ece3] pt-3 text-[9px] text-[#66766b]">
         <span><DataLabel>Locality</DataLabel><br />{report.locality_name ?? '—'}</span>
         <span><DataLabel>Evidence</DataLabel><br />{report.evidence_count ? `${report.evidence_count} file${report.evidence_count > 1 ? 's' : ''}` : 'None'}</span>
         <span><DataLabel>Screened</DataLabel><br />{report.ai_assessed ? 'Yes' : 'Pending'}</span>
@@ -168,19 +168,19 @@ function Tracker({ report }: { report: ReportRow }) {
                   <li key={row.id} className="rounded-xl border border-[#e7ece3] bg-[#f5f8f2] p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[11px] font-semibold text-[#26362a]">{update.label}</p>
-                      <span className="text-[9px] text-[#74847a]">{formatDate(row.created_at)}</span>
+                      <span className="text-[9px] text-[#66766b]">{formatDate(row.created_at)}</span>
                     </div>
                     {update.reason ? <p className="mt-1 text-[10px] leading-relaxed text-[#5a6a5f]">Officer note: {update.reason}</p> : null}
                     {update.verification ? (
-                      <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#74847a]">verification {update.verification}</p>
+                      <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#66766b]">verification {update.verification}</p>
                     ) : null}
                   </li>
                 );
               })}
-              {detail.audit.length === 0 ? <p className="text-[11px] text-[#74847a]">No updates recorded yet.</p> : null}
+              {detail.audit.length === 0 ? <p className="text-[11px] text-[#66766b]">No updates recorded yet.</p> : null}
             </ol>
           ) : null}
-          <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">
+          <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">
             This trail is the same record authorities see. A report is only an official violation once it is verified.
           </p>
         </div>
@@ -263,12 +263,12 @@ export function MyReportsPage() {
 
       <div className="grid gap-2 rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-3 sm:grid-cols-[1fr_auto]">
         <div className="flex items-center gap-2 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] px-3">
-          <Search className="h-3.5 w-3.5 text-[#74847a]" />
+          <Search className="h-3.5 w-3.5 text-[#66766b]" />
           <input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder="Search reference, type or description"
-            className="h-9 w-full bg-transparent text-[11px] text-[#1b2a1f] outline-none placeholder:text-[#7b8a80]"
+            className="h-9 w-full bg-transparent text-[11px] text-[#1b2a1f] outline-none placeholder:text-[#66766b]"
           />
         </div>
         <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="h-9 w-[190px] text-[11px]">

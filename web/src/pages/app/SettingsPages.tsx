@@ -69,10 +69,10 @@ export function SettingsPage() {
 
         <Card>
           <CardHeader><CardTitle>Notifications & privacy</CardTitle><Bell className="h-4 w-4 text-[#6f7f74]" /></CardHeader>
-          <div className="space-y-3 p-4 text-[11px] leading-relaxed text-[#68786d]">
+          <div className="space-y-3 p-4 text-[11px] leading-relaxed text-[#5a6a5f]">
             <p>Notification categories, locality, radius and consent are managed in the notification centre. No email is sent in demo mode without a configured demonstration recipient.</p>
             <Link to="/notifications"><Button variant="dark" size="sm"><Bell className="h-3.5 w-3.5" /> Open notification settings</Button></Link>
-            <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] text-[#74847a]">
+            <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] text-[#66766b]">
               <p className="inline-flex items-center gap-1 text-[#5a6a5f]"><LockKeyhole className="h-3 w-3" /> Session cookie is HTTP-only and SameSite=Lax.</p>
               <p className="mt-1">Evidence is private by default. Citizen contact details are never exposed in public map responses.</p>
             </div>
@@ -83,14 +83,14 @@ export function SettingsPage() {
       {can(['SYSTEM_ADMIN', 'AUTHORITY_ADMIN']) ? (
         <Card>
           <CardHeader><CardTitle>Pending authority approvals</CardTitle><Badge tone="neutral">{pending.length}</Badge></CardHeader>
-          {pending.length === 0 ? <p className="p-4 text-[11px] text-[#74847a]">No pending authority registrations.</p> : (
+          {pending.length === 0 ? <p className="p-4 text-[11px] text-[#66766b]">No pending authority registrations.</p> : (
             <div className="divide-y divide-[#e7ece3]">
               {pending.map((request) => (
                 <div key={request.id} className="flex flex-wrap items-end justify-between gap-3 p-4">
                   <div>
                     <p className="text-[12px] font-semibold text-[#1b2a1f]">{request.name}</p>
-                    <p className="mt-0.5 text-[10px] text-[#68786d]">{request.email} · {request.department ?? '—'} · {request.designation ?? '—'}</p>
-                    <p className="mt-0.5 text-[9px] text-[#74847a]">Requested {request.requested_role?.replace(/_/g, ' ')} · {request.jurisdiction ?? '—'}</p>
+                    <p className="mt-0.5 text-[10px] text-[#5a6a5f]">{request.email} · {request.department ?? '—'} · {request.designation ?? '—'}</p>
+                    <p className="mt-0.5 text-[9px] text-[#66766b]">Requested {request.requested_role?.replace(/_/g, ' ')} · {request.jurisdiction ?? '—'}</p>
                   </div>
                   {can(['SYSTEM_ADMIN']) ? (
                     <div className="flex items-end gap-2">
@@ -106,7 +106,7 @@ export function SettingsPage() {
               ))}
             </div>
           )}
-          <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] text-[#7b8a80]">Approval grants a server-side role. It is audited and cannot be self-assigned at registration.</p>
+          <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] text-[#66766b]">Approval grants a server-side role. It is audited and cannot be self-assigned at registration.</p>
         </Card>
       ) : null}
 
@@ -173,7 +173,7 @@ export function ProfilePage() {
             <ul className="space-y-2 text-[11px] text-[#5a6a5f]">
               {(permissions[user.role] ?? []).map((permission) => <li key={permission} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#3f7d2a]" /> {permission}</li>)}
             </ul>
-            <p className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#74847a]">
+            <p className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#66766b]">
               Role checks are enforced by API middleware. The UI hides unavailable actions but is not the security boundary. Public users cannot verify reports, assign incidents or record determinations.
             </p>
           </div>

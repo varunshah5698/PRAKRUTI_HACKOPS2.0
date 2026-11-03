@@ -101,7 +101,7 @@ export function CompliancePage() {
               {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </Select>
             <div className="relative min-w-[200px] flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#74847a]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#66766b]" />
               <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search parameter or document" className="h-9 pl-9 text-[11px]" />
             </div>
           </div>
@@ -110,11 +110,11 @@ export function CompliancePage() {
               <div key={standard.id} className="border-b border-[#e7ece3] p-4 last:border-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2"><Badge tone="neutral">{categoryLabel(standard.category)}</Badge><Badge tone={standard.verification_status === 'REFERENCE_ONLY' ? 'amber' : 'green'}>{standard.verification_status.replace(/_/g, ' ')}</Badge></div>
-                  <span className="text-[9px] text-[#74847a]">{standard.averaging_period}</span>
+                  <span className="text-[9px] text-[#66766b]">{standard.averaging_period}</span>
                 </div>
                 <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{standard.parameter} {standard.operator} {standard.threshold_value ?? ''}{standard.threshold_max ? `–${standard.threshold_max}` : ''} <span className="text-[#5a6a5f]">{standard.unit}</span></p>
-                <p className="mt-1 text-[10px] text-[#68786d]">{standard.document_title} · {standard.section_ref}</p>
-                <p className="mt-1 text-[9px] leading-relaxed text-[#74847a]">{standard.applicability}. {standard.notes}</p>
+                <p className="mt-1 text-[10px] text-[#5a6a5f]">{standard.document_title} · {standard.section_ref}</p>
+                <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">{standard.applicability}. {standard.notes}</p>
                 {standard.url ? <a href={standard.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[9px] text-[#3f7d2a] underline">Official reference <ExternalLink className="h-3 w-3" /></a> : null}
               </div>
             ))}
@@ -150,7 +150,7 @@ export function CompliancePage() {
                   <div className="p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <Badge tone={comparison.comparability === 'COMPARABLE_REFERENCE' ? (comparison.indicative === 'ABOVE_REFERENCE' ? 'amber' : 'green') : 'neutral'}>{comparison.comparability.replace(/_/g, ' ')}</Badge>
-                      <span className="text-[9px] text-[#74847a]">{formatDate(comparison.observedAt)}</span>
+                      <span className="text-[9px] text-[#66766b]">{formatDate(comparison.observedAt)}</span>
                     </div>
                     <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{comparison.label}</p>
                     <div className="mt-2 grid grid-cols-3 gap-2 text-[10px]">
@@ -158,13 +158,13 @@ export function CompliancePage() {
                       <div><DataLabel>Reference</DataLabel><p className="mt-1 font-semibold">{standard.operator} {standard.threshold_value ?? ''}{standard.threshold_max ? `–${standard.threshold_max}` : ''} {standard.unit}</p></div>
                       <div><DataLabel>Averaging</DataLabel><p className="mt-1 font-semibold">{standard.averaging_period}</p></div>
                     </div>
-                    <p className="mt-2 text-[9px] leading-relaxed text-[#68786d]">{comparison.reason}</p>
-                    <p className="mt-1 text-[9px] text-[#74847a]">{standard.document_title} · {standard.section_ref}</p>
+                    <p className="mt-2 text-[9px] leading-relaxed text-[#5a6a5f]">{comparison.reason}</p>
+                    <p className="mt-1 text-[9px] text-[#66766b]">{standard.document_title} · {standard.section_ref}</p>
                     {comparison.isSimulated ? <p className="mt-1 text-[9px] text-amber-600/70">Observation is simulation-labelled.</p> : null}
                   </div>
                 </Card>
               ))}
-              <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#74847a]">{caution}</p>
+              <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#66766b]">{caution}</p>
             </div>
           ) : (
             <Card className="p-4 text-[10px] leading-relaxed text-[#6f7f74]">
@@ -209,9 +209,9 @@ export function ComplianceDocumentsPage() {
             <CardHeader><CardTitle>{document.short_title}</CardTitle><Badge tone="neutral">{document.standard_count} standards</Badge></CardHeader>
             <div className="p-4">
               <p className="text-[11px] font-medium text-[#26362a]">{document.title}</p>
-              <p className="mt-1 text-[10px] text-[#68786d]">{document.authority} · {document.category}</p>
+              <p className="mt-1 text-[10px] text-[#5a6a5f]">{document.authority} · {document.category}</p>
               <p className="mt-2 text-[10px] leading-relaxed text-[#6f7f74]">{document.summary}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] text-[#74847a]">
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] text-[#66766b]">
                 <Badge tone={document.verification_status === 'REFERENCE_ONLY' ? 'amber' : 'green'}>{document.verification_status.replace(/_/g, ' ')}</Badge>
                 {document.published_at ? <span>Published {formatDate(document.published_at, false)}</span> : null}
                 {document.url ? <a href={document.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#3f7d2a] underline">Official source <ExternalLink className="h-3 w-3" /></a> : null}

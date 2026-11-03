@@ -90,15 +90,15 @@ export function IncidentsPage() {
                     {incident.is_simulated ? <Badge tone="amber">Simulation</Badge> : null}
                   </div>
                   <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{incident.title}</p>
-                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{incident.description}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-[#74847a]">
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#5a6a5f]">{incident.description}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-[#66766b]">
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {incident.locality_name ?? 'Mumbai'}</span>
                     <span>{incident.assigned_to_name ? `Assigned: ${incident.assigned_to_name}` : 'Unassigned'}</span>
                     <span>{incident.note_count} notes · {incident.action_count} actions</span>
                     <span>{timeAgo(incident.detected_at)}</span>
                   </div>
                 </div>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#7b8a80] group-hover:text-[#3f7d2a]" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#66766b] group-hover:text-[#3f7d2a]" />
               </div>
             </Link>
           ))}
@@ -258,7 +258,7 @@ export function IncidentDetailPage() {
           <div className="flex min-w-[760px] items-center gap-1">
             {STATUS_FLOW.map((status, index) => (
               <div key={status} className="flex flex-1 items-center gap-1">
-                <div className={`flex-1 rounded-lg border px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.06em] ${index <= currentIndex ? 'border-[#5b9e46]/30 bg-[#5b9e46]/10 text-[#3f7d2a]' : 'border-[#dfe6db] bg-[#f5f8f2] text-[#7b8a80]'}`}>
+                <div className={`flex-1 rounded-lg border px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.06em] ${index <= currentIndex ? 'border-[#5b9e46]/30 bg-[#5b9e46]/10 text-[#3f7d2a]' : 'border-[#dfe6db] bg-[#f5f8f2] text-[#66766b]'}`}>
                   {status.replace(/_/g, ' ')}
                 </div>
                 {index < STATUS_FLOW.length - 1 ? <ArrowRight className={`h-3 w-3 shrink-0 ${index < currentIndex ? 'text-[#3f7d2a]' : 'text-[#dfe6db]'}`} /> : null}
@@ -283,7 +283,7 @@ export function IncidentDetailPage() {
                 <div className="mt-4 rounded-xl border border-teal-500/25 bg-teal-500/[0.05] p-4">
                   <div className="flex items-center gap-2 text-[#217a70]"><ShieldCheck className="h-4 w-4" /><p className="text-[10px] font-semibold uppercase tracking-[0.1em]">Official determination</p></div>
                   <p className="mt-2 text-[11px] leading-relaxed text-[#405246]">{data.incident.official_determination}</p>
-                  <p className="mt-1 text-[9px] text-[#74847a]">{data.incident.determination_by_name} · {formatDate(data.incident.official_determination_at)}</p>
+                  <p className="mt-1 text-[9px] text-[#66766b]">{data.incident.determination_by_name} · {formatDate(data.incident.official_determination_at)}</p>
                 </div>
               ) : null}
             </div>
@@ -300,7 +300,7 @@ export function IncidentDetailPage() {
                       <span className="font-medium text-[#26362a]">{report.public_ref}</span> · {report.incident_type.replace(/_/g, ' ')} · {report.verification_state}
                     </Link>
                   ))}
-                  {data.relatedReports.length === 0 ? <p className="text-[10px] text-[#74847a]">No related reports.</p> : null}
+                  {data.relatedReports.length === 0 ? <p className="text-[10px] text-[#66766b]">No related reports.</p> : null}
                 </div>
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
@@ -311,7 +311,7 @@ export function IncidentDetailPage() {
                       <span className="font-medium text-[#26362a]">{alert.public_ref}</span> · {alert.level} · {alert.title}
                     </Link>
                   ))}
-                  {data.relatedAlerts.length === 0 ? <p className="text-[10px] text-[#74847a]">No related alerts.</p> : null}
+                  {data.relatedAlerts.length === 0 ? <p className="text-[10px] text-[#66766b]">No related alerts.</p> : null}
                 </div>
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 sm:col-span-2">
@@ -320,10 +320,10 @@ export function IncidentDetailPage() {
                   {data.nearbyReadings.map((station) => (
                     <div key={station.id} className="text-[10px] text-[#5a6a5f]">
                       <p className="font-medium text-[#26362a]">{station.name.replace(' demo air monitor', '')} · {Math.round(station.distance_m)} m</p>
-                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#74847a]">{Object.entries(station.latest_readings).slice(0, 4).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
+                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#66766b]">{Object.entries(station.latest_readings).slice(0, 4).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
                     </div>
                   ))}
-                  {data.nearbyReadings.length === 0 ? <p className="text-[10px] text-[#74847a]">No nearby monitoring stations.</p> : null}
+                  {data.nearbyReadings.length === 0 ? <p className="text-[10px] text-[#66766b]">No nearby monitoring stations.</p> : null}
                 </div>
               </div>
             </div>
@@ -334,7 +334,7 @@ export function IncidentDetailPage() {
             <div className="divide-y divide-[#e7ece3]">
               {data.notes.map((entry) => (
                 <div key={entry.id} className="p-4">
-                  <div className="flex items-center justify-between gap-2"><p className="text-[10px] font-semibold text-[#26362a]">{entry.author_name ?? 'System'} <span className="font-normal text-[#74847a]">· {entry.author_role?.replace(/_/g, ' ') ?? ''}</span></p><span className="text-[8px] text-[#7b8a80]">{formatDate(entry.created_at)}</span></div>
+                  <div className="flex items-center justify-between gap-2"><p className="text-[10px] font-semibold text-[#26362a]">{entry.author_name ?? 'System'} <span className="font-normal text-[#66766b]">· {entry.author_role?.replace(/_/g, ' ') ?? ''}</span></p><span className="text-[8px] text-[#66766b]">{formatDate(entry.created_at)}</span></div>
                   <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#5a6a5f]">{entry.note}</p>
                 </div>
               ))}
@@ -352,7 +352,7 @@ export function IncidentDetailPage() {
                 <div key={action.id} className="p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Badge tone={action.status === 'COMPLETED' || action.status === 'VERIFIED' ? 'green' : action.status === 'CANCELLED' ? 'red' : 'amber'}>{action.status.replace(/_/g, ' ')}</Badge>
-                    <span className="text-[8px] text-[#7b8a80]">Due {action.due_at ? formatDate(action.due_at) : '—'}</span>
+                    <span className="text-[8px] text-[#66766b]">Due {action.due_at ? formatDate(action.due_at) : '—'}</span>
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-[#405246]">{action.description}</p>
                   {action.evidence_note ? <p className="mt-1 text-[9px] text-[#6f7f74]">{action.evidence_note}</p> : null}
@@ -375,7 +375,7 @@ export function IncidentDetailPage() {
           <Card className="overflow-hidden">
             <CardHeader><CardTitle>Incident location</CardTitle><Badge tone="neutral">Mumbai</Badge></CardHeader>
             <MumbaiMap stations={marker} className="h-[240px] w-full" compact theme="light" initialZoom={13.2} initialPitch={20} overlayLabel="Incident location" autoFit={false} />
-            <p className="p-3 text-[9px] text-[#74847a]">{data.incident.lat.toFixed(5)}, {data.incident.lng.toFixed(5)} · validated inside Greater Mumbai</p>
+            <p className="p-3 text-[9px] text-[#66766b]">{data.incident.lat.toFixed(5)}, {data.incident.lng.toFixed(5)} · validated inside Greater Mumbai</p>
           </Card>
 
           {can(['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN', 'SYSTEM_ADMIN']) ? (
@@ -384,7 +384,7 @@ export function IncidentDetailPage() {
               <div className="space-y-3 p-4">
                 {nextStatuses.length ? (
                   <>
-                    <p className="text-[10px] leading-relaxed text-[#68786d]">Next permitted transitions. A reason is required and recorded in the audit trail.</p>
+                    <p className="text-[10px] leading-relaxed text-[#5a6a5f]">Next permitted transitions. A reason is required and recorded in the audit trail.</p>
                     <div className="flex flex-wrap gap-1.5">
                       {nextStatuses.map((status) => (
                         <Button key={status} variant={status === 'CLOSED' ? 'danger' : 'dark'} size="sm" onClick={() => transition(status)} disabled={working}>
@@ -393,7 +393,7 @@ export function IncidentDetailPage() {
                       ))}
                     </div>
                   </>
-                ) : <p className="text-[10px] text-[#74847a]">No further transitions. This incident is closed.</p>}
+                ) : <p className="text-[10px] text-[#66766b]">No further transitions. This incident is closed.</p>}
                 {can(['AUTHORITY_ADMIN', 'SYSTEM_ADMIN']) ? (
                   <div className="border-t border-[#e7ece3] pt-3">
                     <DataLabel>Assign investigator</DataLabel>
@@ -424,10 +424,10 @@ export function IncidentDetailPage() {
             <CardHeader><CardTitle>Regulatory references</CardTitle><Badge tone="neutral">{data.standards.length}</Badge></CardHeader>
             <div className="divide-y divide-[#e7ece3]">
               {data.standards.slice(0, 8).map((standard) => (
-                <div key={standard.id} className="p-3 text-[9px] leading-relaxed text-[#68786d]">
+                <div key={standard.id} className="p-3 text-[9px] leading-relaxed text-[#5a6a5f]">
                   <p className="font-semibold text-[#26362a]">{standard.parameter} {standard.operator} {standard.threshold_value ?? ''}{standard.threshold_max ? `–${standard.threshold_max}` : ''} {standard.unit}</p>
                   <p className="mt-0.5">{standard.document_title} · {standard.section_ref}</p>
-                  <p className="mt-0.5 text-[#7b8a80]">{standard.averaging_period} · {standard.verification_status}</p>
+                  <p className="mt-0.5 text-[#66766b]">{standard.averaging_period} · {standard.verification_status}</p>
                 </div>
               ))}
             </div>

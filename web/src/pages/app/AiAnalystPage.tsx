@@ -132,14 +132,14 @@ export function AiAnalystPage() {
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <Card className="flex min-h-[620px] flex-col">
           <CardHeader>
-            <div><CardTitle>Grounded analysis</CardTitle><p className="mt-1 text-[10px] text-[#74847a]">Answers are labelled OBSERVED / PREDICTED / REPORTED / ESTIMATED / AI-GENERATED</p></div>
+            <div><CardTitle>Grounded analysis</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">Answers are labelled OBSERVED / PREDICTED / REPORTED / ESTIMATED / AI-GENERATED</p></div>
             <Badge tone="teal">Evidence first</Badge>
           </CardHeader>
           <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 ? (
               <div className="rounded-2xl border border-[#dfe6db] bg-[#f5f8f2] p-5">
                 <div className="flex items-center gap-2 text-[#3f7d2a]"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold">Ask about Mumbai evidence</span></div>
-                <p className="mt-2 text-[11px] leading-relaxed text-[#68786d]">
+                <p className="mt-2 text-[11px] leading-relaxed text-[#5a6a5f]">
                   The analyst retrieves observations, forecasts, reports, alerts and reference standards from this application. If River AI is not configured,
                   the server returns a rule-based digest instead of pretending an LLM answered.
                 </p>
@@ -167,7 +167,7 @@ export function AiAnalystPage() {
                         {message.answer.provider === 'RIVER_AI' ? 'AI-generated explanation' : 'Rule-based evidence digest'}
                       </Badge>
                       <Badge tone={message.answer.status === 'COMPLETED' ? 'green' : 'neutral'}>{message.answer.status.replace(/_/g, ' ')}</Badge>
-                      <span className="text-[9px] text-[#7b8a80]">{formatDate(message.answer.generatedAt)}</span>
+                      <span className="text-[9px] text-[#66766b]">{formatDate(message.answer.generatedAt)}</span>
                     </div>
                     <div className="rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] p-4">
                       <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#405246]">{message.answer.narrative}</p>
@@ -184,7 +184,7 @@ export function AiAnalystPage() {
                           <div key={String(label)} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
                             <Badge tone={tone as never}>{String(label)}</Badge>
                             <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                              {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#74847a]">—</span>{item}</li>)}
+                              {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
                             </ul>
                           </div>
                         ) : null)}
@@ -199,14 +199,14 @@ export function AiAnalystPage() {
                           </ul>
                         </div>
                       ) : null}
-                      <p className="mt-3 text-[9px] leading-relaxed text-[#7b8a80]">{message.answer.disclaimer}</p>
+                      <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{message.answer.disclaimer}</p>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div key={index} className="flex gap-2">
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eaf2e4] text-[#5a6a5f]"><Bot className="h-3.5 w-3.5" /></span>
-                  <div className="rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] px-4 py-3 text-[11px] text-[#68786d]">{message.text}</div>
+                  <div className="rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] px-4 py-3 text-[11px] text-[#5a6a5f]">{message.text}</div>
                 </div>
               ),
             )}
@@ -230,14 +230,14 @@ export function AiAnalystPage() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="mt-1.5 text-[9px] text-[#7b8a80]">Enter to send · Shift+Enter for a new line · Prompt injection is treated as untrusted data.</p>
+            <p className="mt-1.5 text-[9px] text-[#66766b]">Enter to send · Shift+Enter for a new line · Prompt injection is treated as untrusted data.</p>
           </div>
         </Card>
 
         <div className="space-y-3">
           <Card>
             <CardHeader><CardTitle>Analyst status</CardTitle><Badge tone={status?.river === 'CONFIGURED' ? 'green' : 'amber'}>{status?.river ?? '—'}</Badge></CardHeader>
-            <div className="p-4 text-[10px] leading-relaxed text-[#68786d]">
+            <div className="p-4 text-[10px] leading-relaxed text-[#5a6a5f]">
               <p>{status?.note ?? 'Loading status…'}</p>
               <div className="mt-3 space-y-2 border-t border-[#e7ece3] pt-3">
                 <div className="flex items-center justify-between"><span>Vision</span><span className="text-amber-600">{status?.vision ?? 'NOT_CONFIGURED'}</span></div>

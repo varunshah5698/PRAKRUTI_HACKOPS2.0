@@ -240,6 +240,23 @@ textarea {
   transform: translateY(18px);
 }
 
+@media (max-width: 1023px) {
+  .app-frame {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: none;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: none;
+  }
+  .glass-pill {
+    backdrop-filter: none;
+  }
+  .app-sky::before {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

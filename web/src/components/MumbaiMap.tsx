@@ -465,7 +465,7 @@ export function MumbaiMap({
             `<div style="min-width:160px"><div style="font-weight:700;margin-bottom:4px">${escapeHtml(p.name)}</div>
              <div style="color:#5f7065;font-size:11px">${escapeHtml(p.locality)}</div>
              <div style="margin-top:6px;font-size:12px"><strong>${escapeHtml(p.valueLabel)}</strong></div>
-             <div style="margin-top:4px;font-size:10px;color:#74847a">${p.isSimulated ? 'SIMULATION DATA · ' : ''}${escapeHtml(p.health)}</div></div>`,
+             <div style="margin-top:4px;font-size:10px;color:#66766b">${p.isSimulated ? 'SIMULATION DATA · ' : ''}${escapeHtml(p.health)}</div></div>`,
           )
           .addTo(map);
       });

@@ -86,11 +86,11 @@ export function ReportsPage() {
                     {report.is_simulated ? <Badge tone="amber">Sim</Badge> : null}
                   </div>
                   <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{report.incident_type.replace(/_/g, ' ')}</p>
-                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{report.description}</p>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#5a6a5f]">{report.description}</p>
                 </div>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#7b8a80] transition group-hover:text-[#3f7d2a]" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#66766b] transition group-hover:text-[#3f7d2a]" />
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#e7ece3] pt-2.5 text-[9px] text-[#74847a]">
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#e7ece3] pt-2.5 text-[9px] text-[#66766b]">
                 <span><DataLabel>Locality</DataLabel><br />{report.locality_name ?? '—'}</span>
                 <span><DataLabel>Evidence</DataLabel><br />{report.evidence_count ? `${report.evidence_count} photo` : 'None'}</span>
                 <span><DataLabel>Submitted</DataLabel><br />{timeAgo(report.submitted_at)}</span>
