@@ -621,6 +621,31 @@ def main() -> None:
     if not keep:
         raise SystemExit("No station passed the PM2.5 coverage gate; refusing to write an empty extract.")
 
+    # Cross-station plausibility check for station weather. A temperature sensor
+    # 10 C off the city median is a fault, not a microclimate.
+    if args.source == "archive" and keep:
+        thresholds = {"temperature": 6.0, "humidity": 25.0, "wind_speed": 25.0}
+        city_weather = {}
+        for column in thresholds:
+            series_list = [
+                station_data[station_id]["station_weather"][column]
+                for station_id in keep
+                if station_data[station_id].get("station_weather") is not None
+            ]
+            city_weather[column] = pd.concat(series_list, axis=1).median(axis=1)
+        for station_id in keep:
+            station_weather = station_data[station_id].get("station_weather")
+            if station_weather is None:
+                continue
+            for column, threshold in thresholds.items():
+                deviation = (station_weather[column] - city_weather[column]).abs()
+                bad = deviation > threshold
+                if bad.any():
+                    station_weather.loc[bad, column] = np.nan
+                    station_data[station_id]["weather_quality"].setdefault(column, {})[
+                        "outliers_removed"
+                    ] = int(bad.sum())
+
     if args.source == "api":
         tasks = [
             (station_id, code, sensor)
@@ -671,7 +696,7 @@ def main() -> None:
         station_weather = data.get("station_weather")
         weather_quality = data.get("weather_quality", {})
         if station_weather is not None:
-            for column in weather.columns:
+            for column in station_weather.columns:
                 weather[column] = station_weather[column].combine_first(weather[column])
         for column in ("temperature", "humidity", "wind_speed", "wind_dir", "precipitation"):
             frame[column] = weather[column]
