@@ -1044,7 +1044,8 @@ export function MapPage() {
   const timelinePct = (timelineIndex / Math.max(1, timeline.length - 1)) * 100;
   const onlineStations = data?.stations.filter((station) => station.healthStatus === 'ONLINE').length ?? 0;
   const sourceImpactMax = Math.max(1, ...worstSources.map((source) => source.impactScore));
-  const camsValues = (data?.modelled ?? []).map((item) => item.pm25).filter((value): value is number => value !== null);
+  const modelled = (data?.modelled ?? []).filter((item) => !localityId || item.localityId === localityId);
+  const camsValues = modelled.map((item) => item.pm25).filter((value): value is number => value !== null);
   const camsAverage = camsValues.length ? Math.round(camsValues.reduce((sum, value) => sum + value, 0) / camsValues.length) : null;
   const staleStations = data?.stations.filter((station) => station.isStale).length ?? 0;
   const latestStationAt = (data?.stations ?? [])
@@ -1173,7 +1174,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
               onMapClick={(point) => { setSelectedStationId(null); setSelectedSourceId(null); setAnalysisPoint(point); }}
               onReportSelect={isAuthority() ? (id) => navigate(`/reports/${id}`) : undefined}
               onIncidentSelect={isAuthority() ? (id) => navigate(`/incidents/${id}`) : undefined}
-              modelled={data?.modelled ?? []}
+              modelled={modelled}
               showSources={showSources}
               showPlumes={showPlumes}
               showImpactLinks={showImpactLinks}
