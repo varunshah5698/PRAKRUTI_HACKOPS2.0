@@ -113,6 +113,40 @@ export const SCENARIOS: ScenarioDefinition[] = [
     previewUnit: 'µg/m³ PM2.5 at selected station',
   },
   {
+    id: 'construction_dust',
+    name: 'Construction dust episode',
+    category: 'air',
+    steps: 16,
+    description:
+      'A demo construction-and-road-dust episode where PM10 leads the signal while PM2.5 rises more slowly. Demonstrates dust-source inspection, coarse-particle screening and the limits of source attribution from one monitor.',
+    stationRequired: true,
+    demonstrates: ['PM10-led episode', 'Dust controls', 'Wind context', 'Source inspection'],
+    phases: [
+      { label: 'Baseline', from: 0, to: 3, tone: 'calm' },
+      { label: 'Works active', from: 3, to: 11, tone: 'build' },
+      { label: 'Recovery', from: 11, to: 15, tone: 'recovery' },
+    ],
+    preview: [72, 78, 86, 98, 118, 148, 182, 214, 238, 246, 228, 190, 148, 112, 90, 78],
+    previewUnit: 'µg/m³ PM10',
+  },
+  {
+    id: 'festival_firecracker',
+    name: 'Festival firecracker burst',
+    category: 'air',
+    steps: 14,
+    description:
+      'A short festival-night PM2.5 and SO2 burst followed by morning recovery. Demonstrates a multi-pollutant episode, sensitive-group advice and language that stays neutral on enforcement.',
+    stationRequired: true,
+    demonstrates: ['Multi-pollutant burst', 'SO2 context', 'Sensitive groups', 'Recovery'],
+    phases: [
+      { label: 'Evening', from: 0, to: 3, tone: 'calm' },
+      { label: 'Firecracker burst', from: 3, to: 7, tone: 'peak' },
+      { label: 'Morning recovery', from: 7, to: 13, tone: 'recovery' },
+    ],
+    preview: [38, 42, 46, 55, 120, 210, 265, 240, 160, 95, 62, 48, 42, 38],
+    previewUnit: 'µg/m³ PM2.5',
+  },
+  {
     id: 'water_discharge',
     name: 'Suspected water discharge',
     category: 'water',
@@ -127,6 +161,23 @@ export const SCENARIOS: ScenarioDefinition[] = [
     ],
     preview: [7.2, 7.15, 7.1, 7.02, 6.9, 6.74, 6.55, 6.35, 6.15, 6.02, 5.9, 5.84, 5.8, 5.82],
     previewUnit: 'pH (baseline 7.2)',
+  },
+  {
+    id: 'monsoon_drain_overflow',
+    name: 'Monsoon drain overflow',
+    category: 'water',
+    steps: 12,
+    description:
+      'Rain-driven drain overflow at a demo water sampling point. Demonstrates turbidity and dissolved-oxygen deterioration, public contact advice and an outfall inspection while the overflow is active.',
+    stationRequired: true,
+    demonstrates: ['Overflow conditions', 'Turbidity and DO', 'Contact advice', 'Outfall inspection'],
+    phases: [
+      { label: 'Dry baseline', from: 0, to: 2, tone: 'calm' },
+      { label: 'Overflow active', from: 2, to: 8, tone: 'build' },
+      { label: 'Receding', from: 8, to: 11, tone: 'recovery' },
+    ],
+    preview: [18, 22, 30, 72, 128, 176, 204, 188, 146, 92, 52, 32],
+    previewUnit: 'NTU turbidity',
   },
   {
     id: 'waste_report',
@@ -252,7 +303,9 @@ async function startingValues(stationId: string): Promise<Record<string, number>
   return values;
 }
 
-interface WeatherSeed {
+export const SIMULATION_SCENARIO_VERSION = 2;
+
+export interface WeatherSeed {
   temperatureC: number | null;
   relativeHumidity: number | null;
   windSpeedKmh: number | null;
@@ -381,7 +434,7 @@ export async function generateSimulation(params: {
   scenario: ScenarioDefinition;
   stationId: string;
   seed: number;
-}): Promise<{ steps: SimulationStep[]; station: StationInfo | null }> {
+}): Promise<{ steps: SimulationStep[]; station: StationInfo | null; weather: WeatherSeed }> {
   const station = await stationInfo(params.stationId);
   if (!station) throw new Error('Station not found');
   const [start, weather, neighbourStation] = await Promise.all([
@@ -406,13 +459,14 @@ export async function generateSimulation(params: {
     let suppressAlert = false;
     let neighbour: SimulationStep['neighbour'];
 
-    if (params.scenario.id === 'water_discharge') {
+    if (params.scenario.id === 'water_discharge' || params.scenario.id === 'monsoon_drain_overflow') {
+      const overflow = params.scenario.id === 'monsoon_drain_overflow';
       const basePh = clamp(start.ph ?? 7.2, 6.8, 7.8);
       const baseDo = clamp(start.do ?? 5.6, 4.6, 6.4);
-      const progress = clamp((step - 3) / 6, 0, 1);
-      const ph = basePh - progress * 1.32 + (random() - 0.5) * 0.08;
-      const doValue = baseDo - progress * 2.85 + (random() - 0.5) * 0.18;
-      const turbidity = 18 + progress * 74 + (random() - 0.5) * 4;
+      const progress = overflow ? clamp((step - 2) / 6, 0, 1) : clamp((step - 3) / 6, 0, 1);
+      const ph = basePh - progress * (overflow ? 1.38 : 1.32) + (random() - 0.5) * 0.08;
+      const doValue = baseDo - progress * (overflow ? 2.95 : 2.85) + (random() - 0.5) * 0.18;
+      const turbidity = (overflow ? 24 : 18) + progress * (overflow ? 228 : 74) + (random() - 0.5) * 5;
       values = {
         ph: reading(ph, 'pH', observedAt),
         do: reading(doValue, 'mg/L', observedAt),
@@ -427,11 +481,16 @@ export async function generateSimulation(params: {
           do: reading(doValue, 'mg/L', observedAt),
           turbidity: reading(turbidity, 'NTU', observedAt),
         },
-        verifiedReports7d: step >= 6 ? 1 : 0,
+        verifiedReports7d: step >= (overflow ? 5 : 6) ? 1 : 0,
         unverifiedReports7d: step >= 3 ? 2 : 0,
       });
-      note =
-        step < 4
+      note = overflow
+        ? step < 3
+          ? `Dry-weather baseline sample. pH ${round(ph)}, dissolved oxygen ${round(doValue)} mg/L and turbidity ${round(turbidity, 0)} NTU.`
+          : step < 8
+            ? 'Overflow conditions: turbidity is rising sharply while dissolved oxygen falls. Avoid contact and sample the outfall while the discharge is active.'
+            : 'Overflow is receding. Confirm recovery with a follow-up sample before closing the investigation.'
+        : step < 4
           ? `Baseline water-quality sample. pH ${round(ph)} and dissolved oxygen ${round(doValue)} mg/L are within the screening reference.`
           : step < 8
             ? 'pH and dissolved oxygen deteriorating while turbidity rises. Reference criteria only; confirm with a repeat sample.'
@@ -501,6 +560,9 @@ export async function generateSimulation(params: {
       const noise = (random() - 0.5) * 3.2;
       let target = basePm;
       let qualityState = 'VALID';
+      let pm10Multiplier = 1.86;
+      let pm10Offset = 13;
+      let so2Boost = 0;
 
       if (params.scenario.id === 'gradual_pm25') {
         target =
@@ -547,6 +609,27 @@ export async function generateSimulation(params: {
           note: `The nearest same-network monitor${neighbourStation ? ` (${round(neighbourStation.distanceKm, 1)} km away)` : ''} is moving in the opposite direction. Two monitors disagreeing is spatial uncertainty, not a confirmed locality-wide condition.`,
         };
         note = 'Selected station rising while the nearest neighbour falls. Wind, local sources or an inlet problem could all explain the divergence.';
+      } else if (params.scenario.id === 'construction_dust') {
+        const progress = clamp((step - 2) / 8, 0, 1);
+        target = basePm + progress * 34;
+        pm10Multiplier = 3.3;
+        pm10Offset = 48;
+        note =
+          step < 3
+            ? 'Baseline before the works begin. PM10 is the parameter to watch because construction and road dust are coarse-particle sources.'
+            : step < 11
+              ? 'PM10 rising much faster than PM2.5, consistent with a local dust source. Screening only: a single monitor cannot identify the works.'
+              : 'Dust-generating activity stops and PM10 declines. Confirm with a repeat step before closing the inspection.';
+      } else if (params.scenario.id === 'festival_firecracker') {
+        const burst = [0, 0, 0, 0, 78, 164, 224, 196, 118, 52, 18, 0, 0, 0][step] ?? 0;
+        target = basePm + burst;
+        so2Boost = burst * 0.52;
+        note =
+          step < 4
+            ? 'Evening baseline before fireworks. SO2 and PM2.5 are both tracked because firecracker smoke is a mixed emission.'
+            : step <= 7
+              ? 'Short, intense PM2.5 and SO2 burst. Sensitive groups should avoid the smoke; this is a screening signal, not a permit determination.'
+              : 'Burst ends and concentrations fall. Check the morning recovery before treating the episode as over.';
       }
 
       const dispersionFactor = 1 + Math.max(0, (10 - (conditions.windSpeedKmh ?? 10)) * 0.014);
@@ -554,9 +637,9 @@ export async function generateSimulation(params: {
         qualityState === 'SUSPECT'
           ? target
           : Math.max(3, (target + noise) * (0.9 + traffic * 0.1) * dispersionFactor);
-      const pm10 = qualityState === 'SUSPECT' ? target * 1.8 + 12 : pm25 * 1.86 + 13 + (random() - 0.5) * 6;
+      const pm10 = qualityState === 'SUSPECT' ? target * 1.8 + 12 : pm25 * pm10Multiplier + pm10Offset + (random() - 0.5) * 6;
       const no2 = qualityState === 'SUSPECT' ? target * 0.3 + 20 : 18 + pm25 * 0.26 + traffic * 12 + (random() - 0.5) * 3;
-      const so2 = qualityState === 'SUSPECT' ? target * 0.06 + 6 : 6 + pm25 * 0.06 + (random() - 0.5) * 1.6;
+      const so2 = qualityState === 'SUSPECT' ? target * 0.06 + 6 : 6 + pm25 * 0.06 + so2Boost + (random() - 0.5) * 1.6;
       const co = qualityState === 'SUSPECT' ? target * 0.009 + 0.3 : 0.28 + pm25 * 0.0085 + traffic * 0.07 + (random() - 0.5) * 0.03;
       const daylight = clamp(Math.sin(((hour - 6) / 24) * Math.PI * 2) * 0.5 + 0.5, 0, 1);
       const o3 = qualityState === 'SUSPECT' ? 42 : Math.max(6, 22 + daylight * 58 - traffic * 7 + (random() - 0.5) * 6);
@@ -630,6 +713,7 @@ export async function generateSimulation(params: {
         : undefined;
 
     const recommendations = buildSimulationRecommendations({
+      scenario: params.scenario.id,
       category: params.scenario.category,
       step,
       totalSteps: params.scenario.steps,
@@ -662,7 +746,7 @@ export async function generateSimulation(params: {
       recommendations,
     });
   }
-  return { steps, station };
+  return { steps, station, weather };
 }
 
 export async function persistSimulationSteps(

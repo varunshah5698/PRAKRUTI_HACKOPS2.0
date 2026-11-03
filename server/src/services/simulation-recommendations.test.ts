@@ -38,6 +38,7 @@ const conditions = { windSpeedKmh: 5, windDirectionDeg: 240, precipitationMm: 0,
 describe('simulation recommendations', () => {
   it('explains a critical air recommendation with the reading and its reason', () => {
     const items = buildSimulationRecommendations({
+      scenario: 'gradual_pm25',
       category: 'air',
       step: 12,
       totalSteps: 24,
@@ -56,6 +57,7 @@ describe('simulation recommendations', () => {
 
   it('prioritises a maintenance check and suppresses public alarm for a suspect sensor', () => {
     const items = buildSimulationRecommendations({
+      scenario: 'sensor_malfunction',
       category: 'air',
       step: 6,
       totalSteps: 12,
@@ -72,6 +74,7 @@ describe('simulation recommendations', () => {
 
   it('keeps industrial advice relative and explicitly non-regulatory', () => {
     const items = buildSimulationRecommendations({
+      scenario: 'industrial_emission',
       category: 'industrial',
       step: 12,
       totalSteps: 16,

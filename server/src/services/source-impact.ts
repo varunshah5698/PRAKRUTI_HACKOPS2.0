@@ -199,18 +199,19 @@ export async function getWindAt(at: Date): Promise<ScreenWind> {
       source: 'OPEN_METEO_WEATHER',
     };
   }
-  const fallback = await query<{ observed_at: string; speed: number; direction: number }>(
+  const nearest = await query<{ observed_at: string; speed: number; direction: number }>(
     `SELECT observed_at, wind_speed_kmh::float8 AS speed, wind_direction_deg::float8 AS direction
      FROM weather_observations
      WHERE kind='OBSERVATION' AND wind_direction_deg IS NOT NULL AND wind_speed_kmh IS NOT NULL
-     ORDER BY observed_at DESC LIMIT 1`,
+     ORDER BY ABS(EXTRACT(EPOCH FROM (observed_at - $1::timestamptz))) ASC LIMIT 1`,
+    [at.toISOString()],
   );
-  if (fallback[0]) {
+  if (nearest[0]) {
     return {
-      speedKmh: Number(fallback[0].speed),
-      directionDeg: Number(fallback[0].direction),
-      observedAt: fallback[0].observed_at,
-      source: 'OPEN_METEO_WEATHER_LATEST',
+      speedKmh: Number(nearest[0].speed),
+      directionDeg: Number(nearest[0].direction),
+      observedAt: nearest[0].observed_at,
+      source: 'OPEN_METEO_WEATHER_NEAREST',
     };
   }
   return { speedKmh: 12, directionDeg: 240, observedAt: null, source: 'FALLBACK_SCREEN_WIND' };
@@ -343,7 +344,7 @@ export function computeSourceImpact(
       note: 'Plume footprints are screening geometry derived from simulated sources and the latest wind. They are not a measured pollution surface or a regulatory impact zone.',
     },
     note:
-      'Source shares are a distance-and-wind screening estimate applied to simulated industrial sources. Future frames use the available PM2.5 forecast where present. They show which monitors could be in a source plume, not a measured apportionment.',
+      'Source shares are a distance-and-wind screening estimate applied to simulated industrial sources, using PM2.5 and wind. Future frames use the available PM2.5 forecast where present. They show which monitors could be in a source plume, not a measured apportionment.',
     disclaimer:
       'SIMULATED SOURCES · SCREENING ONLY. No real facility is identified, no legal threshold is applied, and this is not a regulatory determination.',
   };

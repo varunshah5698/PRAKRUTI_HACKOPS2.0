@@ -22,6 +22,7 @@ export interface RecommendationConditions {
 }
 
 export interface RecommendationContext {
+  scenario: string;
   category: string;
   step: number;
   totalSteps: number;
@@ -56,6 +57,8 @@ const READING_LABELS: Record<string, string> = {
   verified_reports: 'Verified reports',
   unverified_reports: 'Unverified reports',
 };
+
+const AIR_SCREENING: Record<string, number> = { pm25: 60, pm10: 100, no2: 80, so2: 80, o3: 100 };
 
 function confidenceOf(risk: RiskAssessmentResult): 'HIGH' | 'MEDIUM' | 'LOW' {
   if (risk.confidenceLevel === 'HIGH') return 'HIGH';
@@ -109,6 +112,12 @@ export function buildSimulationRecommendations(ctx: RecommendationContext): Simu
       | undefined;
     const ratio = pm25 ? pm25.value / 60 : null;
     const consecutive = persistence?.consecutivePm25AboveThreshold ?? 0;
+    const dominant = Object.entries(AIR_SCREENING)
+      .flatMap(([code, threshold]) => {
+        const value = reading(code);
+        return value ? [{ code, value, ratio: value.value / threshold }] : [];
+      })
+      .sort((a, b) => b.ratio - a.ratio)[0] ?? null;
     const evidence = [
       readingText('pm25'),
       readingText('pm10'),
@@ -171,7 +180,7 @@ export function buildSimulationRecommendations(ctx: RecommendationContext): Simu
         action:
           'Keep windows closed, move strenuous activity indoors and use a well-fitted N95 mask if you must travel. Check on children, older adults and anyone with asthma or heart disease.',
         reason:
-          `PM2.5 is ${numberText(pm25?.value)} ${pm25?.unit ?? 'µg/m³'}${ratio ? ` (${numberText(ratio)}× the 60 µg/m³ screening value)` : ''} and ${consecutive > 0 ? `${consecutive} consecutive steps` : 'the latest observation'} meet the critical screening condition. This is an indicative alert, not an official CPCB exceedance.`,
+          `PM2.5 is ${numberText(pm25?.value)} ${pm25?.unit ?? 'µg/m³'}${ratio ? ` (${numberText(ratio)}× the 60 µg/m³ screening value)` : ''}${dominant && dominant.code !== 'pm25' ? `, while ${READING_LABELS[dominant.code] ?? dominant.code} has the largest screening ratio at ${numberText(dominant.ratio)}× its reference` : ''}, and ${consecutive > 0 ? `${consecutive} consecutive steps` : 'the latest observation'} meet the critical screening condition. This is an indicative alert, not an official CPCB exceedance.`,
         evidence: [...evidence, 'Critical screening condition met'],
         confidence,
       });

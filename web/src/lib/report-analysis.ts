@@ -391,7 +391,9 @@ function buildStation(category: ReportCategory, station: RawStation, stackMax: n
   const comparisons = READING_ORDER[category]
     .flatMap((code) => (readings[code] ? [comparisonFor(category, code, readings[code], stackMax)] : []));
 
-  const primary = comparisons.find((row) => row.reference) ?? comparisons[0] ?? null;
+  const primary = category === 'industrial'
+    ? [...comparisons].sort((a, b) => b.fraction - a.fraction)[0] ?? null
+    : comparisons.find((row) => row.reference) ?? comparisons[0] ?? null;
   const severity = comparisons.reduce((highest, row) => {
     if (row.reference?.kind === 'max' && row.reference.value) return Math.max(highest, row.value / row.reference.value);
     if (row.reference?.kind === 'min' && row.reference.value) return Math.max(highest, row.reference.value / Math.max(0.01, row.value));
@@ -489,7 +491,11 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
   const rawStations = enrichment.stations.filter((station) => stationMatchesCategory(station, category));
   const stackMax = Math.max(
     1,
-    ...rawStations.map((station) => station.latest_readings?.stack_pm?.value ?? 0),
+    ...rawStations.flatMap((station) =>
+      Object.entries(station.latest_readings ?? {})
+        .filter(([code]) => code.startsWith('stack_'))
+        .map(([, reading]) => reading.value),
+    ),
   );
   const stations = rawStations
     .map((station) => buildStation(category, station, stackMax))
@@ -525,13 +531,13 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
     {
       id: 'gps',
       label: 'Location consistency',
-      points: gpsMatch ? 20 : gpsMismatch ? 0 : gpsMissing ? 8 : 0,
+      points: gpsMismatch ? 0 : gpsMatch ? 20 : gpsMissing ? 8 : 0,
       max: 20,
       applicable: true,
-      detail: gpsMatch
-        ? 'At least one photograph carries GPS coordinates within 2 km of the claimed location.'
-        : gpsMismatch
-          ? 'A photograph GPS point is more than 2 km from the claimed location.'
+      detail: gpsMismatch
+        ? 'At least one photograph GPS point is more than 2 km from the claimed location.'
+        : gpsMatch
+          ? 'At least one photograph carries GPS coordinates within 2 km of the claimed location.'
           : gpsMissing
             ? 'A photograph has no GPS metadata. Location is not independently checked.'
             : 'No photographic GPS metadata is available.',
@@ -597,7 +603,7 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
       detail: category === 'waste'
         ? 'No waste-monitoring station type exists in this deployment. Field inspection carries the evidence.'
         : stations.length
-          ? `${reportingStations.length} of ${stations.length} matched ${TYPE_LABEL[category].toLowerCase()}${stations.length > 1 ? 's' : ''} has a recent reading.`
+          ? `${reportingStations.length} of ${stations.length} matched ${TYPE_LABEL[category].toLowerCase()}${stations.length > 1 ? 's' : ''} has a reading in the last 24h.`
           : `No ${TYPE_LABEL[category].toLowerCase()} within 3 km.`,
     },
     {
@@ -606,7 +612,7 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
       points: reportingStations.length >= 2 ? 10 : 0,
       max: 10,
       applicable: category !== 'waste',
-      detail: reportingStations.length >= 2 ? 'More than one category-matched monitor has a recent reading.' : 'Only one or no category-matched monitor has a recent reading.',
+      detail: reportingStations.length >= 2 ? 'More than one category-matched monitor has a reading in the last 24h.' : 'Only one or no category-matched monitor has a reading in the last 24h.',
     },
     {
       id: 'signal',
@@ -705,7 +711,9 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
     ? `${primaryStation.name.replace(/ demo (air monitor|sampling point|stack monitor)/i, '')} is ${Math.round(primaryStation.distance_m)} m away and reports ${primaryStation.headline}. ${primaryStation.primary?.note ?? ''}`
     : category === 'waste'
       ? 'This category has no numeric monitor station type in the deployment; a field inspection is the primary evidence route.'
-      : `No ${TYPE_LABEL[category].toLowerCase()} is within 3 km, so there is no independent reading to compare.`;
+      : stations.length
+        ? `A ${TYPE_LABEL[category].toLowerCase()} is within 3 km, but it has no reading in the last 24h, so no independent value can be compared.`
+        : `No ${TYPE_LABEL[category].toLowerCase()} is within 3 km, so there is no independent reading to compare.`;
   const communitySentence = nearbySameCategory.length || alerts.length || incidents.length
     ? `${nearbySameCategory.length} other same-category report${nearbySameCategory.length === 1 ? '' : 's'} sit within 500 m${nearbyVerified.length ? `, ${nearbyVerified.length} verified` : ''}. ${alerts.length ? `${alerts.length} open alert${alerts.length === 1 ? '' : 's'} match this category.` : 'No open category alert is linked.'} ${incidents.length ? `${incidents.length} incident${incidents.length === 1 ? '' : 's'} sit within 3 km.` : 'No nearby incident is recorded.'}`
     : 'No nearby report, alert or incident independently repeats the concern. That is a gap in corroboration, not evidence that nothing happened.';

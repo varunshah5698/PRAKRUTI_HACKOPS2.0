@@ -18,7 +18,6 @@ import {
   ScanLine,
   ShieldCheck,
   Target,
-  Wind,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Card, CardHeader, CardTitle, DataLabel, ProgressBar } from './ui';
@@ -284,7 +283,9 @@ function StepBody({
       return (
         <div>
           <p className="text-[11px] leading-relaxed text-[#405246]">
-            No {analysis.category === 'waste' ? 'waste' : 'category-matched'} monitor sits within 3 km. This is a blind spot, not a finding of safety.
+            {analysis.stations.length
+              ? `A ${analysis.category === 'waste' ? 'waste' : 'category-matched'} monitor is within 3 km, but it has no reading in the last 24h. This is a blind spot, not a finding of safety.`
+              : `No ${analysis.category === 'waste' ? 'waste' : 'category-matched'} monitor sits within 3 km. This is a blind spot, not a finding of safety.`}
           </p>
           <div className="mt-3 rounded-xl border border-dashed border-[#dbe5d6] bg-white/45 p-2.5 text-[9px] leading-relaxed text-[#66766b]">
             The dossier lowers its environmental-context score and recommends a targeted sample or operator record.
@@ -361,7 +362,6 @@ function StepBody({
     );
   }
 
-  const activeDimension = analysis.dimensions[0];
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -379,7 +379,7 @@ function StepBody({
               <span className="font-semibold text-[#26362a]">{dimension.score}</span>
             </div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#e6eee4]">
-              <div className="h-full rounded-full" style={{ width: `${dimension.score}%`, background: activeDimension.key === dimension.key ? ACCENTS[analysis.category] : analysis.grade.tone }} />
+              <div className="h-full rounded-full" style={{ width: `${dimension.score}%`, background: analysis.grade.tone }} />
             </div>
           </div>
         ))}
@@ -822,7 +822,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                       <span className={`block text-[10px] font-semibold ${active ? 'text-[#173d4a]' : 'text-[#4d5e52]'}`}>{item.label}</span>
                       <span className="mt-0.5 block truncate text-[8px] text-[#7a8f84]">
                         {index === 0 ? `${categoryLabel(report.category)} · ${report.locality_name ?? 'Mumbai'}` : null}
-                        {index === 1 ? (primaryStation ? `${shortName(primaryStation.name)} · ${Math.round(primaryStation.distance_m)} m` : 'No matched monitor') : null}
+                        {index === 1 ? (primaryStation ? `${shortName(primaryStation.name)} · ${Math.round(primaryStation.distance_m)} m` : 'No monitor reading') : null}
                         {index === 2 ? (weather ? `${weather.direction} · ${weather.dispersion.toLowerCase()}` : 'No weather context') : null}
                         {index === 3 ? `${analysis.nearbySameCategory.length} nearby · ${analysis.alerts.length + analysis.incidents.length} case signals` : null}
                         {index === 4 ? `${analysis.overall}/100 · ${analysis.grade.label}` : null}
@@ -937,7 +937,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
               <p className="mt-1 text-[10px] text-[#66766b]">Nearby records compared with loaded screening references</p>
             </div>
             <Badge tone="teal">
-              {analysis.stations.filter((station) => station.comparisons.length > 0).length} reporting
+              {analysis.stations.filter((station) => station.comparisons.length > 0).length} with readings
             </Badge>
           </CardHeader>
           <div className="p-4">

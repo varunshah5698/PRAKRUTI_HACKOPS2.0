@@ -262,16 +262,6 @@ export async function getDashboard() {
     count: airSnapshots.filter((s) => s.aqi?.category === bucket).length,
   }));
 
-  const pollutantTotals = new Map<string, { sum: number; count: number; unit: string }>();
-  for (const station of airSnapshots) {
-    for (const [code, reading] of Object.entries(station.values)) {
-      if (!['pm25', 'pm10', 'no2', 'so2', 'co', 'o3'].includes(code)) continue;
-      const existing = pollutantTotals.get(code) ?? { sum: 0, count: 0, unit: reading.unit };
-      existing.sum += reading.value;
-      existing.count += 1;
-      pollutantTotals.set(code, existing);
-    }
-  }
   const thresholds: Record<string, { value: number; unit: string; averaging: string }> = {
     pm25: { value: 60, unit: 'µg/m³', averaging: '24h NAAQS' },
     pm10: { value: 100, unit: 'µg/m³', averaging: '24h NAAQS' },
@@ -280,6 +270,42 @@ export async function getDashboard() {
     co: { value: 2, unit: 'mg/m³', averaging: '8h NAAQS' },
     o3: { value: 100, unit: 'µg/m³', averaging: '8h NAAQS' },
   };
+  const pollutantTotals = new Map<string, {
+    sum: number;
+    count: number;
+    unit: string;
+    lowest: number;
+    lowestStation: string;
+    peak: number;
+    peakStation: string;
+  }>();
+  for (const station of airSnapshots) {
+    const stationName = station.name.replace(' demo air monitor', '');
+    for (const [code, reading] of Object.entries(station.values)) {
+      const spec = thresholds[code];
+      if (!spec || reading.unit !== spec.unit) continue;
+      const existing = pollutantTotals.get(code) ?? {
+        sum: 0,
+        count: 0,
+        unit: reading.unit,
+        lowest: reading.value,
+        lowestStation: stationName,
+        peak: reading.value,
+        peakStation: stationName,
+      };
+      existing.sum += reading.value;
+      existing.count += 1;
+      if (reading.value < existing.lowest) {
+        existing.lowest = reading.value;
+        existing.lowestStation = stationName;
+      }
+      if (reading.value > existing.peak) {
+        existing.peak = reading.value;
+        existing.peakStation = stationName;
+      }
+      pollutantTotals.set(code, existing);
+    }
+  }
   const pollutantComparison = [...pollutantTotals.entries()].map(([code, total]) => ({
     pollutant: code.toUpperCase(),
     value: Number((total.sum / total.count).toFixed(1)),
@@ -288,6 +314,10 @@ export async function getDashboard() {
     thresholdUnit: thresholds[code]?.unit ?? null,
     averaging: thresholds[code]?.averaging ?? null,
     stations: total.count,
+    lowest: Number(total.lowest.toFixed(1)),
+    lowestStation: total.lowestStation,
+    peak: Number(total.peak.toFixed(1)),
+    peakStation: total.peakStation,
     note: 'Average of latest station values. Indicative only; compare only with matching averaging periods.',
   }));
 
@@ -409,10 +439,16 @@ export async function getDashboard() {
       pm10Series,
       pollutantComparison,
       stationComparison: airSnapshots.map((s) => ({
+        id: s.id,
         station: s.name.replace(' demo air monitor', ''),
+        locality: s.localityName,
+        provider: s.provider,
         aqi: s.aqi?.aqi ?? null,
+        aqiCategory: s.aqi?.category ?? 'INSUFFICIENT DATA',
         pm25: s.values.pm25?.value ?? null,
         pm10: s.values.pm10?.value ?? null,
+        isSimulated: s.isSimulated,
+        latestObservedAt: s.latestObservedAt,
       })),
       dailyTrend: dailySeries,
       incidentCategories,

@@ -172,10 +172,12 @@ function windLabel(wind: SourceImpactWind | null | undefined) {
 
 function StationDrawer({
   stationId,
+  sourceImpact,
   onClose,
   onSourceSelect,
 }: {
   stationId: string | null;
+  sourceImpact: SourceImpactData | null;
   onClose: () => void;
   onSourceSelect?: (id: string) => void;
 }) {
@@ -636,7 +638,7 @@ function SourceSheet({
           <div className="rounded-2xl border border-[#efd3bd] bg-gradient-to-br from-[#fff8f1] to-[#fdfcf7] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <DataLabel>Worst-source position</DataLabel>
+                <DataLabel>Screening rank</DataLabel>
                 <p className="display mt-1 text-[26px] font-bold leading-none tracking-[-0.04em] text-[#7c2d12]">#{source.rank}</p>
               </div>
               <div className="text-right text-[10px] text-[#8a5a3b]">

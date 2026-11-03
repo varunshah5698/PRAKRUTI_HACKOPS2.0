@@ -56,6 +56,18 @@ describe('industrial source screening', () => {
     expect(result.wind.fromLabel).toBe('W');
   });
 
+  it('does not name a distant crosswind monitor as affected', () => {
+    const far = { id: 'FAR', name: 'Far', localityName: 'North', lat: 19.2, lng: 72.9, pm25: 50 };
+    const result = computeSourceImpact([far], {
+      speedKmh: 8,
+      directionDeg: 270,
+      observedAt: new Date().toISOString(),
+      source: 'TEST',
+    }, [source]);
+    expect(result.stationAttributions.FAR.sources.length).toBe(0);
+    expect(result.stationAttributions.FAR.impactLevel).toBe('NONE');
+  });
+
   it('still exposes a plume footprint when no monitor is close', () => {
     const result = computeSourceImpact([], { speedKmh: 12, directionDeg: 240, observedAt: null, source: 'TEST' }, [source]);
     expect(result.landImpact.affectedStations).toBe(0);

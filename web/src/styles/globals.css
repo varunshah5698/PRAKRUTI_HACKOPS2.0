@@ -825,6 +825,7 @@ textarea {
   white-space: nowrap;
 }
 .ra-report .atmo-bar-wall {
+  opacity: 0.62;
   background: linear-gradient(180deg, var(--bar) 0%, color-mix(in srgb, var(--bar) 68%, #173643) 100%);
 }
 .ra-report .atmo-bar-top {

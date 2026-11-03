@@ -89,7 +89,8 @@ async function reverseGeocode(lat: number, lng: number): Promise<ReversePlace | 
     if (name && data.display_name) {
       value = {
         name,
-        displayName: data.display_name,
+        // Keep the drawer readable: road/neighbourhood/ward are enough context.
+        displayName: data.display_name.split(',').map((part) => part.trim()).filter(Boolean).slice(0, 3).join(', '),
         road: address.road ?? null,
         source: 'OpenStreetMap Nominatim',
         fetchedAt: new Date().toISOString(),
