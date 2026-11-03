@@ -404,7 +404,7 @@ function MumbaiMapInner({
     if (!compact) {
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
       map.addControl(new maplibregl.FullscreenControl(), 'top-right');
-      map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+      map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
     }
     map.on('error', (event: any) => {
       const message = String((event as { error?: { message?: string } }).error?.message ?? '');

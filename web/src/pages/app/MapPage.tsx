@@ -1168,7 +1168,7 @@ export function MapPage() {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0">
-          <div className="relative overflow-hidden rounded-[28px] border border-white/85 bg-[#eef1ec] shadow-[0_36px_100px_-72px_rgba(20,32,22,.65)]">
+          <div className="map-studio relative overflow-hidden rounded-[28px] border border-white/85 bg-[#eef1ec] shadow-[0_36px_100px_-72px_rgba(20,32,22,.65)]">
             <MumbaiMap
               stations={stations}
               reports={reports}
@@ -1186,12 +1186,13 @@ export function MapPage() {
               showSources={showSources}
               showPlumes={showPlumes}
               showImpactLinks={showImpactLinks}
-              className="h-[calc(100dvh-290px)] min-h-[520px] max-h-[780px] w-full"
+              className="h-[calc(100dvh-340px)] min-h-[500px] max-h-[740px] w-full"
               theme="light"
+              styleUrl="https://tiles.openfreemap.org/styles/positron"
               showBuildings
               autoFit={false}
               initialZoom={12.2}
-              initialPitch={55}
+              initialPitch={42}
             />
             {error ? (
               <div className="absolute left-3 top-16 z-30 max-w-sm rounded-2xl border border-[#efd3bd] bg-[#fffaf4]/95 px-3 py-2 text-[10px] leading-relaxed text-[#8a5a3b] shadow-lg backdrop-blur">
@@ -1299,7 +1300,7 @@ export function MapPage() {
               <MetricCell icon={Radio} label="Monitors" value={number(data?.stations.length ?? 0, 0)} note={`${onlineStations} online`} className="border-b border-r border-dashed border-[#e7eae3]" />
               <MetricCell icon={Wind} label="Plume wind" value={sourceImpact ? number(sourceImpact.wind.speedKmh) : '—'} unit={sourceImpact ? 'km/h' : undefined} note={sourceImpact ? `from ${sourceImpact.wind.fromLabel}` : 'No plume screen'} className="border-b border-dashed border-[#e7eae3]" />
               <MetricCell icon={MapPin} label="Screened area" value={sourceImpact ? number(sourceImpact.landImpact.impactedAreaKm2) : '—'} unit={sourceImpact ? 'km²' : undefined} note="Not a measured area" className="border-r border-dashed border-[#e7eae3]" />
-              <MetricCell icon={FileWarning} label="Reports" value={number(data?.reports.length ?? 0, 0)} note="Citizen reports" />
+              <MetricCell icon={FileWarning} label="Reports" value={number(data?.reports.length ?? 0, 0)} note="At this frame" />
             </div>
             <div className="px-5 pb-5 pt-4">
               <div className="flex items-center justify-between">
@@ -1323,7 +1324,7 @@ export function MapPage() {
               <SurfaceHeader
                 label="Industrial plume screen"
                 title="Worst sources in view"
-                subtitle={`Ranked by monitor reach, plume footprint and emission index · ${windLabel(sourceImpact.wind)}`}
+                subtitle={`Ranked by screened impact · ${windLabel(sourceImpact.wind)}`}
                 aside={<Badge tone="amber">Simulated</Badge>}
               />
               <div className="px-2.5">

@@ -101,11 +101,13 @@ function SaveButton({
   item,
   saved,
   onToggle,
+  tone = 'overlay',
   className = '',
 }: {
   item: NewsItem;
   saved: boolean;
   onToggle: (item: NewsItem) => void;
+  tone?: 'overlay' | 'plain';
   className?: string;
 }) {
   return (
@@ -118,7 +120,9 @@ function SaveButton({
       className={`inline-flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] ${
         saved
           ? 'border-[#cbe8a5] bg-[#eefbdc] text-[#3f7d2a]'
-          : 'border-white/35 bg-[#12251a]/45 text-white hover:bg-[#12251a]/70'
+          : tone === 'plain'
+            ? 'border-[#d5e0d1] bg-white/70 text-[#7a8b7e] hover:border-[#bfd0b9] hover:text-[#142016]'
+            : 'border-white/35 bg-[#12251a]/45 text-white hover:bg-[#12251a]/70'
       } ${className}`}
     >
       <Bookmark className={`h-3.5 w-3.5 ${saved ? 'fill-current' : ''}`} />
@@ -460,23 +464,30 @@ export function NewsPage() {
             </CardHeader>
             <div className="divide-y divide-dashed divide-[#e1e9dd]">
               {latest.map((item, index) => (
-                <a
-                  key={item.id}
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="group flex items-center gap-3 px-3.5 py-3 transition hover:bg-white/70"
-                >
-                  <span className="display w-5 shrink-0 text-[13px] font-semibold text-[#b3c0b6]">{String(index + 1).padStart(2, '0')}</span>
-                  <Thumb item={item} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[8.5px] font-semibold uppercase tracking-[0.1em] text-[#7a8b7e]">
-                      {item.source} <span className="text-[#b3c0b6]">·</span> {timeAgo(item.publishedAt)}
+                <div key={item.id} className="relative">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="group flex items-center gap-3 py-3 pl-3.5 pr-12 transition hover:bg-white/70"
+                  >
+                    <span className="display w-5 shrink-0 text-[13px] font-semibold text-[#b3c0b6]">{String(index + 1).padStart(2, '0')}</span>
+                    <Thumb item={item} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[8.5px] font-semibold uppercase tracking-[0.1em] text-[#7a8b7e]">
+                        {item.source} <span className="text-[#b3c0b6]">·</span> {timeAgo(item.publishedAt)}
+                      </span>
+                      <span className="mt-0.5 line-clamp-2 block text-[11px] font-medium leading-snug text-[#223328]">{item.title}</span>
                     </span>
-                    <span className="mt-0.5 line-clamp-2 block text-[11px] font-medium leading-snug text-[#223328]">{item.title}</span>
-                  </span>
-                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[#a9b7ac] transition group-hover:text-[#3f7d2a]" />
-                </a>
+                  </a>
+                  <SaveButton
+                    item={item}
+                    saved={isSaved(item.id)}
+                    onToggle={toggle}
+                    tone="plain"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                  />
+                </div>
               ))}
               {latest.length === 0 ? (
                 <p className="px-4 py-8 text-center text-[10px] text-[#66766b]">The lead story is the only headline in this refresh.</p>

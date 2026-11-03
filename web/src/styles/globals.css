@@ -287,6 +287,10 @@ textarea {
 .map-range:focus-visible {
   box-shadow: 0 0 0 3px rgba(77, 164, 42, 0.18);
 }
+
+.map-studio .maplibregl-ctrl-bottom-right {
+  bottom: 88px;
+}
 .maplibregl-ctrl-group button {
   filter: none;
 }
