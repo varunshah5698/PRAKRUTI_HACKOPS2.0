@@ -15,5 +15,15 @@ export default defineConfig({
   build: {
     sourcemap: false,
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'map-vendor': ['maplibre-gl'],
+          'chart-vendor': ['echarts', 'echarts-for-react'],
+          'motion-vendor': ['framer-motion'],
+        },
+      },
+    },
   },
 });
