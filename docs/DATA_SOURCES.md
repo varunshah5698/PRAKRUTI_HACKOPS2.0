@@ -13,7 +13,7 @@ Source status is shown in the application at `/data-sources` and via `GET /api/v
 | `open-meteo-weather` | Open-Meteo weather | CONNECTED | 285 (seed) | Live observations + 18h forecasts at demo station coordinates. |
 | `open-meteo-cams` | CAMS regional air quality | CONNECTED | 20 (seed) | Modelled PM2.5/PM10, not a station measurement. |
 | `demo-network` | प्रकृति demo network | CONNECTED | 4,566 (seed) | All records `is_simulated=true`. |
-| `river-ai` | River AI | NOT_CONFIGURED | — | `RIVER_API_KEY` empty; rule-based fallback used. |
+| `river-ai` | River AI | CONNECTED locally | — | `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified against `zai-org/GLM-5.3-Flash`. Empty by default in `.env.example`; rule-based fallback remains if absent. |
 | `vision-ai` | AI image assessment | NOT_CONFIGURED | — | No separate vision model. |
 | `ml-service` | LightGBM forecasting service | NOT_CONFIGURED | — | Models NOT_TRAINED; persistence baseline only. |
 | `email` | Email delivery | NOT_CONFIGURED | — | Notifications stored as SIMULATED. |

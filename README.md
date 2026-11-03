@@ -26,7 +26,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |
 | LightGBM / quantile / deterioration / anomaly models | **NOT TRAINED** — no verified Mumbai historical extract supplied |
 | Forecasts shown | **PERSISTENCE_BASELINE_V1** — labelled, empirical band, not calibrated |
-| River AI | **NOT_CONFIGURED** — empty `RIVER_API_KEY`; AI Analyst falls back to a rule-based evidence digest |
+| River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
 | Vision AI | **NOT_CONFIGURED** — the River text model is not assumed to inspect images |
 | Email | **SIMULATED** — no provider configured; records are stored, not sent |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |

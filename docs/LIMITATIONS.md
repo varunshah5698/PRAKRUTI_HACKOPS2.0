@@ -20,7 +20,7 @@ This deployment is a working demonstration, not an operational regulatory system
 - Forecasts shown are `PERSISTENCE_BASELINE_V1`; the empirical band is not a calibrated prediction interval and has no validated skill.
 - No deterioration probability is shown because no calibrated classifier exists.
 - No SHAP values are shown because no trained model exists.
-- River AI is `NOT_CONFIGURED` without `RIVER_API_KEY`; the AI Analyst returns a rule-based evidence digest. It is not an LLM response.
+- River AI is configured in this workspace through the gitignored `.env.local`; without `RIVER_API_KEY` the AI Analyst returns a rule-based evidence digest instead. The committed templates never contain the key.
 - The River AI adapter assumes an OpenAI-compatible chat-completions interface; this was not verified against a live key.
 - No vision model is configured. Image assessment is `NOT_CONFIGURED`. A photograph cannot establish chemical composition, toxicity, concentration or responsibility.
 - The AI can still make mistakes even when grounded; its output is decision support, not a determination.

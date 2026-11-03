@@ -63,7 +63,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 - No Prisma; a typed `pg` layer is used instead (allowed: “another suitable typed database access layer”).
 - No S3/object-storage implementation; local private storage with a documented extension point.
 - No trained LightGBM/quantile/classifier/anomaly artifacts; the models are explicitly NOT_TRAINED.
-- No River AI key or live provider verification; the adapter and fallback exist.
+- River AI adapter was verified against a locally supplied key (`zai-org/GLM-5.3-Flash`, chat-completions, reasoning_effort low). The key is only in the gitignored `.env.local`; `.env.example` remains empty and the rule-based fallback remains for missing keys.
 - No vision model; image analysis is NOT_CONFIGURED.
 - No email provider; notifications are SIMULATED records.
 - No ward-level analytics; ward geometries were not verified, so only locality reference points are used.
