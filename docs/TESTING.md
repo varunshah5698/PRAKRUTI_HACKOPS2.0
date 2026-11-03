@@ -32,7 +32,7 @@ The following were exercised during implementation:
 - `GET /dashboard/summary` (KPIs, categories, charts, sources).
 - `GET /map/timeline` for past, current and future timestamps; forecast metadata present.
 - `GET /map/stations/:id`, observations and forecasts.
-- `GET /predictions` and `/predictions/:stationId` (NOT_TRAINED status, baseline).
+- `GET /predictions` and `/predictions/:stationId` (model status and trained forecasts when the ML service is running; labelled baseline otherwise).
 - `POST /ai/analyse` (rule-based fallback, labelled sections).
 - `POST /reports` with a private image; `GET /reports/:id`; `GET /evidence/:id`; verify; link to incident.
 - `GET /alerts`, `/alerts/:id`; close permission check.
@@ -54,8 +54,8 @@ The following were exercised during implementation:
 1. Open `/dashboard` and confirm the demo banner and source status.
 2. Confirm stations are labelled SIMULATION DATA and CPCB is NOT_CONFIGURED.
 3. Open `/map`, select a station, inspect the drawer.
-4. Check values, timestamps, weather, 48h series, baseline forecasts, missing inputs and data quality.
-5. Confirm no trained ML/SHAP claim is present.
+4. Check values, timestamps, weather, 48h series, forecasts, missing inputs and data quality.
+5. Confirm any trained-ML/SHAP claim matches the running ML service and `model_registry`; otherwise confirm the baseline label.
 
 ### B — Map timeline
 
@@ -68,8 +68,8 @@ The following were exercised during implementation:
 ### C — Predictive warning
 
 1. Open `/intelligence/predictions`.
-2. Inspect current, +1/+3/+6, empirical band, model registry, warning criteria.
-3. Confirm `NOT_TRAINED`, `NOT_CALIBRATED`, no SHAP, no deterioration probability.
+2. Inspect current, +1/+3/+6, intervals, model registry and warning criteria.
+3. With the ML service running and a connected OpenAQ station selected, confirm the model version, quantile intervals, SHAP and deterioration probability. With no service or insufficient hourly history, confirm the labelled `PERSISTENCE_BASELINE_V1` / `NOT_CALIBRATED` fallback.
 4. Open the Chembur predictive alert and confirm trigger type PREDICTIVE and model status.
 
 ### D — Citizen report

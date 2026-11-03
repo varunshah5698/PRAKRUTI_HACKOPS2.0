@@ -42,7 +42,7 @@ No synthetic reading is presented as a CPCB reading. No forecast is presented as
 - **Web**: React 18, Vite, TypeScript, Tailwind CSS, shadcn-style local UI components, Framer Motion, Zustand, React Router, Apache ECharts, Lucide, MapLibre GL JS 6, OpenFreeMap, GeoJSON.
 - **API**: Node.js 22, TypeScript, Express, `pg`, Zod, JWT cookie auth, Multer, Nodemailer adapter, SSE.
 - **Database**: PostgreSQL + PostGIS (`geography(Point,4326)`), SQL schema, typed query helpers.
-- **ML**: Python training pipeline in `ml/` using LightGBM, pandas, NumPy, scikit-learn, SHAP and Joblib. Not trained in this deployment.
+- **ML**: Python training pipeline in `ml/` using LightGBM, pandas, NumPy, scikit-learn, SHAP and Joblib. Trained locally on the 23-station OpenAQ Mumbai extract; serving through `ml/serve.py` (FastAPI) on `ML_SERVICE_URL`. Model artifacts are gitignored, so a clean deployment stays `NOT_TRAINED` until they are force-added.
 - **Map data**: OpenStreetMap via OpenFreeMap/OpenMapTiles; Mumbai boundary from OSM via Nominatim (ODbL); 3D heights are OpenMapTiles render heights, not surveyed data.
 
 ## Quick start

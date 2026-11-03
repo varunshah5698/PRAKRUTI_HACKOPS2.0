@@ -57,7 +57,7 @@ Rate limits: global 400/min; auth 40/15 min; report submission 12/hour; AI 20/mi
 | GET | `/map/stations` | user | Station snapshots; optional `category` |
 | GET | `/map/stations/:id` | user | Station identity, values, AQI, 48h series, weather, baseline forecasts, anomaly, nearby stations/reports, alerts, risk, data quality |
 | GET | `/map/stations/:id/observations` | user | `pollutant`, `hours` (max 168) |
-| GET | `/map/stations/:id/forecasts` | user | 1/3/6h persistence baseline; model status NOT_TRAINED |
+| GET | `/map/stations/:id/forecasts` | user | 1/3/6h LightGBM forecasts when the trained service and history are available; labelled persistence baseline otherwise |
 | GET | `/api/v1/stations` | user | Alias for `/map/stations` |
 | GET | `/api/v1/stations/:id` | user | Alias for `/map/stations/:id` |
 

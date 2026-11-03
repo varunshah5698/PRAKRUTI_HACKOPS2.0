@@ -5,8 +5,8 @@ This deployment is a working demonstration, not an operational regulatory system
 ## Data
 
 - **No direct live CPCB or MPCB API feed.** CPCB remains `NOT_CONFIGURED` until a data.gov.in API key is added. OpenAQ is connected and currently supplies 12 Mumbai stations (MPCB/IITM operators); those records are labelled as OpenAQ and preserve upstream timestamps. Demo station records remain synthetic and labelled `SIMULATION DATA`.
-- **No real Mumbai historical training extract.** LightGBM/quantile/deterioration/anomaly models are `NOT_TRAINED`.
-- **No trained model metrics.** Do not infer accuracy from the persistence baseline.
+- **Training data is an OpenAQ archive, not a direct CPCB feed.** LightGBM 1/3/6h, quantile and deterioration models are trained locally on 23 MPCB/BMC/IITM stations (2025-11-01 to 2026-10-23, 143,059 feature rows). The anomaly detector remains `NOT_TRAINED`.
+- **Model metrics are extract-specific.** They apply only to the registered CSV SHA-256 and are not a guarantee for other periods, stations or live conditions.
 - **Sparse demo network.** 10 air stations across a large city cannot establish area-wide concentration.
 - **No interpolated pollution surface or risk polygon.** A point measurement is not an area measurement.
 - **No verified ward mapping.** Localities are OSM/Nominatim reference points, not authoritative ward centroids.
@@ -17,9 +17,9 @@ This deployment is a working demonstration, not an operational regulatory system
 
 ## Predictions and AI
 
-- Forecasts shown are `PERSISTENCE_BASELINE_V1`; the empirical band is not a calibrated prediction interval and has no validated skill.
-- No deterioration probability is shown because no calibrated classifier exists.
-- No SHAP values are shown because no trained model exists.
+- Forecasts use the trained LightGBM model only when the ML service is running and the station has 25 consecutive hourly PM2.5 values in the model's OpenAQ station set. Otherwise the labelled `PERSISTENCE_BASELINE_V1` is shown; its empirical band is not a calibrated prediction interval.
+- The deterioration probability comes from the trained classifier and is only shown for those same stations. Demo stations and stations outside the training set never get a model probability.
+- SHAP values are computed by the served model. The baseline fallback shows no SHAP.
 - River AI is configured in this workspace through the gitignored `.env.local`; without `RIVER_API_KEY` the AI Analyst returns a rule-based evidence digest instead. The committed templates never contain the key.
 - The River AI adapter uses an OpenAI-compatible chat-completions interface; this is verified against a live `zai-org/GLM-5.3-Flash` key in this workspace. Provider behaviour may differ for other deployments.
 - Vision AI is configured in this workspace through the gitignored `.env.local` (open-weight models). Without credentials it remains `NOT_CONFIGURED`. A photograph still cannot establish chemical composition, toxicity, concentration or responsibility.
@@ -50,7 +50,7 @@ This deployment is a working demonstration, not an operational regulatory system
 - Local evidence storage security depends on host permissions.
 - No penetration test, load test, accessibility audit or disaster recovery plan.
 - Background jobs are in-process intervals, not a durable queue.
-- No trained model server or model monitoring.
+- The ML service runs locally as a single process with no managed monitoring, drift detection or automatic retraining.
 - No SMS/push notifications.
 - No mobile native app.
 

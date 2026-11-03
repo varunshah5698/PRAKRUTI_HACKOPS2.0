@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BrainCircuit,
   CalendarClock,
+  ChevronDown,
   ChevronRight,
   Clock,
   Filter,
@@ -460,32 +461,38 @@ function StationDrawer({
                     <Badge tone={ai.status === 'COMPLETED' ? 'green' : 'neutral'}>{ai.status.replace(/_/g, ' ')}</Badge>
                   </div>
                   <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[11px] leading-relaxed text-[#405246]">{ai.narrative}</p>
-                  {[
-                    ['OBSERVED', ai.sections.observed, 'green'],
-                    ['PREDICTED', ai.sections.predicted, 'teal'],
-                    ['REPORTED', ai.sections.reported, 'amber'],
-                    ['ESTIMATED', ai.sections.estimated, 'neutral'],
-                    ['REFERENCE STANDARDS', ai.sections.standards, 'neutral'],
-                    ['LIMITATIONS', ai.sections.limitations, 'red'],
-                    ['NEXT ACTIONS', ai.sections.nextActions, 'lime'],
-                  ].map(([label, items, tone]) => Array.isArray(items) && items.length ? (
-                    <div key={String(label)} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                      <Badge tone={tone as never}>{String(label)}</Badge>
-                      <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                        {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
-                      </ul>
-                    </div>
-                  ) : null)}
-                  {ai.citations.length ? (
-                    <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                      <DataLabel>Source references</DataLabel>
-                      <ul className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
-                        {ai.citations.map((citation, index) => (
-                          <li key={index}>{citation.title} · {citation.section} · {citation.authority}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
+                  <details open key={aiType ?? 'ai'} className="group space-y-3">
+                    <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-[10px] font-semibold text-[#3f7d2a] hover:text-[#142016] [&::-webkit-details-marker]:hidden">
+                      <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                      Evidence and references
+                    </summary>
+                    {[
+                      ['OBSERVED', ai.sections.observed, 'green'],
+                      ['PREDICTED', ai.sections.predicted, 'teal'],
+                      ['REPORTED', ai.sections.reported, 'amber'],
+                      ['ESTIMATED', ai.sections.estimated, 'neutral'],
+                      ['REFERENCE STANDARDS', ai.sections.standards, 'neutral'],
+                      ['LIMITATIONS', ai.sections.limitations, 'red'],
+                      ['NEXT ACTIONS', ai.sections.nextActions, 'lime'],
+                    ].map(([label, items, tone]) => Array.isArray(items) && items.length ? (
+                      <div key={String(label)} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
+                        <Badge tone={tone as never}>{String(label)}</Badge>
+                        <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
+                          {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
+                        </ul>
+                      </div>
+                    ) : null)}
+                    {ai.citations.length ? (
+                      <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
+                        <DataLabel>Source references</DataLabel>
+                        <ul className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
+                          {ai.citations.map((citation, index) => (
+                            <li key={index}>{citation.title} · {citation.section} · {citation.authority}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </details>
                   <p className="text-[9px] leading-relaxed text-[#66766b]">{ai.disclaimer}</p>
                 </div>
               ) : !aiLoading ? (

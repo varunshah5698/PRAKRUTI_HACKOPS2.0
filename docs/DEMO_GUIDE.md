@@ -37,7 +37,7 @@ Password `Demo@1234` for all:
 3. Category cards: air is largest; water/waste/industrial show their own evidence basis.
 4. Open `/map`; the map opens in a 3D central-Mumbai view. Use “Fit Mumbai” for the full boundary.
 5. Click a station. In the drawer inspect values, AQI caveat, weather, nearby context, risk and confidence.
-6. Open the Forecasts tab: +1/+3/+6h persistence baseline, empirical band, `NOT_TRAINED`.
+6. Open the Forecasts tab: trained LightGBM +1/+3/+6h forecasts with quantile intervals when the ML service is running and the station has enough hourly history; otherwise the labelled persistence baseline.
 7. Open the AI Analyses tab and request one of the three analyses.
 
 ## Demo B — Map timeline

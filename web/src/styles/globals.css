@@ -277,16 +277,8 @@ textarea {
   .rail-item-label {
     display: none;
   }
-  .rail-footer {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.5rem;
-  }
   .rail-footer > a,
   .rail-footer > button {
-    flex: 1;
     height: 2.25rem;
   }
 }

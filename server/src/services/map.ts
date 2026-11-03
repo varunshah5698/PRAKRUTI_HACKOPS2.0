@@ -60,9 +60,14 @@ export async function getMapTimeline(filters: MapFilters) {
          FROM monitoring_stations s
          LEFT JOIN localities l ON l.id=s.locality_id
          LEFT JOIN LATERAL (
-           SELECT observed_at, value FROM environmental_observations
+           -- Hourly means over 48h: the model needs 25 consecutive hourly values,
+           -- and raw feeds are often 15-minute cadence.
+           SELECT date_trunc('hour', observed_at) AS observed_at, AVG(value)::float8 AS value
+           FROM environmental_observations
            WHERE station_id=s.id AND pollutant_code='pm25' AND quality_state <> 'INVALID'
-           ORDER BY observed_at DESC LIMIT 12
+             AND observed_at > now() - interval '48 hours'
+           GROUP BY 1
+           ORDER BY 1 DESC LIMIT 48
          ) o ON true
          WHERE s.station_type='AIR_CAAQMS'
          ORDER BY s.code, o.observed_at ASC`,

@@ -43,7 +43,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 | OpenStreetMap | Boundary via Nominatim; ODbL | Greater Mumbai boundary (Mumbai City + Mumbai Suburban districts) stored locally |
 | River AI | Key empty; provider format not verified against a live key | Server-side OpenAI-compatible adapter with NOT_CONFIGURED fallback |
 | Vision | No separate vision provider configured | NOT_CONFIGURED; text model not assumed to support images |
-| ML | No verified Mumbai historical training extract | NOT_TRAINED; persistence baseline shown instead |
+| ML | 23-station OpenAQ Mumbai archive (2025-11-01 to 2026-10-23) | Trained locally; artifacts gitignored; anomaly model NOT_TRAINED |
 
 ## Implementation decisions
 
@@ -62,7 +62,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 
 - No Prisma; a typed `pg` layer is used instead (allowed: “another suitable typed database access layer”).
 - No S3/object-storage implementation; local private storage with a documented extension point.
-- No trained LightGBM/quantile/classifier/anomaly artifacts; the models are explicitly NOT_TRAINED.
+- LightGBM/quantile/classifier artifacts are trained locally from the OpenAQ archive; the anomaly detector remains `NOT_TRAINED`. Artifacts are gitignored, so a clean deployment falls back to the baseline.
 - River AI adapter was verified against a locally supplied key (`zai-org/GLM-5.3-Flash`, chat-completions, reasoning_effort low). The key is only in the gitignored `.env.local`; `.env.example` remains empty and the rule-based fallback remains for missing keys.
 - Vision AI was verified with River AI open-weight models `moonshotai/Kimi-K3` (fallback `zai-org/GLM-5.3-Flash`) on a test image. The key is only in `.env.local`; no test image or report was retained.
 - No email provider; notifications are SIMULATED records.
@@ -77,7 +77,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 - Added `server/src/services/ml.ts` and `forecast-service.ts`; when `ML_SERVICE_URL` is configured and trained, the predictions page, station drawer and future map timeline use trained forecasts. Otherwise the labelled persistence baseline remains.
 - Added `npm run ml:register` to register real model metrics from `ml/artifacts/model_card.json`.
 - Added `npm run integrations:check` to verify database, data.gov.in, OpenAQ, River AI, vision configuration, SMTP and the ML service without printing secrets.
-- Trained the pipeline end-to-end on a temporary synthetic extract only to verify mechanics; those artifacts were deleted and **no synthetic model was registered**. Real training awaits a verified Mumbai CSV.
+- Verified the pipeline mechanics on a temporary synthetic extract (deleted, never registered). A real 23-station OpenAQ Mumbai archive was then fetched, trained and registered; see `docs/MODEL_CARD.md` and `ml/artifacts/model_card.json`.
 
 ## Verification performed
 
@@ -93,4 +93,4 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 
 ## Known audit gaps
 
-See `docs/LIMITATIONS.md` for the full list. The most important are: no CPCB/MPCB data, no trained ML, no River AI key, no vision model, no email provider, no malware scanner, no object storage, no formal legal review, and no production load/security testing.
+See `docs/LIMITATIONS.md` for the full list. The most important are: no direct CPCB/MPCB API, no anomaly model, no email provider, no malware scanner, no object storage, no formal legal review, and no production load/security testing.
