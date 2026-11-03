@@ -376,12 +376,20 @@ export async function ingestOpenAq(): Promise<IngestResult> {
         [`OPENAQ-${location.id}`, location.name, lng, lat, JSON.stringify({ openaqLocationId: location.id })],
       );
       if (!station) continue;
+      const latestObserved = (latest.results ?? [])
+        .map((result) => (result.datetime?.utc ? new Date(result.datetime.utc) : null))
+        .filter((date): date is Date => date !== null && Number.isFinite(date.getTime()))
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
       await query(
         `UPDATE monitoring_stations s SET
            locality_id=(SELECT l.id FROM localities l ORDER BY l.location <-> s.location LIMIT 1),
-           health_status='ONLINE', last_seen_at=now()
+           health_status=$2, last_seen_at=$3
          WHERE s.id=$1`,
-        [station.id],
+        [
+          station.id,
+          latestObserved && Date.now() - latestObserved.getTime() <= 6 * 3_600_000 ? 'ONLINE' : 'DEGRADED',
+          latestObserved?.toISOString() ?? null,
+        ],
       );
       for (const result of latest.results ?? []) {
         const sensor = result.sensorsId != null ? sensors.get(result.sensorsId) : undefined;
