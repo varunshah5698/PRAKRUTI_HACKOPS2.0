@@ -267,14 +267,12 @@ export function PredictionsPage() {
               <CardHeader><CardTitle>Model registry</CardTitle><Badge tone="neutral">{data.models.length} entries</Badge></CardHeader>
               <div className="scrollbar-thin max-h-[360px] overflow-auto">
                 <table className="w-full text-left text-[10px]">
-                  <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#66766b]"><tr><th className="px-4 py-2">Model</th><th className="px-4 py-2">Target</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Metrics</th></tr></thead>
+                  <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#66766b]"><tr><th className="px-4 py-2">Model</th><th className="px-4 py-2">Target</th></tr></thead>
                   <tbody className="divide-y divide-[#e7ece3]">
                     {data.models.map((model) => (
                       <tr key={model.id} className="text-[#5a6a5f]">
                         <td className="px-4 py-2"><p className="font-medium text-[#26362a]">{model.name}</p><p className="text-[9px] text-[#66766b]">{model.version}</p></td>
                         <td className="px-4 py-2">{model.target}{model.horizon_hours ? ` · ${model.horizon_hours}h` : ''}</td>
-                        <td className="px-4 py-2"><Badge tone={model.status === 'BASELINE' ? 'teal' : model.status === 'TRAINED' ? 'green' : 'amber'}>{model.status.replace(/_/g, ' ')}</Badge></td>
-                        <td className="px-4 py-2 text-[9px]">{model.metrics ? 'Available' : 'None — not evaluated'}</td>
                       </tr>
                     ))}
                   </tbody>
