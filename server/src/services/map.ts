@@ -311,7 +311,7 @@ export async function getMapTimeline(filters: MapFilters) {
   }
 
   const impactStations: ImpactStation[] = stations
-    .filter((station) => station.stationType !== 'WATER_SAMPLING')
+    .filter((station) => station.stationType !== 'WATER_SAMPLING' && !station.isStale)
     .map((station) => {
       const values = (station.values ?? {}) as Record<string, { value: number }>;
       const forecast = station.forecast as { predictedValue?: number } | null | undefined;
