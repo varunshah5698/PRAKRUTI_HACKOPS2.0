@@ -698,6 +698,10 @@ def main() -> None:
         if station_weather is not None:
             for column in station_weather.columns:
                 weather[column] = station_weather[column].combine_first(weather[column])
+        # Apply the same plausibility bounds to the merged series so an ERA5
+        # fallback value cannot bypass the station QC.
+        for column, (_, _, _, (low, high)) in WEATHER_MAP.items():
+            weather[column] = weather[column].where((weather[column] >= low) & (weather[column] <= high))
         for column in ("temperature", "humidity", "wind_speed", "wind_dir", "precipitation"):
             frame[column] = weather[column]
         frame.insert(0, "timestamp", index)
