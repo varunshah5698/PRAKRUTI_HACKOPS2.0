@@ -939,32 +939,6 @@ export function MapPage() {
     return links;
   }, [data, sourceImpact]);
 
-  const sourceMixOption = useMemo(() => {
-    const active = worstSources.filter((source) => source.impactScore > 0).slice(0, 6);
-    return {
-      tooltip: { trigger: 'item', formatter: '{b}<br/>{c} screen score · {d}%' },
-      series: [
-        {
-          type: 'pie',
-          radius: ['56%', '82%'],
-          center: ['50%', '48%'],
-          itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
-          label: { show: false },
-          emphasis: { scale: true, scaleSize: 6 },
-          data: active.map((source) => ({
-            name: `${source.name}`,
-            value: source.impactScore,
-            itemStyle: { color: sourceColor(source.rank) },
-          })),
-        },
-      ],
-      graphic: [
-        { type: 'text', left: 'center', top: '40%', style: { text: 'FACILITY', fill: '#9a7b66', fontSize: 9, fontWeight: 700, letterSpacing: 2 } },
-        { type: 'text', left: 'center', top: '48%', style: { text: 'SCREEN', fill: '#7c2d12', fontSize: 10, fontWeight: 700, letterSpacing: 1 } },
-      ],
-    };
-  }, [worstSources]);
-
   const monitorMixOption = useMemo(() => {
     const chartStations = affectedAttributions.slice(0, 6);
     const primaryIds = new Set(chartStations.map((station) => station.primarySourceId).filter((id): id is string => Boolean(id)));
