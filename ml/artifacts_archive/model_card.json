@@ -1,6 +1,6 @@
 {
-  "model_version": "lightgbm-202611030751-34f9567a",
-  "trained_at": "2026-11-03T07:51:01.500584+00:00",
+  "model_version": "lightgbm-202611030753-34f9567a",
+  "trained_at": "2026-11-03T07:53:26.887564+00:00",
   "dataset": "data/mumbai_air_quality_archive.csv",
   "dataset_sha256": "34f9567adec60889934e836727d946eb1c93ab005e6dcf780a73066741bc7e92",
   "dataset_metadata": "data/mumbai_air_quality_archive.meta.json",
@@ -528,15 +528,16 @@
     },
     "deterioration_classifier_3h": {
       "label": "target_3h > 60 ug/m3 (CPCB 24-hour PM2.5 standard used as an hourly exceedance indicator)",
-      "precision": 0.0,
-      "recall": 0.0,
-      "pr_auc": 0.6387250046857144,
-      "roc_auc": 0.9529874093297921,
-      "brier": 0.05780606527480359,
+      "precision": 0.7576484703059388,
+      "recall": 0.5882626921285514,
+      "pr_auc": 0.7452013245754794,
+      "roc_auc": 0.9586974228615546,
+      "brier": 0.041908194233328665,
       "positive_rate_train": 0.18259452216433508,
       "positive_rate_validation": 0.0015987597500121118,
       "positive_rate_test": 0.0957840731652911,
-      "calibration": "isotonic on the chronological validation partition",
+      "calibration": "isotonic, 5-fold out-of-fold predictions on the training partition",
+      "cv_folds": 5,
       "n": 22415
     }
   },
