@@ -473,10 +473,10 @@ export async function analyzeEvidenceImage(
       for (const model of models) {
         try {
           const response = await fetch(
-            `${base}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(visionConfig.apiKey)}`,
+            `${base}/models/${encodeURIComponent(model)}:generateContent`,
             {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': visionConfig.apiKey },
               body: JSON.stringify({
                 contents: [
                   {
