@@ -296,6 +296,65 @@ def archive_series(frame: pd.DataFrame, sensor_id: int, code: str, unit: str) ->
     return series.sort_index(), quality
 
 
+WEATHER_MAP = {
+    # output column: (OpenAQ parameter, accepted units, conversion, plausible bounds)
+    "temperature": ("temperature", ("c", "°c"), 1.0, (10.0, 48.0)),
+    "humidity": ("relativehumidity", ("%",), 1.0, (5.0, 100.0)),
+    "wind_speed": ("wind_speed", ("m/s", "km/h"), None, (0.0, 80.0)),
+    "wind_dir": ("wind_direction", ("deg", "°"), 1.0, (0.0, 360.0)),
+}
+
+
+def archive_weather(frame: pd.DataFrame, index: pd.DatetimeIndex) -> tuple[pd.DataFrame, dict]:
+    """Extract hourly station-measured weather from the OpenAQ archive.
+
+    Where a station has a weather sensor, its measurement is preferred. Missing
+    hours are filled later from Open-Meteo ERA5 and the measured fraction is
+    recorded in the metadata so the source of every weather feature is traceable.
+    """
+    out = pd.DataFrame(index=index)
+    quality: dict[str, dict] = {}
+    if frame.empty:
+        for column in WEATHER_MAP:
+            out[column] = np.nan
+            quality[column] = {"coverage": 0.0}
+        return out, quality
+    for column, (parameter, accepted_units, conversion, bounds) in WEATHER_MAP.items():
+        rows = frame[frame["parameter"].str.lower() == parameter].reset_index(drop=True)
+        rows = rows[rows["units"].str.lower().isin([unit.lower() for unit in accepted_units])]
+        if rows.empty:
+            out[column] = np.nan
+            quality[column] = {"coverage": 0.0}
+            continue
+        # Pick the sensor with the most raw observations; duplicate sensors exist
+        # across data-provider migrations.
+        sensor_id = int(rows.groupby("sensors_id").size().idxmax())
+        rows = rows[rows["sensors_id"] == sensor_id]
+        values = pd.to_numeric(rows["value"], errors="coerce")
+        if column == "wind_speed":
+            values = values * np.where(rows["units"].str.lower() == "m/s", 3.6, 1.0)
+        elif conversion is not None:
+            values = values * conversion
+        low, high = bounds
+        values = values.where((values >= low) & (values <= high))
+        hourly = pd.DataFrame({"hour": rows["datetime"].dt.floor("h"), "value": values}).dropna()
+        if hourly.empty:
+            out[column] = np.nan
+            quality[column] = {"sensor_id": sensor_id, "coverage": 0.0}
+            continue
+        grouped = hourly.groupby("hour")["value"].agg(["mean", "count"])
+        if float(grouped["count"].median()) >= 2:
+            grouped = grouped[grouped["count"] >= 2]
+        series = grouped["mean"].reindex(index)
+        out[column] = series
+        quality[column] = {
+            "sensor_id": sensor_id,
+            "source_unit": str(rows["units"].iloc[0]),
+            "coverage": round(float(series.notna().mean()), 4),
+        }
+    return out, quality
+
+
 def fetch_hours(client: Client, sensor_id: int, start: str, end: str) -> list[dict]:
     rows: list[dict] = []
     page = 1
@@ -484,7 +543,8 @@ def main() -> None:
 
     print(f"{len(selected)} stations with an active PM2.5 sensor")
 
-    expected = len(pd.date_range(start, end, freq="h", inclusive="left"))
+    index = pd.date_range(start, end, freq="h", inclusive="left", tz="UTC")
+    expected = len(index)
     station_data: dict[int, dict] = {}
 
     if args.source == "archive":
@@ -515,6 +575,9 @@ def main() -> None:
                 data["series"][code] = series
                 data["quality"][code] = quality
                 data["coverage"][code] = len(series) / expected if expected else 0.0
+            station_weather, weather_quality = archive_weather(frame, index)
+            data["station_weather"] = station_weather
+            data["weather_quality"] = weather_quality
             station_data[location_id] = data
             print(
                 f"  {location_id} {location['name'][:48]:48s} pm25 "
