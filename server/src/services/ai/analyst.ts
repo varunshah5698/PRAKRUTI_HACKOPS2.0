@@ -178,8 +178,12 @@ interface EvidenceBundle {
     aqi: number;
     category: string;
     dominantPollutant: string | null;
+    aqi24h: number | null;
+    category24h: string | null;
+    dominantPollutant24h: string | null;
     pm25: number | null;
     pollutants: string[];
+    pollutants24h: string[];
     observedAt: string;
     ageMinutes: number;
     isSimulated: boolean;
@@ -227,21 +231,27 @@ type RankableStation = {
   code: string;
   stationType: string;
   isSimulated: boolean;
-  values: Record<string, { value: number; observedAt: string; sourceId: string }>;
+  values: Record<string, { value: number | null; value24h: number; observedAt: string; sourceId: string }>;
 };
 
 export function rankStationSnapshots(stations: RankableStation[]): EvidenceBundle['stationRanking'] {
   const now = Date.now();
   const maxAgeMs = STALE_AFTER_HOURS * 3_600_000;
+  const dayAgeMs = 24 * 3_600_000;
   return stations
     .filter((station) => station.stationType === 'AIR_CAAQMS')
     .flatMap((station) => {
-      const fresh = Object.entries(station.values).filter(([, reading]) => {
+      const all = Object.entries(station.values).filter(([, reading]) => {
         const age = now - new Date(reading.observedAt).getTime();
-        return Number.isFinite(age) && age <= maxAgeMs;
+        return Number.isFinite(age) && age <= dayAgeMs && Number.isFinite(reading.value24h);
+      });
+      const fresh = all.filter(([, reading]) => {
+        const age = now - new Date(reading.observedAt).getTime();
+        return reading.value !== null && Number.isFinite(reading.value) && age <= maxAgeMs;
       });
       const aqi = calculateAqi(Object.fromEntries(fresh.map(([code, reading]) => [code, reading.value])));
       if (aqi.aqi === null) return [];
+      const aqi24h = calculateAqi(Object.fromEntries(all.map(([code, reading]) => [code, reading.value24h])));
       const latest = fresh.reduce(
         (newest, [, reading]) => (new Date(reading.observedAt) > new Date(newest) ? reading.observedAt : newest),
         fresh[0][1].observedAt,
@@ -255,8 +265,12 @@ export function rankStationSnapshots(stations: RankableStation[]): EvidenceBundl
         aqi: aqi.aqi,
         category: aqi.category,
         dominantPollutant: aqi.dominantPollutant,
+        aqi24h: aqi24h.aqi,
+        category24h: aqi24h.aqi === null ? null : aqi24h.category,
+        dominantPollutant24h: aqi24h.dominantPollutant,
         pm25,
-        pollutants: Object.keys(Object.fromEntries(fresh)),
+        pollutants: fresh.map(([code]) => code),
+        pollutants24h: all.map(([code]) => code),
         observedAt,
         ageMinutes: Math.round((now - new Date(observedAt).getTime()) / 60_000),
         isSimulated: station.isSimulated,
@@ -275,22 +289,24 @@ export async function rankAirStations(): Promise<EvidenceBundle['stationRanking'
     name: string;
     is_simulated: boolean;
     pollutant_code: string;
-    value: number;
+    value: number | null;
+    value24h: number;
     latest_observed_at: string;
     sources: string[];
   }>(
     `SELECT s.id, s.code, s.name, s.is_simulated, o.pollutant_code,
-            AVG(o.value)::float8 AS value,
+            AVG(o.value) FILTER (WHERE o.observed_at > now() - ($1 || ' hours')::interval)::float8 AS value,
+            AVG(o.value)::float8 AS value24h,
             MAX(o.observed_at) AS latest_observed_at,
             array_agg(DISTINCT o.source_id) AS sources
      FROM monitoring_stations s
      JOIN environmental_observations o ON o.station_id=s.id
      WHERE s.station_type='AIR_CAAQMS'
-       AND o.observed_at > now() - ($1 || ' hours')::interval
+       AND o.observed_at > now() - ($2 || ' hours')::interval
        AND o.quality_state <> 'INVALID'
      GROUP BY s.id, s.code, s.name, s.is_simulated, o.pollutant_code
      ORDER BY s.id, o.pollutant_code`,
-    [String(STALE_AFTER_HOURS)],
+    [String(STALE_AFTER_HOURS), '24'],
   );
 
   const stations = new Map<string, RankableStation>();
@@ -303,7 +319,8 @@ export async function rankAirStations(): Promise<EvidenceBundle['stationRanking'
       values: {},
     };
     station.values[row.pollutant_code] = {
-      value: Number(row.value),
+      value: row.value === null ? null : Number(row.value),
+      value24h: Number(row.value24h),
       observedAt: row.latest_observed_at,
       sourceId: (row.sources ?? []).join('+') || 'unknown',
     };
@@ -478,7 +495,7 @@ export async function buildEvidence(params: {
   stationRanking = category === 'air' ? await rankAirStations() : [];
   if (category === 'air') {
     notes.push(
-      `The station ranking is sorted by indicative AQI from each pollutant's ${STALE_AFTER_HOURS}-hour mean. Every station uses the same ${STALE_AFTER_HOURS}-hour window; source update times within it differ, so the comparison is not instantaneous.`,
+      `The station ranking is sorted by indicative AQI from each pollutant's ${STALE_AFTER_HOURS}-hour mean. Every station uses the same ${STALE_AFTER_HOURS}-hour window; source update times within it differ, so the comparison is not instantaneous. Each row also carries aqi24h, a 24-hour mean indicative AQI. Neither is an official CPCB AQI.`,
     );
     notes.push(
       'Stations report different pollutant sets; a station with more measured pollutants can show a higher AQI than one with fewer.',
@@ -742,6 +759,16 @@ function ruleBasedAnswer(
     estimated.push(
       `Ranking evidence quality: ${simulatedCount} of ${evidence.stationRanking.length} stations are simulation-labelled; latest dominant samples are ${Math.min(...ages)}-${Math.max(...ages)} minutes old.`,
     );
+    const dayValues = evidence.stationRanking
+      .map((row) => ({ name: row.name, aqi: row.aqi24h, category: row.category24h }))
+      .filter((row): row is { name: string; aqi: number; category: string } => row.aqi !== null && row.category !== null);
+    if (dayValues.length >= 2) {
+      const dayLow = dayValues.reduce((low, row) => (row.aqi < low.aqi ? row : low));
+      const dayHigh = dayValues.reduce((high, row) => (row.aqi > high.aqi ? row : high));
+      estimated.push(
+        `24-hour mean indicative AQI ranges from ${dayLow.aqi} at ${dayLow.name} (${dayLow.category}) to ${dayHigh.aqi} at ${dayHigh.name} (${dayHigh.category}). This is a steadier comparison, not an official CPCB AQI.`,
+      );
+    }
   }
   if (evidence.alerts.length) {
     estimated.push(
@@ -923,6 +950,7 @@ GROUNDING AND SAFETY
 - standardComparisons already compares the focused report's nearest category-matched reading with each standard. Use its status (WITHIN, BELOW, ABOVE, NO_READING) exactly; do not recompute or contradict it.
 - If evidence is missing, say what is missing. Never fill gaps with plausible numbers.
 - Never calculate or invent an AQI yourself. Use only the aqi and category supplied in stationRanking, or an AQI explicitly present in the evidence. A raw pollutant value is not an AQI.
+- stationRanking rows carry aqi (6-hour mean, used for the current order) and aqi24h (24-hour mean). Use aqi for current conditions and aqi24h for a steadier day-level comparison. Both are indicative and neither is an official CPCB AQI.
 - stationRanking uses the same 6-hour averaging window for every station. Source update times within that window differ; do not say the averaging windows differ.
 - Match the gravity of the data. Do not call polluted air good or reassuring.
 - When focusedReport is present, centre the answer on that report: what was reported, nearby monitors, weather, related reports and what still needs verification.

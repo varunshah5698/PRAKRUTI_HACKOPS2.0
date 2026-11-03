@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { query, one } from '../db/pool.js';
 import { requireAuth, requireAuthority, AUTHORITY, AUTHORITY_ADMIN_ROLES } from '../middleware/auth.js';
 import { badRequest, forbidden, notFound } from '../middleware/errors.js';
-import { SCENARIOS, generateSimulation, persistSimulationSteps } from '../services/simulation.js';
+import { SCENARIOS, SIMULATION_SCENARIO_VERSION, generateSimulation, persistSimulationSteps } from '../services/simulation.js';
 import { createOrUpdateAlert } from '../services/alerts.js';
 import { createNotificationsForAlert } from '../services/notifications.js';
 import { getAlertForEmail, renderAlertEmail } from '../services/email.js';
@@ -25,7 +25,7 @@ simulationsRouter.get('/', async (req, res, next) => {
   try {
     const isAuthority = AUTHORITY.includes(req.user!.role);
     const rows = await query<Record<string, unknown>>(
-      `SELECT s.id, s.scenario, s.category, s.seed, s.status, s.current_step, s.total_steps, s.created_at, s.updated_at,
+      `SELECT s.id, s.scenario, s.category, s.scenario_version, s.seed, s.status, s.current_step, s.total_steps, s.created_at, s.updated_at,
               s.is_simulated, st.name AS station_name, l.name AS locality_name, u.name AS created_by_name
        FROM simulation_sessions s
        LEFT JOIN monitoring_stations st ON st.id=s.station_id
@@ -72,9 +72,20 @@ simulationsRouter.post('/', async (req, res, next) => {
     }
     const row = await one<{ id: string }>(
       `INSERT INTO simulation_sessions
-         (scenario, category, station_id, locality_id, seed, status, current_step, total_steps, created_by, is_simulated)
-       VALUES ($1,$2,$3,$4,$5,'CREATED',0,$6,$7,true) RETURNING id`,
-      [scenario.id, scenario.category, stationId, generated.station.locality_id, body.seed, generated.steps.length, req.user!.id],
+         (scenario, category, scenario_version, station_id, locality_id, seed, weather_snapshot,
+          status, current_step, total_steps, created_by, is_simulated)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,'CREATED',0,$8,$9,true) RETURNING id`,
+      [
+        scenario.id,
+        scenario.category,
+        SIMULATION_SCENARIO_VERSION,
+        stationId,
+        generated.station.locality_id,
+        body.seed,
+        JSON.stringify(generated.weather),
+        generated.steps.length,
+        req.user!.id,
+      ],
     );
     if (!row) throw badRequest('Could not create simulation session.');
     await persistSimulationSteps(row.id, generated.steps);
@@ -95,11 +106,13 @@ simulationsRouter.post('/', async (req, res, next) => {
         status: 'CREATED',
         currentStep: 0,
         totalSteps: generated.steps.length,
+        scenarioVersion: SIMULATION_SCENARIO_VERSION,
+        weatherSnapshot: generated.weather,
         station: generated.station,
         isSimulated: true,
       },
       firstEvent: generated.steps[0],
-      note: 'Simulation data is isolated. No real observation was modified.',
+      note: 'Simulation data is isolated. No real observation was modified. The weather snapshot used for generation is stored with the session.',
     });
   } catch (error) {
     next(error);
@@ -143,6 +156,8 @@ simulationsRouter.get('/:id', async (req, res, next) => {
     res.json({
       session,
       scenario: SCENARIOS.find((s) => s.id === session.scenario) ?? null,
+      scenarioVersion: session.scenario_version ?? 1,
+      weatherSnapshot: session.weather_snapshot ?? null,
       events,
       alerts,
       notifications,

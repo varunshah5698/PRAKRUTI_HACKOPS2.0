@@ -463,9 +463,11 @@ CREATE TABLE IF NOT EXISTS simulation_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   scenario text NOT NULL,
   category text NOT NULL,
+  scenario_version integer NOT NULL DEFAULT 1,
   station_id uuid REFERENCES monitoring_stations(id),
   locality_id uuid REFERENCES localities(id),
   seed integer NOT NULL,
+  weather_snapshot jsonb,
   status text NOT NULL DEFAULT 'CREATED' CHECK (status IN ('CREATED','PLAYING','PAUSED','COMPLETED','RESET')),
   current_step integer NOT NULL DEFAULT 0,
   total_steps integer NOT NULL,
@@ -484,6 +486,10 @@ CREATE TABLE IF NOT EXISTS simulation_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (session_id, step, event_type)
 );
+
+ALTER TABLE simulation_sessions ADD COLUMN IF NOT EXISTS scenario_version integer NOT NULL DEFAULT 1;
+ALTER TABLE simulation_sessions ADD COLUMN IF NOT EXISTS weather_snapshot jsonb;
+CREATE INDEX IF NOT EXISTS simulation_sessions_scenario_idx ON simulation_sessions (scenario, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id bigserial PRIMARY KEY,

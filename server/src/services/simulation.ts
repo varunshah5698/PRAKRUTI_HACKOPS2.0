@@ -610,10 +610,12 @@ export async function generateSimulation(params: {
         };
         note = 'Selected station rising while the nearest neighbour falls. Wind, local sources or an inlet problem could all explain the divergence.';
       } else if (params.scenario.id === 'construction_dust') {
-        const progress = clamp((step - 2) / 8, 0, 1);
-        target = basePm + progress * 34;
-        pm10Multiplier = 3.3;
-        pm10Offset = 48;
+        const build = clamp((step - 2) / 8, 0, 1);
+        const decay = step > 10 ? clamp(1 - (step - 10) / 5, 0, 1) : 1;
+        const active = build * decay;
+        target = basePm + active * 34;
+        pm10Multiplier = 1.86 + active * 1.44;
+        pm10Offset = 13 + active * 35;
         note =
           step < 3
             ? 'Baseline before the works begin. PM10 is the parameter to watch because construction and road dust are coarse-particle sources.'

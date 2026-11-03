@@ -40,8 +40,8 @@ describe('station ranking', () => {
         stationType: 'AIR_CAAQMS',
         isSimulated: false,
         values: {
-          pm25: { value: 78, observedAt: ago(180), sourceId: 'openaq' },
-          no2: { value: 100, observedAt: ago(200), sourceId: 'openaq' },
+          pm25: { value: 78, value24h: 70, observedAt: ago(180), sourceId: 'openaq' },
+          no2: { value: 100, value24h: 90, observedAt: ago(200), sourceId: 'openaq' },
         },
       },
       {
@@ -49,27 +49,29 @@ describe('station ranking', () => {
         code: 'A',
         stationType: 'AIR_CAAQMS',
         isSimulated: true,
-        values: { pm25: { value: 22, observedAt: ago(10), sourceId: 'demo-network' } },
+        values: { pm25: { value: 22, value24h: 20, observedAt: ago(10), sourceId: 'demo-network' } },
       },
       {
         name: 'Stale station',
         code: 'C',
         stationType: 'AIR_CAAQMS',
         isSimulated: false,
-        values: { pm25: { value: 300, observedAt: ago(7 * 60), sourceId: 'openaq' } },
+        values: { pm25: { value: 300, value24h: 280, observedAt: ago(7 * 60), sourceId: 'openaq' } },
       },
       {
         name: 'Water station',
         code: 'D',
         stationType: 'WATER_SAMPLING',
         isSimulated: true,
-        values: { ph: { value: 7, observedAt: ago(5), sourceId: 'demo-network' } },
+        values: { ph: { value: 7, value24h: 7, observedAt: ago(5), sourceId: 'demo-network' } },
       },
     ]);
 
     expect(ranked.map((row) => row.name)).toEqual(['Colaba', 'Chembur']);
     expect(ranked[0]).toMatchObject({ aqi: 37, category: 'Good', dominantPollutant: 'pm25', pm25: 22, isSimulated: true });
+    expect(ranked[0].aqi24h).toBe(33);
     expect(ranked[1]).toMatchObject({ aqi: 160, category: 'Moderate', dominantPollutant: 'pm25', pm25: 78 });
+    expect(ranked[1].aqi24h).toBe(133);
     expect(ranked[1].ageMinutes).toBe(180);
     expect(ranked[1].sources).toEqual(['openaq']);
   });

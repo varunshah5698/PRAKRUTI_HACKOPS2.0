@@ -45,6 +45,7 @@ interface Scenario {
 interface SimulationSession {
   id: string; scenario: string; category: string; seed: number; status: string; current_step: number; total_steps: number;
   created_at: string; updated_at: string; station_name: string; station_code: string; locality_name: string | null; created_by_name: string | null;
+  scenario_version?: number;
 }
 interface SimulationRecommendation {
   id: string;
@@ -89,6 +90,16 @@ interface SimulationEvent {
 interface SimulationDetail {
   session: SimulationSession;
   scenario: Scenario | null;
+  scenarioVersion?: number;
+  weatherSnapshot?: {
+    temperatureC: number | null;
+    relativeHumidity: number | null;
+    windSpeedKmh: number | null;
+    windDirectionDeg: number | null;
+    precipitationMm: number | null;
+    isSimulated: boolean;
+    sourceId: string;
+  } | null;
   events: SimulationEvent[];
   alerts: Array<{ id: string; public_ref: string; level: string; state: string; trigger_type: string; title: string; triggered_at: string; is_simulated: boolean }>;
   notifications: Array<{ id: string; audience: string; template: string; subject: string; status: string; is_simulated: boolean; created_at: string }>;
@@ -690,7 +701,7 @@ export function SimulationPage() {
                     <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(3, progress)}%`, background: `linear-gradient(90deg, ${meta.color}, ${meta.color}90)` }} />
                   </div>
                   <div className="mt-2 flex items-center justify-between text-[8px] text-[#8ba1a9]">
-                    <span>Seed {session.seed} · step {session.current_step}/{Math.max(0, session.total_steps - 1)}</span>
+                    <span>Seed {session.seed} · step {session.current_step}/{Math.max(0, session.total_steps - 1)} · v{session.scenario_version ?? 1}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-[#557480]">
                       {formatDate(session.created_at)} <ArrowUpRight className="h-3 w-3 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                     </span>
@@ -998,6 +1009,12 @@ export function SimulationSessionPage() {
                 </span>
               ) : null}
               <span className="rounded-full border border-white/80 bg-white/50 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#5f7f8b]">Seed {data.session.seed}</span>
+              <span
+                className="rounded-full border border-white/80 bg-white/50 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#5f7f8b]"
+                title={data.weatherSnapshot ? `Weather snapshot: ${data.weatherSnapshot.sourceId}` : 'No weather snapshot stored'}
+              >
+                Engine v{data.scenarioVersion ?? data.session.scenario_version ?? 1}
+              </span>
             </div>
             <h1 className="display mt-2.5 text-[28px] font-bold leading-[1.02] tracking-[-0.05em] text-[#123240] sm:text-[36px]">{scenario}</h1>
             <p className="mt-1.5 text-[11px] text-[#527482]">

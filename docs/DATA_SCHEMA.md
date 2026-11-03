@@ -59,6 +59,7 @@ Database: PostgreSQL 18 + PostGIS 3.7. Schema source: `server/src/db/schema.sql`
 - `obs_pollutant_idx` on `(pollutant_code, observed_at DESC)`.
 - Unique `(station_id, pollutant_code, observed_at, source_id)` and a partial unique index on `(source_id, source_record_id)` to prevent duplicate ingestion.
 - `alerts_state_idx`, `alerts_category_idx`, `incidents_status_idx`, `audit_entity_idx`.
+- `simulation_sessions_scenario_idx` on `(scenario, created_at DESC)`.
 
 ## Constraints and integrity
 
@@ -72,6 +73,7 @@ Database: PostgreSQL 18 + PostGIS 3.7. Schema source: `server/src/db/schema.sql`
 ## Simulation isolation
 
 - `environmental_reports`, `risk_assessments`, `environmental_alerts`, `environmental_incidents`, `notifications`, `simulation_sessions` and `investigation_notes`/`corrective_actions` carry simulation fields where relevant.
+- `simulation_sessions.scenario_version` records the generator version, and `weather_snapshot` stores the weather input used at generation so a session's conditions can be audited. Per-step recommendations and their reasons live inside the existing `simulation_events.payload` JSON.
 - Simulation risk assessments are persisted under entity type `simulation_station` with the session UUID, not the real station entity.
 - Operational alert/incident/notification lists filter `simulation_session_id IS NULL`.
 - Reset updates `current_step`/status only. It never deletes real observations.

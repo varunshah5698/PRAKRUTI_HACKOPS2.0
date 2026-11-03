@@ -199,6 +199,16 @@ function StationDrawer({
     if (!stationId) return;
     setEvidenceOpenByStation((prev) => ({ ...prev, [stationId]: open }));
   };
+  const timelineAttribution = stationId && sourceImpact ? sourceImpact.stationAttributions[stationId] : null;
+  const screen = timelineAttribution && sourceImpact
+    ? {
+        ...timelineAttribution,
+        wind: sourceImpact.wind,
+        method: sourceImpact.method,
+        note: sourceImpact.note,
+        disclaimer: sourceImpact.disclaimer,
+      }
+    : detail?.sourceAttribution ?? null;
 
   useEffect(() => {
     if (!stationId) return;
@@ -281,8 +291,8 @@ function StationDrawer({
             <Badge tone={detail.station.isSimulated ? 'amber' : 'green'} dot>{detail.station.isSimulated ? 'Simulation data' : 'Source record'}</Badge>
             <Badge tone={detail.station.healthStatus === 'ONLINE' ? 'green' : 'amber'}>{detail.station.healthStatus}</Badge>
             {detail.station.aqi?.aqi !== null && detail.station.aqi?.aqi !== undefined ? <Badge tone="neutral">Indicative AQI {detail.station.aqi.aqi}</Badge> : null}
-            {detail.sourceAttribution && detail.sourceAttribution.impactLevel !== 'NONE' ? (
-              <Badge tone="amber" dot>Plume screen {detail.sourceAttribution.estimatedSharePct}%</Badge>
+            {screen && screen.impactLevel !== 'NONE' ? (
+              <Badge tone="amber" dot>Plume screen {screen.estimatedSharePct}%</Badge>
             ) : null}
             <span className="ml-auto flex items-center gap-2 text-[9px] text-[#66766b]">
               {refreshing ? (
@@ -358,25 +368,25 @@ function StationDrawer({
                   </div>
                 ) : <p className="mt-2 text-[11px] text-[#66766b]">No weather observation available.</p>}
               </div>
-              {detail.sourceAttribution ? (
+              {screen ? (
                 <div className="rounded-xl border border-[#efd3bd] bg-gradient-to-br from-[#fff7ef] via-[#fdfaf4] to-[#f7f4ea] p-4">
                   <div className="flex items-center justify-between gap-2">
                     <DataLabel>Industrial source screen</DataLabel>
                     <span
                       className="rounded-full border px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em]"
-                      style={{ color: impactTone(detail.sourceAttribution.impactLevel).color, background: impactTone(detail.sourceAttribution.impactLevel).background, borderColor: impactTone(detail.sourceAttribution.impactLevel).border }}
+                      style={{ color: impactTone(screen.impactLevel).color, background: impactTone(screen.impactLevel).background, borderColor: impactTone(screen.impactLevel).border }}
                     >
-                      {impactTone(detail.sourceAttribution.impactLevel).label}
+                      {impactTone(screen.impactLevel).label}
                     </span>
                   </div>
-                  {detail.sourceAttribution.sources.length ? (
+                  {screen.sources.length ? (
                     <>
                       <p className="mt-2 text-[11px] leading-relaxed text-[#5a4636]">
-                        This monitor falls inside the plume screen of <strong className="text-[#7c2d12]">{detail.sourceAttribution.primarySourceName}</strong>. The screen attributes{' '}
-                        <strong>{detail.sourceAttribution.estimatedSharePct}%</strong> of the industrial contribution here to that source.
+                        This monitor falls inside the plume screen of <strong className="text-[#7c2d12]">{screen.primarySourceName}</strong>. The screen attributes{' '}
+                        <strong>{screen.estimatedSharePct}%</strong> of the industrial contribution here to that source.
                       </p>
                       <div className="mt-3 space-y-2.5">
-                        {detail.sourceAttribution.sources.map((contribution, index) => (
+                        {screen.sources.map((contribution, index) => (
                           <button
                             key={contribution.sourceId}
                             type="button"
@@ -397,7 +407,7 @@ function StationDrawer({
                         ))}
                       </div>
                       <p className="mt-2 text-[9px] leading-relaxed text-[#9a7b66]">
-                        Wind {detail.sourceAttribution.wind.fromLabel} at {number(detail.sourceAttribution.wind.speedKmh)} km/h. {detail.sourceAttribution.note}
+                        Wind {screen.wind.fromLabel} at {number(screen.wind.speedKmh)} km/h. {screen.note}
                       </p>
                     </>
                   ) : (
@@ -405,7 +415,7 @@ function StationDrawer({
                       No industrial source is inside this monitor&apos;s screening footprint right now. The screen is re-evaluated as the wind and timeline change.
                     </p>
                   )}
-                  <p className="mt-2 text-[8px] leading-relaxed text-[#9a7b66]">{detail.sourceAttribution.disclaimer}</p>
+                  <p className="mt-2 text-[8px] leading-relaxed text-[#9a7b66]">{screen.disclaimer}</p>
                 </div>
               ) : null}
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
@@ -1410,6 +1420,7 @@ export function MapPage() {
 
       <StationDrawer
         stationId={selectedStationId}
+        sourceImpact={sourceImpact}
         onClose={() => setSelectedStationId(null)}
         onSourceSelect={(id) => { setSelectedStationId(null); setSelectedSourceId(id); }}
       />

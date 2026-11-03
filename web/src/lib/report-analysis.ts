@@ -442,9 +442,10 @@ function buildStation(category: ReportCategory, station: RawStation, stackMax: n
 }
 
 function scoreDimension(key: AnalysisDimension['key'], label: string, factors: DimensionFactor[], summary: string): AnalysisDimension {
-  const applicable = factors.filter((factor) => factor.applicable);
-  const possible = applicable.reduce((sum, factor) => sum + factor.max, 0);
-  const points = applicable.reduce((sum, factor) => sum + factor.points, 0);
+  // Missing factors score zero. A category is never inflated by dropping
+  // the factors it cannot satisfy (for example, waste has no monitor type).
+  const possible = factors.reduce((sum, factor) => sum + factor.max, 0);
+  const points = factors.reduce((sum, factor) => sum + factor.points, 0);
   return {
     key,
     label,
@@ -599,7 +600,7 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
       label: 'Category-matched monitor',
       points: hasMonitor ? 30 : stations.length ? 10 : 0,
       max: 30,
-      applicable: category !== 'waste',
+      applicable: true,
       detail: category === 'waste'
         ? 'No waste-monitoring station type exists in this deployment. Field inspection carries the evidence.'
         : stations.length
@@ -611,24 +612,30 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
       label: 'Monitor redundancy',
       points: reportingStations.length >= 2 ? 10 : 0,
       max: 10,
-      applicable: category !== 'waste',
-      detail: reportingStations.length >= 2 ? 'More than one category-matched monitor has a reading in the last 24h.' : 'Only one or no category-matched monitor has a reading in the last 24h.',
+      applicable: true,
+      detail: category === 'waste'
+        ? 'No waste-monitoring station type exists.'
+        : reportingStations.length >= 2
+          ? 'More than one category-matched monitor has a reading in the last 24h.'
+          : 'Only one or no category-matched monitor has a reading in the last 24h.',
     },
     {
       id: 'signal',
       label: category === 'industrial' ? 'Relative stack signal' : 'Reading against screening reference',
       points: !hasMonitor ? 0 : !hasReferenceSignal && category !== 'industrial' ? 10 : concern ? 30 : 15,
       max: 30,
-      applicable: category !== 'waste',
-      detail: !hasMonitor
-        ? 'No category-matched reading to compare.'
-        : category === 'industrial'
-          ? hasReferenceSignal
-            ? 'A reading is present; the comparison is shown, but no stack reference is loaded.'
-            : 'Relative stack magnitude across nearby monitors.'
-          : concern
-            ? `${primaryStation?.name ?? 'The nearest monitor'} is outside a loaded screening reference. This supports follow-up; it does not confirm the report.`
-            : `${primaryStation?.name ?? 'The nearest monitor'} is inside the loaded screening references. That does not invalidate a local incident.`,
+      applicable: true,
+      detail: category === 'waste'
+        ? 'No waste-monitoring reading exists to compare.'
+        : !hasMonitor
+          ? 'No category-matched reading to compare.'
+          : category === 'industrial'
+            ? hasReferenceSignal
+              ? 'A reading is present; the comparison is shown, but no stack reference is loaded.'
+              : 'Relative stack magnitude across nearby monitors.'
+            : concern
+              ? `${primaryStation?.name ?? 'The nearest monitor'} is outside a loaded screening reference. This supports follow-up; it does not confirm the report.`
+              : `${primaryStation?.name ?? 'The nearest monitor'} is inside the loaded screening references. That does not invalidate a local incident.`,
     },
     {
       id: 'weather',
@@ -643,7 +650,7 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
       label: 'Dispersion context',
       points: ventilated ? 10 : 0,
       max: 10,
-      applicable: Boolean(weather),
+      applicable: true,
       detail: !weather
         ? 'No wind or rain context.'
         : ventilated

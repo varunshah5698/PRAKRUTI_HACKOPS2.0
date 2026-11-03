@@ -31,7 +31,10 @@ Implementation details:
 | `persistent_deterioration` | air | 20 | Persistence, nearby context, risk progression, investigation |
 | `sensor_malfunction` | air | 12 | Implausible values, SUSPECT quality, confidence reduction, alert suppression, maintenance recommendation |
 | `neighbouring_station_changes` | air | 16 | Divergent neighbour, spatial uncertainty, no fabricated zone |
+| `construction_dust` | air | 16 | PM10-led dust episode, control inspection, no named source |
+| `festival_firecracker` | air | 14 | PM2.5 + SO2 burst, sensitive-group advice, neutral enforcement language |
 | `water_discharge` | water | 14 | pH/DO deterioration, reference criteria, report evidence, investigation |
+| `monsoon_drain_overflow` | water | 12 | Overflow, turbidity/DO deterioration, contact advice, outfall inspection |
 | `waste_report` | waste | 10 | Unverified → verified reports, repeat hotspot, risk escalation |
 | `industrial_emission` | industrial | 16 | Relative stack anomaly, no legal threshold, investigation |
 

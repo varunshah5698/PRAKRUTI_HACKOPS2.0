@@ -306,6 +306,57 @@ export function buildSimulationRecommendations(ctx: RecommendationContext): Simu
       });
     }
 
+    if (ctx.scenario === 'construction_dust' && ctx.step >= 3) {
+      add({
+        audience: 'FIELD',
+        priority: 'PRIORITY',
+        title: 'Check dust controls at the active works',
+        action:
+          'Inspect the nearest construction or road-works site for uncovered stockpiles, unsealed haul routes, dry cutting, track-out and missing wheel washing. Photograph the controls and record the wind direction.',
+        reason:
+          `PM10 is ${numberText(pm10?.value)} ${pm10?.unit ?? 'µg/m³'}${pm10 ? ` (${numberText(pm10.value / 100)}× its screening reference)` : ''} while PM2.5 is ${numberText(pm25?.value)} ${pm25?.unit ?? 'µg/m³'}. A coarse-particle gap of this size points to mechanical dust rather than combustion. Wind is ${windText}.`,
+        evidence: [readingText('pm10') ?? 'PM10 elevated', readingText('pm25') ?? 'PM2.5 lower', `Dispersion ${dispersionText}`],
+        confidence,
+      });
+      add({
+        audience: 'AUTHORITY',
+        priority: 'ROUTINE',
+        title: 'Call the works a screening lead, not a named source',
+        action:
+          'Record the inspection time, activity and controls observed. Do not name a contractor or allege a breach until the site record and the monitor record are linked.',
+        reason:
+          'A single downwind monitor cannot establish which site produced the dust. The PM10/PM2.5 contrast strengthens the dust hypothesis but does not identify the operator.',
+        evidence: [ctx.stationName, 'No source attribution applied'],
+        confidence: 'MEDIUM',
+      });
+    }
+
+    if (ctx.scenario === 'festival_firecracker' && ctx.step >= 4) {
+      const so2 = reading('so2');
+      add({
+        audience: 'PUBLIC',
+        priority: ctx.risk.alertState === 'CRITICAL' ? 'IMMEDIATE' : 'WATCH',
+        title: 'Avoid firecracker smoke, especially if you are sensitive',
+        action:
+          'Stay indoors with windows closed while the burst is active. Keep children, older adults and anyone with asthma or heart disease away from the smoke; use a well-fitted mask if you must go out.',
+        reason:
+          `The episode raises both PM2.5 (${numberText(pm25?.value)} ${pm25?.unit ?? 'µg/m³'}) and SO2 (${numberText(so2?.value)} ${so2?.unit ?? 'µg/m³'}). Firecracker smoke mixes fine particles with irritant gases, so the usual particle-only advice is not enough.`,
+        evidence: [readingText('pm25') ?? 'PM2.5 elevated', readingText('so2') ?? 'SO2 elevated', `Alert ${ctx.risk.alertState.replace(/_/g, ' ')}`],
+        confidence,
+      });
+      add({
+        audience: 'AUTHORITY',
+        priority: 'ROUTINE',
+        title: 'Keep enforcement language conditional',
+        action:
+          'If a local restriction applies, cite the actual rule and the evidence. Otherwise describe a short-duration emission episode and avoid naming individuals or neighbourhoods.',
+        reason:
+          'The replay detects a multi-pollutant burst but does not know which source, permission or local rule applies. The public-health advice can be firm without an unverified enforcement claim.',
+        evidence: ['No permit rule evaluated', 'PM2.5 + SO2 episode'],
+        confidence: 'MEDIUM',
+      });
+    }
+
     if (ctx.neighbour) {
       add({
         audience: 'AUTHORITY',
@@ -374,6 +425,30 @@ export function buildSimulationRecommendations(ctx: RecommendationContext): Simu
           'The ruleset compares against CPCB outdoor bathing criteria for context. It does not establish a discharge offence or identify the responsible party.',
         evidence: ['WATER_REFERENCE_V1', 'No legal determination'],
         confidence: 'HIGH',
+      });
+    }
+    if (ctx.scenario === 'monsoon_drain_overflow' && ctx.step >= 2) {
+      add({
+        audience: 'PUBLIC',
+        priority: severe ? 'IMMEDIATE' : 'WATCH',
+        title: 'Avoid walking or cycling through drain overflow',
+        action:
+          'Do not enter floodwater or overflow near the outfall. Wash exposed skin with clean water, keep children away, and report the overflow location with a photo from a safe distance.',
+        reason:
+          `Turbidity is ${numberText(turbidity?.value, 0)} NTU and dissolved oxygen is ${numberText(dissolvedOxygen?.value)} mg/L. Overflow can carry sewage, debris and contaminants; the water can look clear and still be unsafe.`,
+        evidence: [readingText('turbidity') ?? 'Turbidity elevated', readingText('do') ?? 'DO low', ctx.stationName],
+        confidence,
+      });
+      add({
+        audience: 'AUTHORITY',
+        priority: 'PRIORITY',
+        title: 'Inspect the overflowing outfall while it is active',
+        action:
+          'Record the outfall identifier, flow and colour, sample upstream and downstream of the discharge, and notify the drainage operator if the overflow is not an emergency release.',
+        reason:
+          'The source survey has to happen while the overflow is running; a later visit only shows the receded condition. A downstream sample separates an outfall signal from ambient creek water.',
+        evidence: [readingText('turbidity') ?? 'Turbidity elevated', `Step ${ctx.step + 1} of ${totalSteps}`, 'Reference criteria only'],
+        confidence,
       });
     }
   }

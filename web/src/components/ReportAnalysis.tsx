@@ -924,7 +924,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
             <details className="mt-3 rounded-xl border border-dashed border-[#dbe5d6] bg-white/40 p-2.5">
               <summary className="cursor-pointer text-[8px] font-semibold uppercase tracking-[0.1em] text-[#557480]">How this is scored</summary>
               <p className="mt-2 text-[8px] leading-relaxed text-[#66766b]">
-                Evidence integrity is 45% of the index, environmental context 30%, and community corroboration 25%. Missing factors score zero; factors that do not apply are excluded. This is not an official evidence grade.
+                Evidence integrity is 45% of the index, environmental context 30%, and community corroboration 25%. Each dimension is out of 100 and missing evidence scores zero; nothing is reweighted to make a gap disappear. This is not an official evidence grade.
               </p>
             </details>
           </div>

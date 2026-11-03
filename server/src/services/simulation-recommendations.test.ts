@@ -72,6 +72,65 @@ describe('simulation recommendations', () => {
     expect(items.every((item) => !item.reason.includes('environmental deterioration'))).toBe(true);
   });
 
+  it('ties construction-dust advice to the PM10/PM2.5 contrast', () => {
+    const items = buildSimulationRecommendations({
+      scenario: 'construction_dust',
+      category: 'air',
+      step: 6,
+      totalSteps: 16,
+      stationName: 'Test monitor',
+      risk: risk(),
+      values: {
+        pm25: { value: 76, unit: 'µg/m³', qualityState: 'VALID' },
+        pm10: { value: 302, unit: 'µg/m³', qualityState: 'VALID' },
+      },
+      conditions,
+    });
+    const dust = items.find((item) => item.title.toLowerCase().includes('dust controls'));
+    expect(dust?.reason).toContain('PM10');
+    expect(dust?.reason).toContain('PM2.5');
+    expect(items.some((item) => item.title.toLowerCase().includes('screening lead'))).toBe(true);
+  });
+
+  it('adds mixed-pollutant and neutral-enforcement advice for a firecracker burst', () => {
+    const items = buildSimulationRecommendations({
+      scenario: 'festival_firecracker',
+      category: 'air',
+      step: 5,
+      totalSteps: 14,
+      stationName: 'Test monitor',
+      risk: risk(),
+      values: {
+        pm25: { value: 220, unit: 'µg/m³', qualityState: 'VALID' },
+        so2: { value: 105, unit: 'µg/m³', qualityState: 'VALID' },
+      },
+      conditions,
+    });
+    expect(items.some((item) => item.title.toLowerCase().includes('firecracker smoke'))).toBe(true);
+    expect(items.some((item) => item.reason.includes('SO2'))).toBe(true);
+    expect(items.some((item) => item.title.toLowerCase().includes('enforcement language'))).toBe(true);
+  });
+
+  it('adds overflow contact advice and an outfall inspection for drain overflow', () => {
+    const items = buildSimulationRecommendations({
+      scenario: 'monsoon_drain_overflow',
+      category: 'water',
+      step: 5,
+      totalSteps: 12,
+      stationName: 'Test outfall',
+      risk: risk({ category: 'water', riskScore: 78, alertState: 'CRITICAL', observedAlertState: 'CRITICAL' }),
+      values: {
+        ph: { value: 5.9, unit: 'pH', qualityState: 'VALID' },
+        do: { value: 2.8, unit: 'mg/L', qualityState: 'VALID' },
+        turbidity: { value: 190, unit: 'NTU', qualityState: 'VALID' },
+      },
+      conditions,
+    });
+    expect(items.some((item) => item.title.toLowerCase().includes('drain overflow'))).toBe(true);
+    expect(items.some((item) => item.title.toLowerCase().includes('overflowing outfall'))).toBe(true);
+    expect(items.some((item) => item.reason.includes('Turbidity'))).toBe(true);
+  });
+
   it('keeps industrial advice relative and explicitly non-regulatory', () => {
     const items = buildSimulationRecommendations({
       scenario: 'industrial_emission',
