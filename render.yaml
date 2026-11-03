@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: prakruti
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node server/dist/db/setup.js && npm start
+    initialDeployHook: node server/dist/db/seed.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata
+      - key: DEMO_MODE
+        value: 'true'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prakruti-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          name: prakruti
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+databases:
+  - name: prakruti-db
+    databaseName: prakruti
+    user: prakruti
+    plan: free
+    region: singapore
+    postgresMajorVersion: '16'
+    ipAllowList: []

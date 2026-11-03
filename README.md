@@ -114,6 +114,22 @@ npm start
 
 The API serves `web/dist` when present.
 
+## Deploy on Render
+
+`render.yaml` provisions one Node web service (API + built SPA) and a PostGIS-enabled Postgres database.
+
+1. Push this repository to GitHub.
+2. In Render: **New → Blueprint**, select the repository, and click **Apply**.
+3. That is it. On boot the service applies `server/src/db/schema.sql`; after the first successful deploy Render runs `db:seed` once to create the demo dataset.
+
+Notes:
+
+- The free web plan spins down when idle, so the first request after a pause is slow.
+- Evidence photographs are stored on the service's local disk and are lost on redeploy or restart (free plans have no persistent disk).
+- Optional integrations (River AI, email, data.gov.in, OpenAQ) are added as environment variables in the Render dashboard; see `.env.example`.
+- If you attach a custom domain, update `FRONTEND_URL` to `https://your-domain` so CORS and the same-origin check accept it.
+- The database is private-network only (`ipAllowList: []`); use Render's dashboard shell to inspect it.
+
 ## Demo accounts
 
 Password for all seeded accounts: `Demo@1234`
