@@ -104,7 +104,7 @@ For trained forecasts, the adapter also backfills the OpenAQ hourly PM2.5 series
 ## Vision AI
 
 - Separate `VISION_BASE_URL`, `VISION_MODEL`, `VISION_API_KEY` and optional `VISION_FALLBACK_MODELS`.
-- Set `VISION_FALLBACK_BASE_URL` and `VISION_FALLBACK_API_KEY` to run fallback models on a second provider; otherwise fallbacks reuse the primary endpoint.
+- Set `VISION_FALLBACK_BASE_URL` to run fallback models on a second provider; a River-hosted fallback reuses `RIVER_API_KEY`, other providers need `VISION_FALLBACK_API_KEY`. Without a fallback base URL, fallbacks reuse the primary endpoint.
 - This workspace uses Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`, then River `moonshotai/Kimi-K3` and `zai-org/GLM-5.3-Flash` when the Groq rate limit is hit; keys are only in `.env.local`.
 - Any OpenAI-compatible vision endpoint works. Google Gemini remains supported through its native `generateContent` path.
 - Without configuration, image analysis is `NOT_CONFIGURED`; the report still stores the private image and metadata.
