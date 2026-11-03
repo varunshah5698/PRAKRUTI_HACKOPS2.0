@@ -666,6 +666,7 @@ export async function getLocationAnalysis(input: { lat: number; lng: number; cat
             ST_Distance(r.location, ST_SetSRID(ST_MakePoint($2,$1),4326)::geography)::float8 AS distance_m
      FROM environmental_reports r LEFT JOIN localities l ON l.id = r.locality_id
      WHERE r.submitted_at > now() - interval '30 days'
+       AND r.is_simulated=false
        AND r.category = $3
        AND ST_DWithin(r.location, ST_SetSRID(ST_MakePoint($2,$1),4326)::geography, 3000)
      ORDER BY distance_m ASC
@@ -679,6 +680,7 @@ export async function getLocationAnalysis(input: { lat: number; lng: number; cat
      FROM environmental_incidents i
      WHERE i.detected_at > now() - interval '90 days'
        AND i.simulation_session_id IS NULL
+       AND i.is_simulated=false
        AND i.category = $3
        AND ST_DWithin(i.location, ST_SetSRID(ST_MakePoint($2,$1),4326)::geography, 5000)
      ORDER BY distance_m ASC
@@ -690,6 +692,7 @@ export async function getLocationAnalysis(input: { lat: number; lng: number; cat
     `SELECT a.id, a.public_ref, a.category, a.level, a.state, a.trigger_type, a.title, a.triggered_at, a.is_simulated
      FROM environmental_alerts a
      WHERE a.state <> 'CLOSED'
+       AND a.is_simulated=false
        AND a.category = $3
        AND (($1::uuid IS NOT NULL AND a.locality_id = $1) OR ($2::uuid IS NOT NULL AND a.station_id = $2))
      ORDER BY CASE a.level WHEN 'CRITICAL' THEN 0 WHEN 'EARLY_WARNING' THEN 1 WHEN 'WATCH' THEN 2 ELSE 3 END,
@@ -716,7 +719,7 @@ export async function getLocationAnalysis(input: { lat: number; lng: number; cat
           localityName: locality?.name ?? null,
           lat,
           lng,
-          pm25: primary?.values.pm25?.value ?? cams?.pm25 ?? null,
+          pm25: primary && !primary.isStale ? primary.values.pm25?.value ?? cams?.pm25 ?? null : cams?.pm25 ?? null,
         },
       ],
       new Date(),

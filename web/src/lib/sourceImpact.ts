@@ -75,10 +75,10 @@ export const SOURCE_COLORS = ['#c2410c', '#b45309', '#9a3412', '#a16207', '#7c2d
 export const sourceColor = (rank: number) => SOURCE_COLORS[(Math.max(1, rank) - 1) % SOURCE_COLORS.length];
 
 export const IMPACT_TONES: Record<string, { color: string; background: string; border: string; label: string }> = {
-  HIGH: { color: '#9a3412', background: '#fdf0e7', border: '#f0c9ae', label: 'High influence' },
-  MODERATE: { color: '#a16207', background: '#fdf7e3', border: '#ecdcae', label: 'Moderate influence' },
-  LOW: { color: '#4d7d40', background: '#eff8e9', border: '#cfe6c2', label: 'Low influence' },
-  NONE: { color: '#66766b', background: '#f5f8f2', border: '#dfe6db', label: 'No screened influence' },
+  HIGH: { color: '#9a3412', background: '#fdf0e7', border: '#f0c9ae', label: 'High screen share' },
+  MODERATE: { color: '#a16207', background: '#fdf7e3', border: '#ecdcae', label: 'Moderate screen share' },
+  LOW: { color: '#4d7d40', background: '#eff8e9', border: '#cfe6c2', label: 'Low screen share' },
+  NONE: { color: '#66766b', background: '#f5f8f2', border: '#dfe6db', label: 'No screened share' },
 };
 
 export const impactTone = (level?: string | null) => IMPACT_TONES[String(level ?? 'NONE').toUpperCase()] ?? IMPACT_TONES.NONE;

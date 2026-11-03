@@ -9,7 +9,7 @@
     "stackHeightM": null,
     "emissionIndex": null,
     "capacityMW": 930,
-    "primaryPollutant": "SO₂ / NOₓ",
+    "primaryPollutant": null,
     "isSimulated": false,
     "source": "OpenStreetMap",
     "osmType": "way",

@@ -427,7 +427,7 @@ export async function getMapTimeline(filters: MapFilters) {
     if (row.pollutant_code === 'pm25') entry.pm25 = Number(row.value);
     if (row.pollutant_code === 'pm10') entry.pm10 = Number(row.value);
   }
-  const modelled = [...camsByLocality.values()];
+  const modelled = category === 'air' || category === 'industrial' ? [...camsByLocality.values()] : [];
 
   return {
     at: at.toISOString(),
@@ -488,7 +488,7 @@ export async function getStationDetail(stationId: string) {
   const anomaly = anomalyScore(history);
 
   let sourceAttribution: Record<string, unknown> | null = null;
-  if (station.stationType === 'AIR_CAAQMS') {
+  if (station.stationType === 'AIR_CAAQMS' && !station.isStale) {
     const impact = await computeSourceImpactAt(
       [
         {
@@ -522,7 +522,8 @@ export async function getStationDetail(stationId: string) {
             (SELECT observed_at FROM environmental_observations o WHERE o.station_id=s.id
               ORDER BY observed_at DESC LIMIT 1) AS latest_observed_at
      FROM monitoring_stations s
-     WHERE s.id <> $1 AND ST_DWithin(s.location, (SELECT location FROM monitoring_stations WHERE id=$1), 6000)
+     WHERE s.id <> $1 AND s.is_simulated=false
+       AND ST_DWithin(s.location, (SELECT location FROM monitoring_stations WHERE id=$1), 6000)
      ORDER BY distance_m LIMIT 6`,
     [stationId],
   );
@@ -531,7 +532,8 @@ export async function getStationDetail(stationId: string) {
     `SELECT r.id, r.public_ref, r.category, r.incident_type, r.status, r.verification_state, r.submitted_at,
             ST_Distance(r.location, (SELECT location FROM monitoring_stations WHERE id=$1))::float8 AS distance_m
      FROM environmental_reports r
-     WHERE ST_DWithin(r.location, (SELECT location FROM monitoring_stations WHERE id=$1), 3000)
+     WHERE r.is_simulated=false
+       AND ST_DWithin(r.location, (SELECT location FROM monitoring_stations WHERE id=$1), 3000)
      ORDER BY r.submitted_at DESC LIMIT 8`,
     [stationId],
   );
@@ -539,7 +541,7 @@ export async function getStationDetail(stationId: string) {
   const alerts = await query<Record<string, unknown>>(
     `SELECT id, public_ref, category, level, state, trigger_type, title, summary, triggered_at, is_simulated
      FROM environmental_alerts WHERE (station_id=$1 OR (entity_type='station' AND entity_id=$1))
-       AND simulation_session_id IS NULL
+       AND simulation_session_id IS NULL AND is_simulated=false
      ORDER BY triggered_at DESC LIMIT 8`,
     [stationId],
   );

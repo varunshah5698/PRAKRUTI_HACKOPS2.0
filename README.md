@@ -6,7 +6,7 @@ This is a working demonstration application, not a static dashboard. It connects
 
 - an environmental command centre,
 - an immersive Atmosphere lab with 3D dispersion columns, scenario forecasting and model transparency,
-- an interactive 3D Mumbai map with timeline replay, simulated factory plumes and monitor source attribution,
+- an interactive 3D Mumbai map with timeline replay, real OpenStreetMap facility locations, a wind-alignment screen and CAMS modelled context,
 - predictive intelligence with explicit model status,
 - a grounded AI analyst,
 - citizen reporting with private evidence,
@@ -21,9 +21,9 @@ This is a working demonstration application, not a static dashboard. It connects
 | Area | Status in this deployment |
 |---|---|
 | CPCB CAAQMS | **NOT CONNECTED** — no data.gov.in API key is configured. The official resource ID is pre-filled. |
-| MPCB | **LIVE SUBSET via OpenAQ** — 12 Mumbai stations (MPCB/IITM operators); 7 reporting within 6 hours; not a direct MPCB API |
-| OpenAQ | **CONNECTED locally** — key in gitignored `.env.local`; 12 Mumbai stations, hourly PM2.5 backfill, live polling. Stations stale for more than 6 hours are excluded from current counts and the current map. |
-| Demo monitoring stations | **SIMULATION DATA** — 15 synthetic stations, every record `is_simulated=true` |
+| MPCB | **ARCHIVE SUBSET via OpenAQ** — 29 Mumbai stations (MPCB/IITM/BMC operators); 7 have readings from the last 24 hours; not a direct MPCB API |
+| OpenAQ | **ARCHIVE IMPORTED, LIVE KEY NOT SET** — `OPENAQ_API_KEY` is empty, so no new OpenAQ polls run. Imported station readings are shown as real records with their last-observed age; no synthetic station stands in for them. |
+| Demo monitoring stations | **SIMULATION DATA, EXCLUDED FROM THE MAP** — synthetic stations remain for seeded demo screens but the map queries only non-simulated stations. |
 | Weather | **LIVE** — Open-Meteo at station coordinates |
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |
 | LightGBM / quantile / exceedance models | **TRAINED LOCALLY** — 23-station OpenAQ Mumbai extract, 2025-03-01 to 2026-10-27; temporal and spatial-holdout metrics in `ml/artifacts/model_card.json`. Artifacts are gitignored, so a clean or Render deployment stays `NOT_TRAINED` until they are force-added. |
@@ -35,7 +35,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |
 | Live City open data | **LIVE / MODELLED, LABELLED** — Open-Meteo weather, CAMS air, marine, flood and archive layers; MET Norway weather fallback; OpenStreetMap Nominatim/Overpass; Valhalla walking routes; NASA EONET; USGS. Context only, never station evidence. |
-| Industrial source screen | **SIMULATED CATALOGUE** — 10 synthetic factory sources. Plumes and monitor shares are a distance/wind screening estimate, not measured apportionment or a regulatory finding. |
+| Industrial source screen | **REAL OSM LOCATIONS, SCREENING ONLY** — 13 named OpenStreetMap facilities. Corridors and monitor shares are a distance/wind screening estimate; OSM has no stack height or emission measurement for these features. Not a measured apportionment or regulatory finding. |
 | Database | PostgreSQL 18 + PostGIS 3.7 |
 
 No synthetic reading is presented as a CPCB reading. No forecast is presented as trained ML output. No automated finding is presented as an official regulatory determination.
@@ -224,7 +224,8 @@ The API runs a live polling service:
 
 - Open-Meteo current weather every 60 seconds (upstream values change every 900 seconds; polling only shortens detection delay).
 - CAMS modelled PM2.5/PM10 every 300 seconds.
-- In demo mode, simulation-labelled station readings tick every 60 seconds so the demo behaves like a live network.
+- In demo mode, simulation-labelled station readings tick every 60 seconds for the seeded demo screens. The map excludes them; its station layer is real-only.
+- The map shows real OpenAQ station records even when their last reading is stale, with an amber age ring and the last-observed timestamp. Add `OPENAQ_API_KEY` or `DATA_GOV_IN_API_KEY` to resume live CPCB/OpenAQ ingestion.
 - Risk evaluation runs every 5 minutes.
 
 Configure with `LIVE_ENABLED`, `LIVE_WEATHER_INTERVAL_SECONDS`, `LIVE_AQI_INTERVAL_SECONDS` and `LIVE_SIMULATION_INTERVAL_SECONDS`. Every row keeps `observed_at` (upstream validity) and `retrieved_at` (fetch time).

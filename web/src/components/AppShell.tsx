@@ -71,7 +71,7 @@ const groups: Array<{
 const titles: Array<[string, string]> = [
   ['/dashboard', 'Environmental command centre'],
   ['/atmosphere', 'Atmosphere lab · 3D air intelligence'],
-  ['/map', 'Mumbai environmental map'],
+  ['/map', 'Mumbai map'],
   ['/city', 'Live city pulse'],
   ['/news', 'Environmental newsroom'],
   ['/intelligence/predictions', 'Predictive environmental intelligence'],

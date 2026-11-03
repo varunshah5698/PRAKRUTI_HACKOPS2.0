@@ -749,6 +749,9 @@ function MumbaiMapInner({
           'text-halo-width': 2,
         },
       });
+      for (const layer of ['ep-modelled-halo', 'ep-modelled', 'ep-modelled-labels']) {
+        if (map.getLayer(layer) && map.getLayer('ep-station-halo')) map.moveLayer(layer, 'ep-station-halo');
+      }
       map.addSource('ep-reports', { type: 'geojson', data: reportFeatures(dataRef.current.reports) });
       map.addLayer({
         id: 'ep-reports',

@@ -804,7 +804,8 @@ function SourceSheet({
 
           <div className="rounded-xl border border-[#ecdfd2] bg-[#fdf8f2] p-4 text-[9px] leading-relaxed text-[#8a7565]">
             <p>{source.note}</p>
-            <p className="mt-1">Facility location and tags are from OpenStreetMap (ODbL). Shares are a distance-and-wind screening estimate, not a measured apportionment. No legal threshold is applied and this is not a regulatory determination.</p>
+            {source.osmType && source.osmId ? <p className="mt-1">OSM feature {source.osmType}/{source.osmId} · OpenStreetMap (ODbL).</p> : null}
+            <p className="mt-1">Shares are a distance-and-wind screening estimate, not a measured apportionment. No legal threshold is applied and this is not a regulatory determination.</p>
           </div>
         </div>
       ) : null}
@@ -1121,7 +1122,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
               <Select aria-label="Source" value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="mt-1 h-9 text-[11px]">
                 <option value="">All sources</option>
                 <option value="openaq">OpenAQ stations</option>
-                <option value="open-meteo-cams">CAMS modelled</option>
+                <option value="data-gov-in-air">CPCB / data.gov.in</option>
               </Select>
             </div>
             <div>
@@ -1447,7 +1448,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
               </div>
             </SurfaceCard>
             <SurfaceCard>
-              <SurfaceHeader label="Coverage" title="What this map can say" subtitle="Boundary, uncertainty and nearby citizen evidence" />
+              <SurfaceHeader label="Coverage" title="What this map can say" subtitle="Boundary, uncertainty and data provenance" />
               <div className="px-5 pb-5">
                 <p className="text-[9.5px] leading-relaxed text-[#6f7a70]">{data?.estimatedZoneNote}</p>
                 <div className="mt-3 rounded-2xl border border-[#ecefe8] bg-[#fbfcf9] p-3 text-[8.5px] leading-relaxed text-[#8a938b]">
