@@ -87,19 +87,6 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.post('/api/v1/internal/cleanup-test-reports', async (req, res) => {
-  const token = process.env.CLEANUP_TOKEN;
-  if (!token || req.get('x-cleanup-token') !== token) {
-    res.status(404).end();
-    return;
-  }
-  const deleted = await pool.query<{ public_ref: string }>(
-    `DELETE FROM environmental_reports WHERE public_ref = ANY($1) RETURNING public_ref`,
-    [['EP-R-2026-1010', 'EP-R-2026-1011', 'EP-R-2026-1020']],
-  );
-  res.json({ deleted: deleted.rows.map((row) => row.public_ref) });
-});
-
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/public', publicRouter);
 app.use('/api/v1/dashboard', dashboardRouter);

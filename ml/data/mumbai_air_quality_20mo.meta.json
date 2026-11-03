@@ -1,6 +1,6 @@
 {
   "dataset": "Mumbai PM2.5 forecasting extract",
-  "built_at": "2026-11-03T08:17:10.823368+00:00",
+  "built_at": "2026-11-03T08:18:37.001169+00:00",
   "period": {
     "start": "2025-03-01T00:00:00Z",
     "end": "2026-10-27T00:00:00Z",
@@ -243,7 +243,7 @@
           "sensor_id": 12235835,
           "source_unit": "%",
           "coverage": 0.7829,
-          "outliers_removed": 691
+          "outliers_removed": 2938
         },
         "wind_speed": {
           "sensor_id": 14340924,
@@ -366,8 +366,8 @@
         "humidity": {
           "sensor_id": 12235897,
           "source_unit": "%",
-          "coverage": 0.6253,
-          "outliers_removed": 781
+          "coverage": 0.6122,
+          "outliers_removed": 1104
         },
         "wind_speed": {
           "sensor_id": 14340936,
@@ -475,8 +475,8 @@
         "humidity": {
           "sensor_id": 12236436,
           "source_unit": "%",
-          "coverage": 0.361,
-          "outliers_removed": 5017
+          "coverage": 0.347,
+          "outliers_removed": 4960
         },
         "wind_speed": {
           "sensor_id": 14342067,
@@ -599,7 +599,7 @@
           "sensor_id": 12252659,
           "source_unit": "%",
           "coverage": 0.1183,
-          "outliers_removed": 494
+          "outliers_removed": 799
         },
         "wind_speed": {
           "sensor_id": 14341951,
@@ -723,7 +723,7 @@
           "sensor_id": 12243931,
           "source_unit": "%",
           "coverage": 0.6724,
-          "outliers_removed": 31
+          "outliers_removed": 229
         },
         "wind_speed": {
           "sensor_id": 14340940,
@@ -1070,7 +1070,7 @@
           "sensor_id": 12236410,
           "source_unit": "%",
           "coverage": 0.5784,
-          "outliers_removed": 3001
+          "outliers_removed": 3953
         },
         "wind_speed": {
           "sensor_id": 14341019,
@@ -1193,7 +1193,7 @@
           "sensor_id": 12236395,
           "source_unit": "%",
           "coverage": 0.6835,
-          "outliers_removed": 6926
+          "outliers_removed": 7582
         },
         "wind_speed": {
           "sensor_id": 14342058,
@@ -1302,7 +1302,7 @@
           "sensor_id": 12236482,
           "source_unit": "%",
           "coverage": 0.5236,
-          "outliers_removed": 21
+          "outliers_removed": 116
         },
         "wind_speed": {
           "sensor_id": 14342084,
@@ -1424,8 +1424,8 @@
         "humidity": {
           "sensor_id": 12235915,
           "source_unit": "%",
-          "coverage": 0.6428,
-          "outliers_removed": 390
+          "coverage": 0.6419,
+          "outliers_removed": 862
         },
         "wind_speed": {
           "sensor_id": 14341956,
@@ -1548,7 +1548,7 @@
           "sensor_id": 12708247,
           "source_unit": "%",
           "coverage": 0.0021,
-          "outliers_removed": 16
+          "outliers_removed": 23
         },
         "wind_speed": {
           "sensor_id": 14342049,
@@ -1789,8 +1789,8 @@
         "humidity": {
           "sensor_id": 12238349,
           "source_unit": "%",
-          "coverage": 0.8039,
-          "outliers_removed": 2071
+          "coverage": 0.8001,
+          "outliers_removed": 2596
         },
         "wind_speed": {
           "sensor_id": 14341566,
@@ -1913,7 +1913,7 @@
           "sensor_id": 12238376,
           "source_unit": "%",
           "coverage": 0.828,
-          "outliers_removed": 3328
+          "outliers_removed": 4324
         },
         "wind_speed": {
           "sensor_id": 14341575,
@@ -2035,8 +2035,8 @@
         "humidity": {
           "sensor_id": 12238385,
           "source_unit": "%",
-          "coverage": 0.804,
-          "outliers_removed": 468
+          "coverage": 0.7985,
+          "outliers_removed": 577
         },
         "wind_speed": {
           "sensor_id": 14341578,
@@ -2159,7 +2159,7 @@
           "sensor_id": 12238412,
           "source_unit": "%",
           "coverage": 0.8499,
-          "outliers_removed": 125
+          "outliers_removed": 522
         },
         "wind_speed": {
           "sensor_id": 14341587,
@@ -2282,7 +2282,7 @@
           "sensor_id": 12238568,
           "source_unit": "%",
           "coverage": 0.8373,
-          "outliers_removed": 3
+          "outliers_removed": 19
         },
         "wind_speed": {
           "sensor_id": 14341641,
@@ -2404,8 +2404,8 @@
         "humidity": {
           "sensor_id": 12238577,
           "source_unit": "%",
-          "coverage": 0.8505,
-          "outliers_removed": 411
+          "coverage": 0.8473,
+          "outliers_removed": 486
         },
         "wind_speed": {
           "sensor_id": 14341644,
@@ -2528,8 +2528,8 @@
         "humidity": {
           "sensor_id": 12238586,
           "source_unit": "%",
-          "coverage": 0.6806,
-          "outliers_removed": 232
+          "coverage": 0.6779,
+          "outliers_removed": 517
         },
         "wind_speed": {
           "sensor_id": 14342263,
@@ -2652,8 +2652,8 @@
         "humidity": {
           "sensor_id": 12238595,
           "source_unit": "%",
-          "coverage": 0.5206,
-          "outliers_removed": 1901
+          "coverage": 0.5175,
+          "outliers_removed": 2705
         },
         "wind_speed": {
           "sensor_id": 14342266,
@@ -2776,7 +2776,7 @@
           "sensor_id": 12238604,
           "source_unit": "%",
           "coverage": 0.841,
-          "outliers_removed": 897
+          "outliers_removed": 1760
         },
         "wind_speed": {
           "sensor_id": 14341647,
@@ -2878,6 +2878,6 @@
     "gaps": "left as NaN; no interpolation",
     "provider_filter": "station owner/provider contains MPCB, BMC, IITM or CPCB; location active within 21 days"
   },
-  "sha256": "dc1f3ae69292232e88b7cabca9556b82a0c35292ddd9c1ae4e50a98a0f16d5a5",
+  "sha256": "e5a2aa4d348bc871be3de93238e73e958bf2a607ee252e974ac8b30ca3fcff46",
   "attribution": "Data from OpenAQ (CPCB/MPCB/BMC/IITM) and Open-Meteo (ERA5). Check upstream licences before redistribution."
 }
