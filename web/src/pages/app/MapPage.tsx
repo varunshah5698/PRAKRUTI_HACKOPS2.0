@@ -659,12 +659,12 @@ function SourceSheet({
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-[#5a4636]">
               When wind arrives from <strong>{wind?.fromLabel ?? '—'}</strong> at {number(wind?.speedKmh ?? 0)} km/h, the plume footprint points{' '}
-              {source.plumeBearingDeg}° and can cross {source.estimatedLandKm2} km² of land in this screen. Monitors and localities inside that footprint are flagged below.
+              {source.plumeBearingDeg}° and can cover about {source.estimatedLandKm2} km² in this screen. Monitors and localities inside that footprint are flagged below.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-[#6f5b4b] sm:grid-cols-4">
               <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Stack</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.stackHeightM} m</p></div>
               <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Pollutant</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.primaryPollutant}</p></div>
-              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Land footprint</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.estimatedLandKm2} km²</p></div>
+              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Plume footprint</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.estimatedLandKm2} km²</p></div>
               <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Wind from</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{wind?.fromLabel ?? '—'} · {number(wind?.speedKmh ?? 0)} km/h</p></div>
             </div>
           </div>
@@ -1399,8 +1399,8 @@ export function MapPage() {
           <Card className="xl:col-span-12">
             <CardHeader>
               <div>
-                <CardTitle>Land and locality flags</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Places where the wind screen places a factory plume over land</p>
+                <CardTitle>Plume and locality flags</CardTitle>
+                <p className="mt-1 text-[10px] text-[#66766b]">Places where the wind screen places a factory plume across land and water</p>
               </div>
               <Badge tone="amber">{sourceImpact.landImpact.impactedAreaKm2} km² screened</Badge>
             </CardHeader>

@@ -19,7 +19,7 @@ Implementation details:
 - Risk assessments are persisted under entity type `simulation_station` with the session UUID, not the real station entity.
 - Simulated alerts use the session UUID as entity id, so they do not collide with real station alerts.
 - Simulated alerts, notifications and incidents are excluded from `/alerts`, `/incidents` and `/notifications` operational lists.
-- Reset changes `current_step` and status only. It never deletes real observations.
+- Reset rewinds to step 0 and rebuilds derived simulated alerts for that position. It never deletes real observations or simulated incidents.
 - Email previews are previews. Replay-generated notifications are `SIMULATED`; no real mailing list is used.
 
 ## Scenarios
@@ -89,7 +89,7 @@ the dispersion context visible rather than decorative.
 - Reset
 - Email preview (public and authority)
 - Create simulated incident
-- Step explorer (inspect an earlier step without changing playback)
+- Step explorer and phase-bar scrubber (move the replay position; simulated alerts are rebuilt for the selected step)
 - Event history and current risk/confidence
 
 ## API
@@ -102,6 +102,7 @@ GET  /api/v1/simulations/:id
 POST /api/v1/simulations/:id/play
 POST /api/v1/simulations/:id/pause
 POST /api/v1/simulations/:id/step
+POST /api/v1/simulations/:id/seek                  { step }
 POST /api/v1/simulations/:id/reset
 POST /api/v1/simulations/:id/email-preview
 POST /api/v1/simulations/:id/incident

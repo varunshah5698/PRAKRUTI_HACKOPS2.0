@@ -416,7 +416,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
   const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
 
   const primaryStation = analysis.primaryStation;
-  const firstCommunity = analysis.nearbySameCategory[0] ?? enrichment.nearbyReports[0] ?? null;
+  const firstCommunity = analysis.nearbySameCategory[0] ?? null;
   const selectedStation = selected.kind === 'station' ? analysis.stations.find((station) => station.id === selected.id) ?? null : null;
   const selectedCommunity = selected.kind === 'community' ? enrichment.nearbyReports.find((row) => row.id === selected.id) ?? null : null;
   const activeDimension = analysis.dimensions.find((dimension) => dimension.key === dimensionKey) ?? analysis.dimensions[0];
@@ -629,7 +629,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
 
         <div className="grid lg:grid-cols-[1fr_320px]">
           <div
-            className="atmo-scene ra-scene h-[440px] sm:h-[520px]"
+            className="atmo-scene ra-scene h-[440px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8fc47a] sm:h-[520px]"
             data-step={STEP_IDS[step]}
             style={{ cursor: dragging ? 'grabbing' : 'grab' }}
             onPointerDown={handlePointerDown}

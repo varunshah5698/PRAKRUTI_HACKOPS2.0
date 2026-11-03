@@ -8,6 +8,7 @@ setWorkerUrl(workerUrl);
 import type { FeatureCollection } from 'geojson';
 import { classNames } from '../lib/format';
 import { impactTone, sourceColor, type SourceImpactSource } from '../lib/sourceImpact';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export interface MapStation {
   id: string;
@@ -308,7 +309,7 @@ function sourceLinkFeatures(links: MapSourceLink[]): FeatureCollection {
   };
 }
 
-export function MumbaiMap({
+function MumbaiMapInner({
   stations = [],
   reports = [],
   incidents = [],
@@ -906,5 +907,23 @@ export function MumbaiMap({
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function MumbaiMap(props: Parameters<typeof MumbaiMapInner>[0]) {
+  return (
+    <ErrorBoundary
+      label="mumbai-map"
+      fallback={
+        <div className={classNames('flex flex-col items-center justify-center gap-2 rounded-[24px] border border-amber-500/25 bg-[#fdf8e9] px-5 text-center', props.className)}>
+          <span className="text-[11px] font-semibold text-amber-800">Map unavailable in this browser</span>
+          <span className="max-w-xs text-[10px] leading-relaxed text-amber-700/75">
+            WebGL or the map renderer could not start. The station and alert lists on this page remain usable.
+          </span>
+        </div>
+      }
+    >
+      <MumbaiMapInner {...props} />
+    </ErrorBoundary>
   );
 }

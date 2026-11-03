@@ -141,7 +141,8 @@ Rate limits: global 400/min; auth 40/15 min; report submission 12/hour; AI 20/mi
 | POST | `/simulations/:id/play` | authority | Status PLAYING |
 | POST | `/simulations/:id/pause` | authority | Status PAUSED |
 | POST | `/simulations/:id/step` | authority | Advance one event; creates simulated alerts on transitions |
-| POST | `/simulations/:id/reset` | authority | Reset replay position; never deletes real observations |
+| POST | `/simulations/:id/seek` | authority | `{step}`; move the replay position and rebuild derived simulated alerts/notifications for that step |
+| POST | `/simulations/:id/reset` | authority | Rewind to step 0 and rebuild derived simulated alerts; never deletes real observations |
 | POST | `/simulations/:id/email-preview` | authority | Public/authority email previews |
 | POST | `/simulations/:id/incident` | authority | Create simulation-labelled incident |
 

@@ -32,7 +32,6 @@ import { CityPulseStrip } from '../../components/CityPulseStrip';
 import { RiskBadge, SourceBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock } from '../../components/ui';
 import { api } from '../../lib/api';
-import { aqiCategory } from '../../lib/aqi';
 import { AQI_COLORS, CATEGORY_LABELS, RISK_COLORS, categoryLabel, formatDate, formatTime, number, timeAgo, windDirection } from '../../lib/format';
 import { feelsLikeC, isNightInMumbai, weatherCondition } from '../../lib/weather';
 import { useAuth } from '../../store/auth';
@@ -464,7 +463,7 @@ function PollutantComparisonCard({ rows }: { rows: DashboardData['charts']['poll
                     {number(tileReading.value, tileReading.value < 10 ? 1 : 0)}
                   </span>
                   <span className="mt-0.5 block truncate text-[8px] text-[#84948a]">
-                    {mode === 'mean' ? row.unit : tileReading.station}
+                    {mode === 'mean' ? row.unit : tileReading.station ? stationComparisonLabel(tileReading.station) : row.unit}
                   </span>
                   <span className="mt-2 block h-1 overflow-hidden rounded-full bg-[#e8efe4]">
                     <span

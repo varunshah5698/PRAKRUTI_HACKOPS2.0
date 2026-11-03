@@ -406,18 +406,38 @@ simulationsRouter.post('/:id/step', async (req, res, next) => {
 simulationsRouter.post('/:id/reset', async (req, res, next) => {
   try {
     if (!AUTHORITY.includes(req.user!.role)) throw forbidden('Authority role required to control a simulation.');
-    const session = await one<{ id: string }>('SELECT id FROM simulation_sessions WHERE id=$1', [req.params.id]);
+    const session = await one<{
+      id: string;
+      station_id: string;
+      locality_id: string | null;
+      scenario: string;
+      station_name: string;
+    }>(
+      `SELECT s.id, s.station_id, s.locality_id, s.scenario, st.name AS station_name
+       FROM simulation_sessions s JOIN monitoring_stations st ON st.id=s.station_id WHERE s.id=$1`,
+      [req.params.id],
+    );
     if (!session) throw notFound('Simulation session not found.');
+    await rebuildSessionAlerts(
+      {
+        id: session.id,
+        station_id: session.station_id,
+        locality_id: session.locality_id,
+        scenario: session.scenario,
+        station_name: session.station_name,
+      },
+      0,
+    );
     await query(`UPDATE simulation_sessions SET current_step=0, status='RESET', updated_at=now() WHERE id=$1`, [session.id]);
     await audit({
       actorId: req.user!.id,
       action: 'SIMULATION_RESET',
       entityType: 'simulation_session',
       entityId: session.id,
-      after: { note: 'Replay position reset. Simulation records retained. Real observations untouched.' },
+      after: { note: 'Replay position reset. Derived simulated alerts were rebuilt; simulated incidents retained. Real observations untouched.' },
       ip: req.ip,
     });
-    res.json({ status: 'RESET', currentStep: 0, note: 'Replay reset. No real observations were modified or deleted.' });
+    res.json({ status: 'RESET', currentStep: 0, note: 'Replay reset. Simulated alerts were rebuilt; real observations were not modified or deleted.' });
   } catch (error) {
     next(error);
   }

@@ -814,7 +814,7 @@ export function SimulationSessionPage() {
     if (finished) {
       setWorking(true);
       try {
-        await api.post(`/simulations/${sessionId}/seek`, { step: 0 });
+        await api.post(`/simulations/${sessionId}/reset`);
         await load(true);
         await api.post(`/simulations/${sessionId}/play`);
         setPlaying(true);
@@ -869,7 +869,7 @@ export function SimulationSessionPage() {
     setSeekPreview(null);
     setWorking(true);
     try {
-      await api.post(`/simulations/${sessionId}/seek`, { step: 0 });
+      await api.post(`/simulations/${sessionId}/reset`);
       toast.success('Replay rewound to step 0. Simulated alerts were rebuilt for this position.');
       await load(true);
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Reset failed'); }
@@ -1115,7 +1115,13 @@ export function SimulationSessionPage() {
             <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#6e8b95]">S0</span>
             <div className="flex-1">
               {phases.length ? (
-                <PhaseRail phases={phases} steps={totalSteps} current={currentStep} />
+                <PhaseRail
+                  phases={phases}
+                  steps={totalSteps}
+                  current={currentStep}
+                  onSeek={(step) => void seekTo(step)}
+                  disabled={working}
+                />
               ) : (
                 <div className="relative h-2 overflow-hidden rounded-full bg-white/55">
                   <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-500" style={{ width: `${Math.max(2, progress * 100)}%`, background: `linear-gradient(90deg, ${meta.color}, ${meta.color}bb)` }} />
@@ -1245,30 +1251,36 @@ export function SimulationSessionPage() {
                 <span className="text-[8px] text-[#8ba1a9]">Click a step or the chart line to move the replay position</span>
               </div>
               <div className="hide-scrollbar mt-2 flex gap-1 overflow-x-auto pb-1">
-                {events.map((event) => {
-                  const active = displayedStep === event.step;
+                {Array.from({ length: totalSteps }, (_, step) => {
+                  const event = events.find((item) => item.step === step);
+                  const active = displayedStep === step;
+                  const revealed = step <= currentStep;
                   return (
                     <button
-                      key={event.step}
+                      key={step}
                       type="button"
-                      onClick={() => void seekTo(event.step)}
+                      onClick={() => void seekTo(step)}
+                      disabled={working}
                       aria-pressed={active}
-                      title={`Step ${event.step} · ${event.payload.risk.alertState}`}
+                      aria-label={`Seek to step ${step}`}
+                      title={revealed ? `Step ${step} · ${event?.payload.risk.alertState ?? 'revealed'}` : `Step ${step} · not yet revealed`}
                       className={classNames(
-                        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold transition',
+                        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold transition disabled:cursor-wait disabled:opacity-60',
                         active
                           ? 'border-[#9ccfdb] bg-[#eef8fa] text-[#1f5a6b]'
-                          : 'border-white/80 bg-white/50 text-[#6e8b95] hover:border-[#c7e3ea] hover:bg-white',
+                          : revealed
+                            ? 'border-white/80 bg-white/50 text-[#6e8b95] hover:border-[#c7e3ea] hover:bg-white'
+                            : 'border-dashed border-[#e0ebed] bg-white/25 text-[#9fb1b7] hover:border-[#c7e3ea] hover:bg-white/50',
                       )}
                     >
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: alertTone(event.payload.risk.alertState) }} />
-                      S{event.step}
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ background: revealed && event ? alertTone(event.payload.risk.alertState) : '#c7d5d9' }}
+                      />
+                      S{step}
                     </button>
                   );
                 })}
-                {events.length === 0 ? (
-                  <span className="text-[9px] text-[#8ba1a9]">Advance the replay to reveal steps.</span>
-                ) : null}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 border-t border-dashed border-[#dbe5d6] p-3 sm:grid-cols-4">
@@ -1348,7 +1360,7 @@ export function SimulationSessionPage() {
             <CardHeader className="items-center">
               <div>
                 <CardTitle>Event history</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Only revealed steps are listed. Reset moves the replay position, not the records.</p>
+                <p className="mt-1 text-[10px] text-[#66766b]">Click a revealed step to rewind the replay to it. Alerts are rebuilt for the selected position.</p>
               </div>
               <Badge tone="neutral">{events.length} events</Badge>
             </CardHeader>
@@ -1462,7 +1474,7 @@ export function SimulationSessionPage() {
             <CardHeader className="items-center">
               <div>
                 <CardTitle>Simulated alerts</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Session-wide records, not filtered by the inspected step.</p>
+                <p className="mt-1 text-[10px] text-[#66766b]">Generated by this replay up to the current step.</p>
               </div>
               <Badge tone="neutral">{data.alerts.length}</Badge>
             </CardHeader>

@@ -129,7 +129,9 @@ describe('evidence grounding rules', () => {
     const prompt = systemPrompt();
     expect(prompt).toContain('PRAKRITI WEBSITE GUIDE');
     expect(prompt).toContain('/map');
+    expect(prompt).toContain('/city');
     expect(prompt).toContain('/compliance');
+    expect(prompt).toContain('aqi24h');
     expect(prompt).toContain('ANALYTICAL METHOD');
     expect(prompt).toContain('You cannot click');
     expect(prompt).toContain('nextActions must be concrete');
