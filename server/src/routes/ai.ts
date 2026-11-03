@@ -48,7 +48,7 @@ aiRouter.post('/chat', limiter, async (req, res, next) => {
   try {
     const body = z
       .object({
-        question: z.string().trim().min(3).max(1200),
+        question: z.string().trim().min(2).max(1200),
         stationId: z.string().uuid().optional(),
         localityId: z.string().uuid().optional(),
         category: z.enum(['air', 'water', 'waste', 'industrial']).optional(),

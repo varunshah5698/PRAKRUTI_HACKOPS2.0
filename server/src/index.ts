@@ -154,8 +154,9 @@ app.use((_req, res) => {
 
 app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof ZodError) {
+    const reason = error.issues.map((issue) => `${issue.path.join('.') || 'request'}: ${issue.message}`).join('; ');
     res.status(400).json({
-      error: { code: 'VALIDATION_ERROR', message: 'Invalid request.', details: error.flatten() },
+      error: { code: 'VALIDATION_ERROR', message: `Invalid request — ${reason}`, details: error.flatten() },
     });
     return;
   }
