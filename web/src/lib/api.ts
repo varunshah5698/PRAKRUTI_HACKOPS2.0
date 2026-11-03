@@ -13,8 +13,13 @@ export class ApiError extends Error {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
-const RETRY_DELAYS_MS = [400, 800];
+const RESTART_RETRY_DELAYS_MS = [500, 1000, 1500];
 const NETWORK_RETRY_DELAY_MS = 500;
+// Only treat a failure as a restart when the API answered us recently. A cold
+// load against a stopped API must fail fast instead of waiting out the budget.
+const RESTART_WINDOW_MS = 60_000;
+
+let lastSuccessAt = 0;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,8 +34,9 @@ function apiRestarting(response: Response): boolean {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const retryable = (options.method ?? 'GET').toUpperCase() === 'GET';
+  const retryDelays = Date.now() - lastSuccessAt < RESTART_WINDOW_MS ? RESTART_RETRY_DELAYS_MS : [];
   let response: Response | undefined;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+  for (let attempt = 0; ; attempt += 1) {
     try {
       response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
@@ -47,8 +53,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       await sleep(NETWORK_RETRY_DELAY_MS);
       continue;
     }
-    if (retryable && attempt < RETRY_DELAYS_MS.length && apiRestarting(response)) {
-      await sleep(RETRY_DELAYS_MS[attempt]);
+    if (response.ok) lastSuccessAt = Date.now();
+    const delay = retryDelays[attempt];
+    if (retryable && delay !== undefined && apiRestarting(response)) {
+      await sleep(delay);
       continue;
     }
     break;
