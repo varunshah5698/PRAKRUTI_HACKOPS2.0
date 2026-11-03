@@ -76,16 +76,17 @@ export const riverConfig = {
   configured: env.RIVER_API_KEY.length > 0,
 };
 
-const fallbackBaseURL = env.VISION_FALLBACK_BASE_URL || env.VISION_BASE_URL;
-// A River-hosted fallback can reuse RIVER_API_KEY, so a deployment does not need
-// a second copy of the same secret. Other providers still need their own key.
+// If no second provider is configured, reuse River (already required for the
+// analyst) so a vision rate limit on the primary provider does not lose the
+// assessment. Explicit VISION_FALLBACK_* values still win.
+const fallbackBaseURL =
+  env.VISION_FALLBACK_BASE_URL || (env.RIVER_API_KEY ? env.RIVER_BASE_URL : env.VISION_BASE_URL);
 const fallbackApiKey =
   env.VISION_FALLBACK_API_KEY ||
   (fallbackBaseURL.includes('river.ai') ? env.RIVER_API_KEY : env.VISION_API_KEY);
-// Keep the cross-provider fallback working when only its base URL is configured.
 const fallbackModels =
   env.VISION_FALLBACK_MODELS ||
-  (env.VISION_FALLBACK_BASE_URL.includes('river.ai') ? 'moonshotai/Kimi-K3,zai-org/GLM-5.3-Flash' : '');
+  (fallbackBaseURL.includes('river.ai') ? env.RIVER_MODEL : '');
 
 export const visionConfig = {
   baseURL: env.VISION_BASE_URL,
