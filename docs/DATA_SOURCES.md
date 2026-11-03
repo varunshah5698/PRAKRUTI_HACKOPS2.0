@@ -9,14 +9,14 @@ Source status is shown in the application at `/data-sources` and via `GET /api/v
 | `cpcb-caaqms` | CPCB CAAQMS (Mumbai) | NOT_CONFIGURED | 0 | No documented credentialled machine API is configured. Demo stations are not CPCB stations. |
 | `mpcb` | MPCB monitoring publications | LIVE SUBSET via OpenAQ | 12 stations | No direct MPCB API is configured. OpenAQ supplies MPCB/IITM-operated Mumbai stations with upstream timestamps. |
 | `data-gov-in-air` | data.gov.in air-quality resource | NOT_CONFIGURED | 0 | Requires `DATA_GOV_IN_API_KEY`. Verified resource ID `3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69` is pre-filled. |
-| `openaq` | OpenAQ | CONNECTED locally | 91+ (12 Mumbai stations) | `OPENAQ_API_KEY` configured in `.env.local`; v3 locations + latest, Mumbai-coordinate filter. Includes MPCB/IITM stations; source is OpenAQ. |
+| `openaq` | OpenAQ | CONNECTED locally | 12 Mumbai stations (7 current) | `OPENAQ_API_KEY` configured in `.env.local`; v3 locations + latest, hourly PM2.5 backfill, Mumbai-coordinate filter. Includes MPCB/IITM stations; source is OpenAQ. |
 | `open-meteo-weather` | Open-Meteo weather | CONNECTED | 285 (seed) | Live observations + 18h forecasts at demo station coordinates. |
 | `open-meteo-cams` | CAMS regional air quality | CONNECTED | 20 (seed) | Modelled PM2.5/PM10, not a station measurement. |
 | `demo-network` | प्रकृति demo network | CONNECTED | 4,566 (seed) | All records `is_simulated=true`. |
 | `river-ai` | River AI | CONNECTED locally | — | `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified against `zai-org/GLM-5.3-Flash`. Empty by default in `.env.example`; rule-based fallback remains if absent. |
 | `vision-ai` | AI image assessment | CONNECTED locally | — | Open-weight models over an OpenAI-compatible endpoint: Groq `qwen/qwen3.8-27b` locally; River `moonshotai/Kimi-K3` with `zai-org/GLM-5.3-Flash` fallback verified. Key is only in the gitignored `.env.local`; `.env.example` leaves the key empty. |
 | `ml-service` | LightGBM forecasting service | CONNECTED locally | — | Trained on the 23-station OpenAQ Mumbai archive; FastAPI service on `ML_SERVICE_URL`. Artifacts are gitignored, so a clean deployment falls back to the labelled persistence baseline. |
-| `email` | Email delivery | NOT_CONFIGURED | — | Notifications stored as SIMULATED. |
+| `email` | Email delivery | NOT_CONFIGURED (transport verified) | — | Nodemailer SMTP path verified against a local sink. Add `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` for real delivery; otherwise notifications stay `SIMULATED`. |
 | `evidence-storage` | Evidence storage | CONNECTED | — | Local private storage. |
 | `openfreemap` | OpenFreeMap vector tiles | CONNECTED | — | Attribution required. |
 
@@ -57,7 +57,9 @@ The internal station code is `DATA_GOV_IN:<station name>` and metadata records t
 
 Uses OpenAQ v3 `locations` with a Mumbai coordinate/radius and `locations/:id/latest`. Only coordinates inside Mumbai are stored. Internal station code is `OPENAQ-<location id>` (OpenAQ's identifier, not CPCB's).
 
-The live pull currently returns 12 Mumbai stations, including MPCB and IITM-operated stations, with 91 sensor observations. Some stations are stale (2021–2022); they are marked `DEGRADED` and their old timestamps are preserved. They are never presented as current CPCB readings. Source attribution is OpenAQ and the upstream operator shown in the station name.
+The live pull currently returns 12 Mumbai stations, including MPCB and IITM-operated stations. Some stations are stale (2021–2022); they are marked `DEGRADED`, their old timestamps are preserved, and they are excluded from current dashboard, map and public counts once their latest observation is older than 6 hours. The API exposes the excluded count so the UI can say how many were hidden. They are never presented as current CPCB readings. Source attribution is OpenAQ and the upstream operator shown in the station name.
+
+For trained forecasts, the adapter also backfills the OpenAQ hourly PM2.5 series for each live station when fewer than 25 hourly values exist. The model therefore uses the current sensor's hourly data, not the legacy duplicate sensor.
 
 ## Open-Meteo weather
 
