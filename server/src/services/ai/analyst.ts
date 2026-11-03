@@ -514,7 +514,6 @@ export async function analyzeEvidenceImage(
       },
     };
   }
-  const base = visionConfig.baseURL.replace(/\/$/, '');
   const prompt =
     'Provide an initial visual assessment of this citizen environmental report photograph. Describe only visible features such as smoke-like appearance, visible waste, water discolouration or foam, dust, or flames. Do not identify people, number plates or addresses. Do not claim chemical composition, toxicity, pollutant concentration or legal responsibility. Return a single JSON object, not an array of bounding boxes, with keys visibleFeatures (array of short strings), description (string), confidence (LOW, MEDIUM or HIGH), and limitations (array of strings).';
   const parseJson = (text: string): Record<string, unknown> | null => {
@@ -548,40 +547,69 @@ export async function analyzeEvidenceImage(
     }
   };
   try {
-    const isGemini = base.includes('generativelanguage.googleapis.com') || base.includes('googleapis.com');
-    let content = '';
-    let usedModel = visionConfig.model;
-    let parsed: Record<string, unknown> | null = null;
-    if (isGemini) {
-      const fallbacks = env.VISION_FALLBACK_MODELS.split(',').map((model) => model.trim()).filter(Boolean);
-      const models = [visionConfig.model, ...fallbacks.filter((model) => model !== visionConfig.model)];
-      let lastError = '';
-      for (const model of models) {
-        try {
-          const response = await fetch(
-            `${base}/models/${encodeURIComponent(model)}:generateContent`,
-            {
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+    const fallbackModels = env.VISION_FALLBACK_MODELS.split(',').map((model) => model.trim()).filter(Boolean);
+    const isGemini = (url: string) => url.includes('generativelanguage.googleapis.com') || url.includes('googleapis.com');
+    const attemptFor = (baseURL: string, apiKey: string, model: string) => ({
+      base: baseURL.replace(/\/$/, ''),
+      apiKey,
+      model,
+      gemini: isGemini(baseURL),
+    });
+    const attempts = [
+      attemptFor(visionConfig.baseURL, visionConfig.apiKey, visionConfig.model),
+      ...fallbackModels
+        .filter((model) => model !== visionConfig.model)
+        .map((model) => attemptFor(visionConfig.fallbackBaseURL, visionConfig.fallbackApiKey, model)),
+    ];
+    let lastError = '';
+    for (const attempt of attempts) {
+      let content = '';
+      let parsed: Record<string, unknown> | null = null;
+      try {
+        const response = attempt.gemini
+          ? await fetch(`${attempt.base}/models/${encodeURIComponent(attempt.model)}:generateContent`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': visionConfig.apiKey },
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': attempt.apiKey },
               body: JSON.stringify({
                 contents: [
                   {
                     role: 'user',
                     parts: [
                       { text: prompt },
-                      { inline_data: { mime_type: mimeType, data: buffer.toString('base64') } },
+                      { inline_data: { mime_type: mimeType, data: base64 } },
                     ],
                   },
                 ],
                 generationConfig: { temperature: 0.1, maxOutputTokens: 700, responseMimeType: 'application/json' },
               }),
               signal: AbortSignal.timeout(45_000),
-            },
-          );
-          if (!response.ok) {
-            lastError = `Gemini vision HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`;
-            continue;
-          }
+            })
+          : await fetch(`${attempt.base}/chat/completions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${attempt.apiKey}` },
+              body: JSON.stringify({
+                model: attempt.model,
+                max_tokens: 1200,
+                temperature: 0.1,
+                messages: [
+                  {
+                    role: 'user',
+                    content: [
+                      { type: 'text', text: prompt },
+                      { type: 'image_url', image_url: { url: dataUrl } },
+                    ],
+                  },
+                ],
+              }),
+              signal: AbortSignal.timeout(45_000),
+            });
+        if (!response.ok) {
+          lastError = `Vision provider HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`;
+          continue;
+        }
+        if (attempt.gemini) {
           const data = (await response.json()) as {
             candidates?: Array<{
               content?: { parts?: Array<{ text?: string; thought?: boolean }> };
@@ -597,78 +625,35 @@ export async function analyzeEvidenceImage(
             lastError = `Gemini vision returned no text (finish: ${data.candidates?.[0]?.finishReason ?? 'unknown'})`;
             continue;
           }
-          parsed = parseJson(content);
-          if (!parsed) {
-            lastError = 'Gemini vision returned no parseable JSON';
-            continue;
-          }
-          usedModel = model;
-          break;
-        } catch (error) {
-          lastError = error instanceof Error ? error.message : 'Gemini vision request failed';
-        }
-      }
-      if (!content || !parsed) throw new Error(lastError || 'Gemini vision unavailable');
-    } else {
-      const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
-      const fallbacks = env.VISION_FALLBACK_MODELS.split(',').map((model) => model.trim()).filter(Boolean);
-      const models = [visionConfig.model, ...fallbacks.filter((model) => model !== visionConfig.model)];
-      let lastError = '';
-      for (const model of models) {
-        try {
-          const response = await fetch(`${base}/chat/completions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${visionConfig.apiKey}` },
-            body: JSON.stringify({
-              model,
-              max_tokens: 1200,
-              temperature: 0.1,
-              messages: [
-                {
-                  role: 'user',
-                  content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: dataUrl } },
-                  ],
-                },
-              ],
-            }),
-            signal: AbortSignal.timeout(45_000),
-          });
-          if (!response.ok) {
-            lastError = `Vision provider HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`;
-            continue;
-          }
+        } else {
           const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
           content = data.choices?.[0]?.message?.content ?? '';
           if (!content) {
             lastError = 'Vision provider returned no text';
             continue;
           }
-          parsed = parseJson(content);
-          if (!parsed) {
-            lastError = 'Vision provider returned no parseable JSON';
-            continue;
-          }
-          usedModel = model;
-          break;
-        } catch (error) {
-          lastError = error instanceof Error ? error.message : 'Vision request failed';
         }
+        parsed = parseJson(content);
+        if (!parsed) {
+          lastError = 'Vision provider returned no parseable JSON';
+          continue;
+        }
+        return {
+          status: 'COMPLETED',
+          provider: attempt.gemini ? `google:${attempt.model}` : attempt.model,
+          output: {
+            ...parsed,
+            limitations: [
+              ...(Array.isArray(parsed.limitations) ? parsed.limitations : []),
+              'Initial visual assessment only. It cannot establish chemical composition, toxicity, pollutant concentration or legal responsibility.',
+            ],
+          },
+        };
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : 'Vision request failed';
       }
-      if (!content || !parsed) throw new Error(lastError || 'Vision provider unavailable');
     }
-    return {
-      status: 'COMPLETED',
-      provider: isGemini ? `google:${usedModel}` : usedModel,
-      output: {
-        ...parsed,
-        limitations: [
-          ...(Array.isArray(parsed.limitations) ? parsed.limitations : []),
-          'Initial visual assessment only. It cannot establish chemical composition, toxicity, pollutant concentration or legal responsibility.',
-        ],
-      },
-    };
+    throw new Error(lastError || 'Vision provider unavailable');
   } catch (error) {
     return {
       status: 'FAILED',

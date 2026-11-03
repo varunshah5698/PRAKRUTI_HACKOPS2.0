@@ -18,7 +18,8 @@ async function stationPrediction(stationId: string) {
   const weather = await getLatestWeather(stationId);
   const latest = Object.fromEntries(Object.entries(station.values).map(([code, reading]) => [code, reading.value]));
   const bundle = await getForecastsForStation({
-    stationId,
+    // The model was trained on OpenAQ station codes, not database UUIDs.
+    stationId: station.code,
     history,
     latest,
     weather: weather[0]

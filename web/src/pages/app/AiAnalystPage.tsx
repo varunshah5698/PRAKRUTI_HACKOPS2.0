@@ -258,7 +258,7 @@ export function AiAnalystPage() {
               ),
             )}
             {loading ? (
-              <div className="flex items-center gap-2 text-[11px] text-[#6f7f74]"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5b9e46]/10"><BrainCircuit className="h-3.5 w-3.5 animate-pulse text-[#3f7d2a]" /></span> Let me look into that…</div>
+              <div className="flex items-center gap-2 text-[11px] text-[#6f7f74]"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5b9e46]/10"><BrainCircuit className="h-3.5 w-3.5 animate-pulse text-[#3f7d2a]" /></span> {waitingForServer ? 'The server is updating. Retrying automatically…' : 'Let me look into that…'}</div>
             ) : null}
             <div ref={bottomRef} />
           </div>

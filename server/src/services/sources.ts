@@ -126,8 +126,8 @@ export function integrationStatus() {
     visionAi: visionConfig.configured ? 'CONFIGURED' : 'NOT_CONFIGURED',
     email: emailConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED',
     storage: env.STORAGE_DRIVER === 'local' ? 'LOCAL_PRIVATE' : 'S3_COMPATIBLE',
-    cpcb: 'NOT_CONFIGURED',
-    mpcb: 'NOT_CONFIGURED',
-    ml: 'NOT_TRAINED',
+    cpcb: env.DATA_GOV_IN_API_KEY ? 'CONFIGURED' : 'NOT_CONFIGURED',
+    mpcb: env.OPENAQ_API_KEY ? 'OPENAQ_SUBSET' : 'NOT_CONFIGURED',
+    ml: env.ML_SERVICE_URL ? 'CONFIGURED' : 'NOT_CONFIGURED',
   };
 }

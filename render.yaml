@@ -24,7 +24,11 @@ services:
       - key: VISION_MODEL
         value: qwen/qwen3.8-27b
       - key: VISION_FALLBACK_MODELS
-        value: ''
+        value: moonshotai/Kimi-K3,zai-org/GLM-5.3-Flash
+      - key: VISION_FALLBACK_BASE_URL
+        value: https://api.river.ai/v1
+      - key: VISION_FALLBACK_API_KEY
+        sync: false
       - key: VISION_API_KEY
         sync: false
       - key: OPENAQ_API_KEY

@@ -2,6 +2,7 @@ import { env } from '../config/env.js';
 import { one, query } from '../db/pool.js';
 import { getSourceStatuses } from './sources.js';
 import { getStationSnapshots } from './station-data.js';
+import { mlHealth } from './ml.js';
 import { CATEGORY_LABELS, type Category } from '../types.js';
 
 interface AlertRow {
@@ -50,7 +51,9 @@ function percentChange(current: number, previous: number): number | null {
 }
 
 export async function getDashboard() {
-  const [snapshots, sources] = await Promise.all([getStationSnapshots(), getSourceStatuses()]);
+  const [snapshots, sources, mlStatus] = await Promise.all([getStationSnapshots(), getSourceStatuses(), mlHealth()]);
+  const currentSnapshots = snapshots.filter((station) => !station.isStale);
+  const staleStationCount = snapshots.length - currentSnapshots.length;
 
   const [
     activeStationRow,
@@ -202,9 +205,10 @@ export async function getDashboard() {
     query<{ category: string; stations: number; reports_7d: number; observations_24h: number; latest_update: string | null }>(
       `SELECT c.category,
               (SELECT COUNT(*)::int FROM monitoring_stations s WHERE
-                 (c.category='air' AND s.station_type='AIR_CAAQMS') OR
-                 (c.category='water' AND s.station_type='WATER_SAMPLING') OR
-                 (c.category='industrial' AND s.station_type='INDUSTRIAL_STACK')) AS stations,
+                 ((c.category='air' AND s.station_type='AIR_CAAQMS') OR
+                  (c.category='water' AND s.station_type='WATER_SAMPLING') OR
+                  (c.category='industrial' AND s.station_type='INDUSTRIAL_STACK'))
+                 AND s.last_seen_at > now() - interval '6 hours') AS stations,
               (SELECT COUNT(*)::int FROM environmental_reports r WHERE r.category=c.category AND r.submitted_at > now() - interval '7 days') AS reports_7d,
               (SELECT COUNT(*)::int FROM environmental_observations o WHERE o.category=c.category AND o.station_id IS NOT NULL AND o.observed_at > now() - interval '24 hours') AS observations_24h,
               GREATEST(
@@ -251,7 +255,7 @@ export async function getDashboard() {
     };
   });
 
-  const airSnapshots = snapshots.filter((s) => s.stationType === 'AIR_CAAQMS');
+  const airSnapshots = currentSnapshots.filter((s) => s.stationType === 'AIR_CAAQMS');
   const aqiBuckets = ['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor', 'Severe'];
   const aqiDistribution = aqiBuckets.map((bucket) => ({
     bucket,
@@ -301,8 +305,8 @@ export async function getDashboard() {
     camsMap.set(row.locality_id, existing);
   }
 
-  const simulatedStationCount = snapshots.filter((station) => station.isSimulated).length;
-  const connectedStationCount = snapshots.length - simulatedStationCount;
+  const simulatedStationCount = currentSnapshots.filter((station) => station.isSimulated).length;
+  const connectedStationCount = currentSnapshots.length - simulatedStationCount;
   const stationDataMode = connectedStationCount > 0 && simulatedStationCount > 0 ? 'MIXED' : connectedStationCount > 0 ? 'LIVE_SOURCE' : 'SIMULATION';
   const activeStations = Number(activeStationRow?.count ?? 0);
   const previousActive = Number(previousActiveRow?.count ?? 0);
@@ -318,10 +322,11 @@ export async function getDashboard() {
       stationObservations: stationDataMode,
       simulatedStations: simulatedStationCount,
       connectedSourceStations: connectedStationCount,
+      staleStationsExcluded: staleStationCount,
       weather: 'LIVE_OPEN_METEO',
       cams: 'MODELLED_CAMS',
-      cpcb: 'NOT_CONFIGURED',
-      forecasts: 'PERSISTENCE_BASELINE_NOT_TRAINED',
+      cpcb: env.DATA_GOV_IN_API_KEY ? 'CONFIGURED' : 'NOT_CONFIGURED',
+      forecasts: mlStatus.status === 'TRAINED' ? 'LIGHTGBM_TRAINED_AVAILABLE' : 'PERSISTENCE_BASELINE',
     },
     kpis: {
       activeStations: {
@@ -333,8 +338,8 @@ export async function getDashboard() {
         href: '/map',
         note:
           connectedStationCount > 0
-            ? `${connectedStationCount} connected-source station(s) and ${simulatedStationCount} simulation-labelled demo station(s). Check each station's source label.`
-            : 'All stations are simulation-labelled demo stations. No CPCB station is connected.',
+            ? `${connectedStationCount} connected-source station(s) and ${simulatedStationCount} simulation-labelled demo station(s) reporting within 6 hours. ${staleStationCount} stale station(s) excluded from current totals.`
+            : `All current stations are simulation-labelled demo stations. ${staleStationCount} stale station(s) excluded. No CPCB station is connected.`,
       },
       locationsUnderWatch: {
         value: watchLocations,
@@ -352,7 +357,10 @@ export async function getDashboard() {
         window: 'Active analytical early warnings',
         dataTimestamp: latestRow?.latest ?? null,
         href: '/intelligence/predictions',
-        note: 'Persistence baseline only. LightGBM models are NOT TRAINED.',
+        note:
+          mlStatus.status === 'TRAINED'
+            ? 'LightGBM models are trained for OpenAQ stations with sufficient hourly history. Other stations use the labelled persistence baseline.'
+            : 'Persistence baseline only. The trained ML service is not reachable.',
       },
       criticalIncidents: {
         value: Number(criticalIncidentRow?.count ?? 0),
@@ -365,7 +373,8 @@ export async function getDashboard() {
       },
     },
     categories,
-    stations: snapshots,
+    stations: currentSnapshots,
+    staleStationCount,
     mapStations: airSnapshots.map((s) => ({
       id: s.id,
       code: s.code,

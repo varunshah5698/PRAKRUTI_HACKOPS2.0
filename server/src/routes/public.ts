@@ -26,13 +26,16 @@ publicRouter.get('/overview', async (_req, res, next) => {
          FROM weather_observations WHERE kind='OBSERVATION' ORDER BY observed_at DESC LIMIT 1`,
       ),
     ]);
-    const simulatedStationCount = snapshots.filter((station) => station.isSimulated).length;
-    const connectedStationCount = snapshots.length - simulatedStationCount;
+    const currentSnapshots = snapshots.filter((station) => !station.isStale);
+    const staleStationCount = snapshots.length - currentSnapshots.length;
+    const simulatedStationCount = currentSnapshots.filter((station) => station.isSimulated).length;
+    const connectedStationCount = currentSnapshots.length - simulatedStationCount;
     res.json({
       demoMode: env.DEMO_MODE,
       stationDataMode: connectedStationCount > 0 && simulatedStationCount > 0 ? 'MIXED' : connectedStationCount > 0 ? 'LIVE_SOURCE' : 'SIMULATION',
       stationCounts: { simulated: simulatedStationCount, connectedSource: connectedStationCount },
-      stations: snapshots.map((s) => ({
+      staleStationCount,
+      stations: currentSnapshots.map((s) => ({
         id: s.id,
         name: s.name,
         locality: s.localityName,
@@ -68,6 +71,7 @@ publicRouter.get('/overview', async (_req, res, next) => {
       labels: {
         observations: 'SIMULATION DATA — demo stations, not CPCB readings',
         weather: 'Live Open-Meteo observation',
+        staleStations: `${staleStationCount} stale station(s) excluded from the current map and counts.`,
       },
     });
   } catch (error) {

@@ -21,6 +21,8 @@ const EnvSchema = z.object({
   VISION_BASE_URL: z.string().default(''),
   VISION_MODEL: z.string().default(''),
   VISION_FALLBACK_MODELS: z.string().default(''),
+  VISION_FALLBACK_BASE_URL: z.string().default(''),
+  VISION_FALLBACK_API_KEY: z.string().default(''),
   VISION_API_KEY: z.string().default(''),
   DATA_GOV_IN_API_KEY: z.string().default(''),
   DATA_GOV_IN_AIR_RESOURCE_ID: z.string().default(''),
@@ -74,10 +76,14 @@ export const riverConfig = {
   configured: env.RIVER_API_KEY.length > 0,
 };
 
+const fallbackProviderConfigured = Boolean(env.VISION_FALLBACK_BASE_URL && env.VISION_FALLBACK_API_KEY);
+
 export const visionConfig = {
   baseURL: env.VISION_BASE_URL,
   model: env.VISION_MODEL,
   apiKey: env.VISION_API_KEY,
+  fallbackBaseURL: fallbackProviderConfigured ? env.VISION_FALLBACK_BASE_URL : env.VISION_BASE_URL,
+  fallbackApiKey: fallbackProviderConfigured ? env.VISION_FALLBACK_API_KEY : env.VISION_API_KEY,
   configured: Boolean(env.VISION_BASE_URL && env.VISION_MODEL && env.VISION_API_KEY),
 };
 

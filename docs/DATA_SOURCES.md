@@ -102,7 +102,8 @@ The live pull currently returns 12 Mumbai stations, including MPCB and IITM-oper
 ## Vision AI
 
 - Separate `VISION_BASE_URL`, `VISION_MODEL`, `VISION_API_KEY` and optional `VISION_FALLBACK_MODELS`.
-- This workspace uses Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`; the key is only in `.env.local`.
+- Set `VISION_FALLBACK_BASE_URL` and `VISION_FALLBACK_API_KEY` to run fallback models on a second provider; otherwise fallbacks reuse the primary endpoint.
+- This workspace uses Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`, then River `moonshotai/Kimi-K3` and `zai-org/GLM-5.3-Flash` when the Groq rate limit is hit; keys are only in `.env.local`.
 - Any OpenAI-compatible vision endpoint works. Google Gemini remains supported through its native `generateContent` path.
 - Without configuration, image analysis is `NOT_CONFIGURED`; the report still stores the private image and metadata.
 - The adapter returns only visible-feature descriptions and limitations. It cannot establish chemical composition, toxicity, concentration or legal responsibility.

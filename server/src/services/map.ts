@@ -75,7 +75,13 @@ export async function getMapTimeline(filters: MapFilters) {
           grouped.get(row.id)!.history.push({ observedAt: row.observed_at, value: Number(row.value) });
         }
       }
+      let staleForecastCount = 0;
       for (const { base, history } of grouped.values()) {
+        const latestPoint = history[history.length - 1];
+        if (!latestPoint || Date.now() - new Date(latestPoint.observedAt).getTime() > 6 * 3_600_000) {
+          staleForecastCount += 1;
+          continue;
+        }
         const latestRows = await query<{ pollutant_code: string; value: number }>(
           `SELECT DISTINCT ON (pollutant_code) pollutant_code, value::float8 AS value
            FROM environmental_observations WHERE station_id=$1 AND observed_at > now() - interval '24 hours'
@@ -86,7 +92,8 @@ export async function getMapTimeline(filters: MapFilters) {
         const latest = Object.fromEntries(latestRows.map((row) => [row.pollutant_code, Number(row.value)]));
         const latestWeather = await getLatestWeather(base.id);
         const bundle = await getForecastsForStation({
-          stationId: base.id,
+          // The model was trained on OpenAQ station codes, not database UUIDs.
+          stationId: base.code,
           history,
           latest,
           weather: latestWeather[0]
@@ -139,6 +146,9 @@ export async function getMapTimeline(filters: MapFilters) {
           aqiCategory: aqi.category,
           markerKind: 'PREDICTED',
         });
+      }
+      if (staleForecastCount > 0) {
+        warnings.push(`${staleForecastCount} stale station(s) excluded from the forecast layer. Forecasts are not produced from observations older than 6 hours.`);
       }
       if (filters.pollutant && filters.pollutant !== 'pm25' && filters.pollutant !== 'aqi') {
         warnings.push('Only PM2.5 persistence-baseline forecasts are available. Other pollutant forecasts are unavailable.');
@@ -253,13 +263,19 @@ export async function getMapTimeline(filters: MapFilters) {
     }
   } else {
     const snapshots = await getStationSnapshots(category === 'waste' ? undefined : category);
-    stations = snapshots.map((s) => ({
-      ...s,
-      markerKind: 'OBSERVED',
-    }));
+    const staleCount = snapshots.filter((s) => s.isStale).length;
+    stations = snapshots
+      .filter((s) => !s.isStale)
+      .map((s) => ({
+        ...s,
+        markerKind: 'OBSERVED',
+      }));
     if (category === 'waste') {
       stations = [];
       warnings.push('No waste monitoring stations exist. Waste is represented by citizen reports and incidents.');
+    }
+    if (staleCount > 0) {
+      warnings.push(`${staleCount} stale station(s) excluded from the current map. Their last observation is older than 6 hours.`);
     }
     if (!stations.some((s) => s.latestObservedAt)) warnings.push('No recent observations available for this category.');
   }
@@ -367,7 +383,7 @@ export async function getStationDetail(stationId: string) {
   const bundle =
     station.stationType === 'AIR_CAAQMS'
       ? await getForecastsForStation({
-          stationId,
+          stationId: station.code,
           history,
           latest,
           weather: weather[0]

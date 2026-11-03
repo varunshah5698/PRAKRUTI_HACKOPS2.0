@@ -361,7 +361,8 @@ export function DashboardPage() {
   const dayMax = dailyTrend.length ? Math.max(...dailyTrend.map((d) => d.value)) : 0;
   const dayAverage = dailyTrend.length ? dailyTrend.reduce((sum, d) => sum + d.value, 0) / dailyTrend.length : null;
   const daySamples = dailyTrend.reduce((sum, d) => sum + d.samples, 0);
-  const staleStations = data.mapStations.filter((station) => station.isStale).length;
+  const staleStations = Number(data.dataMode.staleStationsExcluded ?? 0);
+  const mlActive = data.dataMode.forecasts === 'LIGHTGBM_TRAINED_AVAILABLE';
   const sources = data.sources
     .filter((s) => SOURCE_ORDER.includes(s.id))
     .sort((a, b) => SOURCE_ORDER.indexOf(a.id) - SOURCE_ORDER.indexOf(b.id));
@@ -382,7 +383,7 @@ export function DashboardPage() {
               {data.dataMode.stationObservations === 'SIMULATION' ? 'Simulation data' : data.dataMode.stationObservations === 'MIXED' ? 'Mixed sources' : 'Connected source'}
             </Badge>
             <Badge tone="neutral">Weather live</Badge>
-            <Badge tone="amber">{data.integrations?.ml === 'TRAINED' ? 'ML active' : 'ML not trained'}</Badge>
+            <Badge tone="amber">{mlActive ? 'ML active' : 'ML baseline'}</Badge>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -762,8 +763,8 @@ export function DashboardPage() {
             </div>
             <div className="rounded-2xl border border-white/80 bg-white/45 p-3">
               <DataLabel>Forecast</DataLabel>
-              <p className="mt-1 text-lg font-semibold text-amber-600">Baseline</p>
-              <p className="text-[9px] text-[#66766b]">LightGBM not trained</p>
+              <p className="mt-1 text-lg font-semibold text-amber-600">{mlActive ? 'Trained' : 'Baseline'}</p>
+              <p className="text-[9px] text-[#66766b]">{mlActive ? 'OpenAQ stations with history' : 'Persistence fallback'}</p>
             </div>
           </div>
         </Card>
