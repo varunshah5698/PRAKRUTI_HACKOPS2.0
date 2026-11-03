@@ -434,9 +434,11 @@ export async function ingestOpenAq(): Promise<IngestResult> {
       // needs 25 consecutive hourly PM2.5 values, so backfill the hourly
       // series once per station. OpenAQ's /hours values are pre-aggregated
       // and floored to the hour by the training pipeline as well.
-      const pm25Sensor = (location.sensors ?? []).find(
-        (sensor) => POLLUTANT_MAP[String(sensor.parameter?.name ?? '').toUpperCase()] === 'pm25',
-      );
+      const pm25Sensor = (location.sensors ?? [])
+        .filter((sensor) => POLLUTANT_MAP[String(sensor.parameter?.name ?? '').toUpperCase()] === 'pm25')
+        // Locations can expose a legacy and a current PM2.5 sensor. Prefer the
+        // newer sensor ID; the legacy one often has no recent hourly data.
+        .sort((a, b) => b.id - a.id)[0];
       if (pm25Sensor) {
         const historyCount = await one<{ count: number }>(
           `SELECT COUNT(DISTINCT date_trunc('hour', observed_at))::int AS count
