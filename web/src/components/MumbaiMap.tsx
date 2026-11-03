@@ -723,7 +723,7 @@ function MumbaiMapInner({
         type: 'circle',
         source: 'ep-modelled',
         paint: {
-          'circle-radius': 4.5,
+          'circle-radius': 4,
           'circle-color': '#2f8f84',
           'circle-stroke-width': 1.5,
           'circle-stroke-color': theme === 'dark' ? '#101317' : '#ffffff',
@@ -734,7 +734,7 @@ function MumbaiMapInner({
         id: 'ep-modelled-labels',
         type: 'symbol',
         source: 'ep-modelled',
-        minzoom: 10.8,
+        minzoom: 12.8,
         layout: {
           'text-field': ['get', 'valueLabel'],
           'text-size': 8.5,

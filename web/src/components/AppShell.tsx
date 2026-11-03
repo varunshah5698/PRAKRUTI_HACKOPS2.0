@@ -328,8 +328,8 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                     {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                   </span>
                 </div>
-                <Badge tone="lime" dot className="hidden xl:inline-flex">
-                  Demo data
+                <Badge tone={location.pathname.startsWith('/map') ? 'teal' : 'lime'} dot className="hidden xl:inline-flex">
+                  {location.pathname.startsWith('/map') ? 'Live sources' : 'Demo data'}
                 </Badge>
                 <Link
                   to="/notifications"

@@ -285,7 +285,7 @@ export async function getMapTimeline(filters: MapFilters) {
       warnings.push('No waste monitoring stations exist. Waste is represented by citizen reports and incidents.');
     }
     if (staleCount > 0) {
-      warnings.push(`${staleCount} real station(s) last reported more than 6 hours ago. Their last values are shown as stale, not as current measurements.`);
+      warnings.push(`${staleCount} real station(s) last reported more than 6 hours ago. Their last values are shown as stale. Add OPENAQ_API_KEY or DATA_GOV_IN_API_KEY for live CPCB/OpenAQ updates.`);
     }
     if (!stations.some((s) => s.latestObservedAt)) {
       warnings.push('No real station readings are available. Add DATA_GOV_IN_API_KEY or OPENAQ_API_KEY to ingest CPCB/OpenAQ data.');

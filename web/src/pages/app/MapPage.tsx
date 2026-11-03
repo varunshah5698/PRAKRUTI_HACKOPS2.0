@@ -1407,7 +1407,16 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
             <SurfaceCard className="overflow-hidden xl:col-span-7">
               <SurfaceHeader label="Monitor-by-monitor" title="Source mix" subtitle="Share of the screened industrial contribution reaching each monitor" aside={<Badge tone="amber">Estimate</Badge>} />
               <div className="px-2 pb-2 pt-1">
-                <Chart height={300} empty={affectedAttributions.length === 0} option={monitorMixOption} />
+                {affectedAttributions.length ? (
+                  <Chart height={300} option={monitorMixOption} />
+                ) : (
+                  <div className="flex h-[300px] flex-col items-center justify-center px-8 text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a938b]">No fresh monitor attribution</p>
+                    <p className="mt-2 max-w-xs text-[10px] leading-relaxed text-[#8a938b]">
+                      The real station readings are older than six hours, so they are not used to apportion the industrial contribution. Facility corridors remain visible on the map.
+                    </p>
+                  </div>
+                )}
               </div>
               <p className="border-t border-dashed border-[#e7eae3] px-5 py-3 text-[9px] leading-relaxed text-[#8a938b]">
                 Each bar shows how the screen divides the industrial contribution at a monitor between the OSM facilities inside its wind corridor. The remaining share is traffic, dust or other sources outside this catalogue. It is not a measured apportionment.
