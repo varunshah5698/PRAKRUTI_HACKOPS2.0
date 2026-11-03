@@ -107,6 +107,6 @@ The following were exercised during implementation:
 ## Not automated
 
 - Browser E2E tests are not committed. Playwright was used locally for visual review during implementation.
-- No live CPCB/MPCB, SMTP, River AI, vision or object-storage integration tests.
+- No live CPCB/MPCB or object-storage integration tests. SMTP transport was verified against a local sink; no external provider delivery without credentials. River AI and vision were verified manually against live keys.
 - No load, fuzz, penetration or accessibility audit.
 - No tests against real Mumbai historical data because none was supplied.
