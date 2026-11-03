@@ -12,7 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Toaster
         position="bottom-right"
         toastOptions={{
-          style: { background: '#181d23', color: '#f3f5f7', border: '1px solid #303945' },
+          style: { background: 'rgba(255,255,255,0.97)', color: '#142016', border: '1px solid #dfe6db', borderRadius: '14px', boxShadow: '0 20px 50px -30px rgba(23,42,29,.5)' },
         }}
       />
     </BrowserRouter>

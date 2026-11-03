@@ -537,8 +537,8 @@ export function MumbaiMap({
         </div>
       ) : null}
       {compact && overlayLabel ? (
-        <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full border border-white/85 bg-white/80 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#34463a] shadow-pill backdrop-blur">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#b5e36b]" />
+        <div className="pointer-events-none absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-full border border-white/85 bg-white/80 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#34463a] shadow-pill backdrop-blur">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#5da341]" />
           {overlayLabel}
         </div>
       ) : null}

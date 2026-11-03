@@ -360,7 +360,11 @@ export function DashboardPage() {
   const dailyTrend = data.charts.dailyTrend;
   const dayMax = dailyTrend.length ? Math.max(...dailyTrend.map((d) => d.value)) : 0;
   const dayAverage = dailyTrend.length ? dailyTrend.reduce((sum, d) => sum + d.value, 0) / dailyTrend.length : null;
-  const sources = data.sources.filter((s) => SOURCE_ORDER.includes(s.id));
+  const daySamples = dailyTrend.reduce((sum, d) => sum + d.samples, 0);
+  const staleStations = data.mapStations.filter((station) => station.isStale).length;
+  const sources = data.sources
+    .filter((s) => SOURCE_ORDER.includes(s.id))
+    .sort((a, b) => SOURCE_ORDER.indexOf(a.id) - SOURCE_ORDER.indexOf(b.id));
   const weather = data.weather;
   const temperature = weather ? number(weather.temperature_c) : '—';
   const WeatherIcon = weather && weather.precipitation_mm > 0.2 ? CloudRain : weather && weather.relative_humidity >= 70 ? CloudSun : Sun;
@@ -564,7 +568,7 @@ export function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
-        <Card className="md:col-span-1 xl:col-span-5">
+        <Card className="flex flex-col md:col-span-1 xl:col-span-5">
           <CardHeader>
             <div>
               <CardTitle>Daily outlook</CardTitle>
@@ -572,7 +576,7 @@ export function DashboardPage() {
             </div>
             <Badge tone="neutral">Demo series</Badge>
           </CardHeader>
-          <div className="p-5">
+          <div className="flex flex-1 flex-col p-5">
             <div className="flex items-end justify-between gap-3">
               <div>
                 <DataLabel>Week average</DataLabel>
@@ -603,17 +607,22 @@ export function DashboardPage() {
               {dailyTrend.length === 0 ? <p className="text-[10px] text-[#8a988e]">No daily series available.</p> : null}
             </div>
             <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#8a988e]">Indicative city mean, not a forecast. Forecast output remains labelled until a model is trained.</p>
+            <div className="mt-auto grid grid-cols-3 gap-2 pt-4">
+              <div><DataLabel>Days</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{dailyTrend.length}</p></div>
+              <div><DataLabel>Samples</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{daySamples}</p></div>
+              <div><DataLabel>Peak</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{number(dayMax, 0)}</p></div>
+            </div>
           </div>
         </Card>
 
-        <Card className="md:col-span-1 xl:col-span-3">
+        <Card className="flex flex-col md:col-span-1 xl:col-span-3">
           <CardHeader>
             <div>
               <CardTitle>City air quality</CardTitle>
               <p className="mt-1 text-[10px] text-[#74847a]">Highest indicative AQI</p>
             </div>
           </CardHeader>
-          <div className="flex flex-col items-center px-4 pb-5 pt-4">
+          <div className="flex flex-1 flex-col items-center px-4 pb-5 pt-4">
             <AqiGauge value={maxAqi} category={dominant?.aqiCategory} />
             <div className="mt-1 w-full rounded-2xl border border-white/80 bg-white/55 px-3 py-2.5 text-center">
               <p className="text-[10px] font-semibold text-[#34463a]">{dominant?.name.replace(' demo air monitor', '') ?? 'No station reporting'}</p>
@@ -622,6 +631,11 @@ export function DashboardPage() {
             <Link to="/map" className="mt-3 inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
               View stations <ArrowUpRight className="h-3 w-3" />
             </Link>
+            <div className="mt-auto grid w-full grid-cols-3 gap-2 border-t border-dashed border-[#dbe5d6] pt-3">
+              <div><DataLabel>Stations</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{data.kpis.activeStations.value}</p></div>
+              <div><DataLabel>Dominant</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{dominant?.pm25 && dominant.pm25 > 60 ? 'PM2.5' : 'PM10'}</p></div>
+              <div><DataLabel>Stale</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{staleStations}</p></div>
+            </div>
           </div>
         </Card>
 
@@ -879,7 +893,7 @@ export function DashboardPage() {
                       silent: true,
                       symbol: 'none',
                       lineStyle: { color: '#c94a50', type: 'dashed', width: 1, opacity: 0.6 },
-                      label: { color: '#c94a50', fontSize: 9, formatter: '24h NAAQS 60' },
+                      label: { color: '#c94a50', fontSize: 9, formatter: 'NAAQS 60', position: 'insideStartTop' },
                       data: [{ yAxis: 60 }],
                     },
                   },
