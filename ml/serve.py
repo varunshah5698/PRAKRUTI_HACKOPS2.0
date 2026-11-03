@@ -1,0 +1,184 @@
+"""LightGBM inference service for Mumbai EnviroPulse.
+
+This service is optional. It returns 503 MODEL_NOT_TRAINED until the training
+pipeline has produced artifacts from a verified historical extract. It never
+invents forecasts.
+"""
+from __future__ import annotations
+
+import json
+import math
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+ARTIFACT_DIR = Path(__file__).resolve().parent / "artifacts"
+HORIZONS = (1, 3, 6)
+FEATURE_COLUMNS = ["pm25", "pm10", "no2", "so2", "co", "o3", "temperature", "humidity", "wind_speed", "wind_dir", "precipitation"]
+
+app = FastAPI(title="Mumbai EnviroPulse ML inference", version="1.0.0")
+
+
+class HistoryPoint(BaseModel):
+    timestamp: str
+    pm25: float
+    pm10: float | None = None
+    no2: float | None = None
+    so2: float | None = None
+    co: float | None = None
+    o3: float | None = None
+
+
+class WeatherInput(BaseModel):
+    temperature: float | None = None
+    humidity: float | None = None
+    wind_speed: float | None = None
+    wind_dir: float | None = None
+    precipitation: float | None = None
+
+
+class PredictRequest(BaseModel):
+    station_id: str
+    history: list[HistoryPoint] = Field(min_length=24)
+    weather: WeatherInput = Field(default_factory=WeatherInput)
+    latest: dict[str, float] = Field(default_factory=dict)
+
+
+def artifact(name: str) -> dict[str, Any] | None:
+    path = ARTIFACT_DIR / name
+    if not path.exists():
+        return None
+    return joblib.load(path)
+
+
+def model_manifest() -> dict[str, Any]:
+    card_path = ARTIFACT_DIR / "model_card.json"
+    if not card_path.exists():
+        return {"status": "NOT_TRAINED", "artifacts": []}
+    try:
+        card = json.loads(card_path.read_text())
+    except Exception:
+        card = {}
+    return {
+        "status": "TRAINED",
+        "model_version": card.get("model_version", "trained-1"),
+        "trained_at": card.get("trained_at"),
+        "metrics": card.get("metrics"),
+        "artifacts": sorted(path.name for path in ARTIFACT_DIR.glob("*.joblib")),
+        "caveat": "Metrics are only valid for the registered training extract.",
+    }
+
+
+def build_features(request: PredictRequest) -> pd.DataFrame:
+    frame = pd.DataFrame([point.model_dump() for point in request.history])
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
+    frame = frame.sort_values("timestamp").drop_duplicates("timestamp")
+    if len(frame) < 24:
+        raise HTTPException(422, "At least 24 hourly PM2.5 observations are required.")
+    for column in FEATURE_COLUMNS:
+        if column not in frame.columns:
+            frame[column] = np.nan
+    frame = frame.ffill()
+    for column, value in request.latest.items():
+        if column in FEATURE_COLUMNS:
+            frame[column] = value
+    pm = frame["pm25"]
+    row: dict[str, Any] = {}
+    for column in FEATURE_COLUMNS:
+        row[column] = frame[column].iloc[-1]
+    for lag in (1, 2, 3, 6, 12, 24):
+        row[f"pm25_lag_{lag}"] = pm.iloc[-1 - lag]
+    for window in (3, 6, 24):
+        row[f"pm25_roll_mean_{window}"] = pm.iloc[-window:].mean()
+    latest = frame["timestamp"].iloc[-1]
+    row["hour"] = latest.hour
+    row["day_of_week"] = latest.dayofweek
+    row["month"] = latest.month
+    row["wind_dir_sin"] = math.sin(math.radians(row["wind_dir"] if row["wind_dir"] is not None else 0))
+    row["wind_dir_cos"] = math.cos(math.radians(row["wind_dir"] if row["wind_dir"] is not None else 0))
+    weather = request.weather.model_dump()
+    for key, value in weather.items():
+        if value is not None:
+            row[key] = value
+    return pd.DataFrame([row])
+
+
+@app.get("/health")
+def health() -> dict[str, Any]:
+    manifest = model_manifest()
+    return {"service": "mumbai-enviropulse-ml", "status": manifest["status"], **manifest}
+
+
+@app.post("/predict")
+def predict(request: PredictRequest) -> dict[str, Any]:
+    manifest = model_manifest()
+    if manifest["status"] != "TRAINED":
+        raise HTTPException(503, "MODEL_NOT_TRAINED: train and register a verified model first.")
+    features = build_features(request)
+    forecasts: list[dict[str, Any]] = []
+    for horizon in HORIZONS:
+        bundle = artifact(f"pm25_{horizon}h.joblib")
+        if not bundle:
+            raise HTTPException(503, f"MODEL_ARTIFACT_MISSING: pm25_{horizon}h.joblib")
+        model = bundle["model"]
+        feature_names = bundle["features"]
+        values = features.reindex(columns=feature_names)
+        prediction = float(model.predict(values)[0])
+        lower_bundle = artifact(f"pm25_quantile_{horizon}h_10.joblib")
+        upper_bundle = artifact(f"pm25_quantile_{horizon}h_90.joblib")
+        lower = float(lower_bundle["model"].predict(values.reindex(columns=lower_bundle["features"]))[0]) if lower_bundle else max(0.0, prediction - 10)
+        upper = float(upper_bundle["model"].predict(values.reindex(columns=upper_bundle["features"]))[0]) if upper_bundle else prediction + 10
+        forecasts.append({
+            "horizon_hours": horizon,
+            "predicted_value": round(max(0.0, prediction), 2),
+            "lower_bound": round(max(0.0, min(lower, upper)), 2),
+            "upper_bound": round(max(lower, upper), 2),
+        })
+
+    classifier = artifact("deterioration_classifier.joblib")
+    deterioration_probability = None
+    if classifier:
+        probability = classifier["model"].predict_proba(features.reindex(columns=classifier["features"]))[0][1]
+        deterioration_probability = round(float(probability), 4)
+
+    shap_values: list[dict[str, Any]] = []
+    shap_status = "UNAVAILABLE"
+    try:
+        import shap
+
+        bundle = artifact("pm25_3h.joblib")
+        if bundle:
+            explainer = shap.TreeExplainer(bundle["model"])
+            values = features.reindex(columns=bundle["features"])
+            contributions = explainer.shap_values(values)[0]
+            ranked = sorted(
+                ({"feature": name, "contribution": float(value)} for name, value in zip(bundle["features"], contributions)),
+                key=lambda item: abs(item["contribution"]),
+                reverse=True,
+            )
+            shap_values = ranked[:10]
+            shap_status = "COMPUTED"
+    except Exception as error:
+        shap_status = f"FAILED: {error}"
+
+    return {
+        "status": "COMPLETED",
+        "station_id": request.station_id,
+        "model_version": manifest.get("model_version"),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "forecasts": forecasts,
+        "deterioration_probability": deterioration_probability,
+        "shap_status": shap_status,
+        "shap": shap_values,
+        "limitations": [
+            "Forecasts are model estimates, not confirmed future conditions or official determinations.",
+            "Metrics are only valid for the registered training extract.",
+            "Missing weather inputs reduce reliability and are not replaced with invented values.",
+        ],
+    }

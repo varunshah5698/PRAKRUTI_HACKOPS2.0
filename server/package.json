@@ -11,7 +11,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:reset": "tsx src/db/setup.ts --reset",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "ml:register": "tsx src/db/register-models.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

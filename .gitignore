@@ -11,4 +11,6 @@ coverage/
 ml/.venv/
 ml/artifacts/*.joblib
 ml/data/*.csv
+__pycache__/
+*.pyc
 tmp/

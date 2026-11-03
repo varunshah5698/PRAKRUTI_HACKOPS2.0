@@ -26,6 +26,8 @@ const EnvSchema = z.object({
   OPENAQ_API_KEY: z.string().default(''),
   OPEN_METEO_BASE_URL: z.string().default('https://api.open-meteo.com'),
   OPEN_METEO_AIR_QUALITY_BASE_URL: z.string().default('https://air-quality-api.open-meteo.com'),
+  ML_SERVICE_URL: z.string().default(''),
+  ML_SERVICE_API_KEY: z.string().default(''),
   MAP_STYLE_URL: z.string().default('https://tiles.openfreemap.org/styles/liberty'),
   MAP_TILE_PROVIDER: z.string().default('OpenFreeMap'),
   EMAIL_PROVIDER: z.string().default('console'),

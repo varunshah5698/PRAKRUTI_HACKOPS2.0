@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
@@ -235,6 +236,8 @@ def main() -> None:
     shap = shap_summary(bundle, test, args.output)
 
     model_card = {
+        "model_version": f"lightgbm-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}",
+        "trained_at": datetime.now(timezone.utc).isoformat(),
         "dataset": str(args.input),
         "rows": int(len(frame)),
         "stations": int(frame["station_id"].nunique()),

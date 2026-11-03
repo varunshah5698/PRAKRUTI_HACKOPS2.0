@@ -2,6 +2,7 @@ import { query } from '../db/pool.js';
 import { calculateAqi } from './aqi.js';
 import { baselineForecast, anomalyScore } from './forecast.js';
 import { getStationSeries, getStationSnapshots, getLatestWeather } from './station-data.js';
+import { getForecastsForStation } from './forecast-service.js';
 
 export interface MapFilters {
   at: string;
@@ -75,7 +76,31 @@ export async function getMapTimeline(filters: MapFilters) {
         }
       }
       for (const { base, history } of grouped.values()) {
-        const forecast = baselineForecast(history, horizon, now);
+        const latestRows = await query<{ pollutant_code: string; value: number }>(
+          `SELECT DISTINCT ON (pollutant_code) pollutant_code, value::float8 AS value
+           FROM environmental_observations WHERE station_id=$1 AND observed_at > now() - interval '24 hours'
+             AND quality_state <> 'INVALID'
+           ORDER BY pollutant_code, observed_at DESC`,
+          [base.id],
+        );
+        const latest = Object.fromEntries(latestRows.map((row) => [row.pollutant_code, Number(row.value)]));
+        const latestWeather = await getLatestWeather(base.id);
+        const bundle = await getForecastsForStation({
+          stationId: base.id,
+          history,
+          latest,
+          weather: latestWeather[0]
+            ? {
+                temperature: latestWeather[0].temperature_c === null ? null : Number(latestWeather[0].temperature_c),
+                humidity: latestWeather[0].relative_humidity === null ? null : Number(latestWeather[0].relative_humidity),
+                windSpeed: latestWeather[0].wind_speed_kmh === null ? null : Number(latestWeather[0].wind_speed_kmh),
+                windDirection: latestWeather[0].wind_direction_deg === null ? null : Number(latestWeather[0].wind_direction_deg),
+                precipitation: latestWeather[0].precipitation_mm === null ? null : Number(latestWeather[0].precipitation_mm),
+              }
+            : null,
+          now,
+        });
+        const forecast = bundle.forecasts.find((item) => item.horizonHours === horizon) ?? baselineForecast(history, horizon, now);
         if (!forecast) {
           stations.push({
             id: base.id,
@@ -118,14 +143,16 @@ export async function getMapTimeline(filters: MapFilters) {
       if (filters.pollutant && filters.pollutant !== 'pm25' && filters.pollutant !== 'aqi') {
         warnings.push('Only PM2.5 persistence-baseline forecasts are available. Other pollutant forecasts are unavailable.');
       }
+      const trainedForecast = stations.find((station) => (station.forecast as { method?: string } | null)?.method === 'LIGHTGBM_TRAINED');
       forecastMeta = {
         available: true,
-        method: 'PERSISTENCE_BASELINE_V1',
-        status: 'NOT_A_TRAINED_MODEL',
+        method: trainedForecast ? 'LIGHTGBM_TRAINED' : 'PERSISTENCE_BASELINE_V1',
+        status: trainedForecast ? 'TRAINED_MODEL' : 'NOT_A_TRAINED_MODEL',
         horizonHours: horizon,
         targetTime: at.toISOString(),
-        note:
-          'Persistence baseline with an empirical 80% band. LightGBM models are NOT TRAINED. Forecasts are not confirmed future conditions and are not regulatory determinations.',
+        note: trainedForecast
+          ? 'Forecasts are from the registered LightGBM model. They are estimates, not confirmed future conditions or regulatory determinations.'
+          : 'Persistence baseline with an empirical 80% band. No trained ML model is active. Forecasts are not confirmed future conditions and are not regulatory determinations.',
       };
       if (!stations.some((s) => s.forecast)) warnings.push('FORECAST UNAVAILABLE for the selected time.');
     }
@@ -334,17 +361,28 @@ export async function getStationDetail(stationId: string) {
   const primary = station.stationType === 'AIR_CAAQMS' ? 'pm25' : station.stationType === 'WATER_SAMPLING' ? 'do' : 'stack_pm';
   const series = await getStationSeries(stationId, primary, 48);
   const weather = await getLatestWeather(stationId);
-  const forecasts = [];
-  if (station.stationType === 'AIR_CAAQMS') {
-    for (const horizon of [1, 3, 6]) {
-      const forecast = baselineForecast(
-        series.map((s) => ({ observedAt: s.observed_at, value: Number(s.value) })),
-        horizon,
-      );
-      if (forecast) forecasts.push({ ...forecast, pollutant: 'PM2.5', unit: 'µg/m³' });
-    }
-  }
-  const anomaly = anomalyScore(series.map((s) => ({ observedAt: s.observed_at, value: Number(s.value) })));
+  const pmSeries = station.stationType === 'AIR_CAAQMS' ? await getStationSeries(stationId, 'pm25', 48) : series;
+  const history = pmSeries.map((s) => ({ observedAt: s.observed_at, value: Number(s.value) }));
+  const latest = Object.fromEntries(Object.entries(station.values).map(([code, reading]) => [code, reading.value]));
+  const bundle =
+    station.stationType === 'AIR_CAAQMS'
+      ? await getForecastsForStation({
+          stationId,
+          history,
+          latest,
+          weather: weather[0]
+            ? {
+                temperature: weather[0].temperature_c === null ? null : Number(weather[0].temperature_c),
+                humidity: weather[0].relative_humidity === null ? null : Number(weather[0].relative_humidity),
+                windSpeed: weather[0].wind_speed_kmh === null ? null : Number(weather[0].wind_speed_kmh),
+                windDirection: weather[0].wind_direction_deg === null ? null : Number(weather[0].wind_direction_deg),
+                precipitation: weather[0].precipitation_mm === null ? null : Number(weather[0].precipitation_mm),
+              }
+            : null,
+        })
+      : null;
+  const forecasts = bundle?.forecasts ?? [];
+  const anomaly = anomalyScore(history);
 
   const nearbyStations = await query<Record<string, unknown>>(
     `SELECT s.id, s.code, s.name, s.station_type, s.health_status,
@@ -404,11 +442,16 @@ export async function getStationDetail(stationId: string) {
     alerts,
     risk: risk[0] ?? null,
     forecastStatus: {
-      trainedModel: 'NOT_TRAINED',
-      availableMethod: 'PERSISTENCE_BASELINE_V1',
+      trainedModel: bundle?.modelStatus ?? 'NOT_CONFIGURED',
+      availableMethod: bundle?.source === 'ML' ? 'LIGHTGBM_TRAINED' : 'PERSISTENCE_BASELINE_V1',
       note:
-        'No LightGBM model is trained because no verified Mumbai historical training extract has been supplied. Forecasts shown are a labelled persistence baseline, not ML output.',
-      shap: 'UNAVAILABLE — no trained model',
+        bundle?.source === 'ML'
+          ? 'Forecasts are from the registered LightGBM model. They are estimates, not confirmed future conditions or regulatory determinations.'
+          : 'No trained LightGBM model is active for this deployment. Forecasts shown are a labelled persistence baseline, not ML output.',
+      shap: bundle?.shapStatus ?? 'UNAVAILABLE',
+      shapValues: bundle?.shap ?? [],
+      limitations: bundle?.limitations ?? [],
+      modelVersion: bundle?.modelVersion ?? null,
     },
     dataQuality: {
       stationHealth: station.healthStatus,

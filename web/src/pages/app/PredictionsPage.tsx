@@ -33,12 +33,15 @@ interface PredictionData {
     method: string;
     intervals: string;
     shap: string;
+    shapValues: Array<{ feature: string; contribution: number }>;
+    forecastLimitations: string[];
+    modelVersion: string | null;
     forecastPerformance: { status: string; reason: string };
   } | null;
   stations: Array<{ id: string; name: string; locality: string; pm25: number | null; aqi: number | null; isSimulated: boolean }>;
   models: Array<{ id: string; name: string; version: string; target: string; horizon_hours: number | null; model_type: string; status: string; metrics: unknown; trained_at: string | null; notes: string }>;
   externalContext: { cams: Array<{ locality_name: string; pollutant_code: string; value: number; unit: string; observed_at: string }> };
-  status: { trainedModels: string; reason: string; available: string; shap: string; quantileIntervals: string; deteriorationClassifier: string; anomalyDetector: string };
+  status: { trainedModels: string; reason: string; available: string; shap: string; quantileIntervals: string; deteriorationClassifier: string; anomalyDetector: string; modelVersion?: string | null };
   generatedAt: string;
 }
 
@@ -96,7 +99,7 @@ export function PredictionsPage() {
             data: [{ yAxis: 60, label: { formatter: '24h NAAQS 60', color: '#dc555b', fontSize: 9 }, lineStyle: { color: '#dc555b', type: 'dashed', opacity: 0.5 } }],
           },
         },
-        { name: 'Baseline median', type: 'line', data: median, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#56c1b3', width: 2, type: 'dashed' }, itemStyle: { color: '#56c1b3' } },
+        { name: data.detail?.method === 'LIGHTGBM_TRAINED' ? 'Model median' : 'Baseline median', type: 'line', data: median, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#56c1b3', width: 2, type: 'dashed' }, itemStyle: { color: '#56c1b3' } },
         { name: 'Lower band', type: 'line', data: lower, symbol: 'none', lineStyle: { color: 'rgba(86,193,179,0.35)', width: 1, type: 'dotted' } },
         { name: 'Upper band', type: 'line', data: upper, symbol: 'none', lineStyle: { color: 'rgba(86,193,179,0.35)', width: 1, type: 'dotted' } },
       ],
@@ -129,6 +132,7 @@ export function PredictionsPage() {
   }
 
   const detail = data.detail;
+  const trained = detail?.method === 'LIGHTGBM_TRAINED';
   const alertState = detail?.risk?.alert_state ?? 'NORMAL';
 
   return (
@@ -136,15 +140,18 @@ export function PredictionsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="amber" dot>ML models not trained</Badge>
-            <Badge tone="teal">Persistence baseline</Badge>
-            <Badge tone="neutral">Intervals not calibrated</Badge>
+            <Badge tone={trained ? 'green' : data.status.trainedModels === 'UNAVAILABLE' ? 'amber' : 'amber'} dot>
+              {trained ? `Trained model · ${detail?.modelVersion ?? data.status.modelVersion ?? 'registered'}` : data.status.trainedModels === 'UNAVAILABLE' ? 'ML service unavailable' : 'ML models not trained'}
+            </Badge>
+            <Badge tone={trained ? 'teal' : 'teal'}>{trained ? 'LightGBM forecasts' : 'Persistence baseline'}</Badge>
+            <Badge tone="neutral">{trained ? 'Quantile 10–90' : 'Intervals not calibrated'}</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Predictive environmental intelligence</h2>
           <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#788493]">
-            Air pollution is the primary predictive application. No verified Mumbai historical training extract has been supplied, so the
-            LightGBM, quantile, deterioration-classifier and anomaly models are <strong className="text-amber-300">NOT TRAINED</strong>.
-            The page exposes a labelled persistence baseline instead of inventing model skill.
+            Air pollution is the primary predictive application.{' '}
+            {trained
+              ? 'A registered LightGBM model is active. Forecasts and quantile intervals come from that model; the model card and metrics must be reviewed before operational use.'
+              : 'No verified Mumbai historical training extract is active, so the LightGBM, quantile, deterioration-classifier and anomaly models are NOT TRAINED. The page exposes a labelled persistence baseline instead of inventing model skill.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -159,7 +166,7 @@ export function PredictionsPage() {
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
           <div className="text-[11px] leading-relaxed text-amber-100/80">
-            <p className="font-semibold text-amber-200">Model status: {data.status.trainedModels}</p>
+            <p className="font-semibold text-amber-200">Model status: {data.status.trainedModels}{data.status.modelVersion ? ` · ${data.status.modelVersion}` : ''}</p>
             <p className="mt-1">{data.status.reason}</p>
             <p className="mt-1">Available method: {data.status.available}. SHAP: {data.status.shap}. Quantile intervals: {data.status.quantileIntervals}. Deterioration classifier: {data.status.deteriorationClassifier}.</p>
           </div>
@@ -179,9 +186,9 @@ export function PredictionsPage() {
               const forecast = detail.forecasts.find((f) => f.horizonHours === horizon);
               return (
                 <Card key={horizon} className="p-4">
-                  <div className="flex items-center justify-between"><DataLabel>+{horizon} hour forecast</DataLabel><Badge tone="teal">Baseline</Badge></div>
+                  <div className="flex items-center justify-between"><DataLabel>+{horizon} hour forecast</DataLabel><Badge tone="teal">{trained ? 'LightGBM' : 'Baseline'}</Badge></div>
                   <p className="display mt-3 text-[30px] font-bold">{forecast ? number(forecast.predictedValue) : '—'} <span className="text-sm font-normal text-[#788493]">µg/m³</span></p>
-                  <p className="mt-1 text-[10px] text-[#788493]">80% band {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : 'unavailable'}</p>
+                  <p className="mt-1 text-[10px] text-[#788493]">{trained ? 'Quantile 10–90' : '80% band'} {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : 'unavailable'}</p>
                   <div className="mt-3"><ProgressBar value={forecast ? Math.min(100, (forecast.predictedValue / 100) * 100) : 0} tone={forecast && forecast.predictedValue >= 60 ? '#e88a43' : '#56c1b3'} /></div>
                   <p className="mt-2 text-[9px] text-[#6f7c89]">{forecast?.method ?? 'FORECAST UNAVAILABLE'}</p>
                 </Card>
@@ -212,7 +219,7 @@ export function PredictionsPage() {
                   <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Averaging basis</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.averaging}</span></div>
                   <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">+3h baseline</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.forecast3h ?? '—'} µg/m³</span></div>
                   <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Persistence readings</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.persistence} / 6</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Deterioration probability</span><span className="font-semibold text-amber-300">NOT AVAILABLE</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Deterioration probability</span><span className="font-semibold text-amber-300">{detail.criteria.deteriorationProbability === null ? 'NOT AVAILABLE' : `${Math.round(detail.criteria.deteriorationProbability * 100)}%`}</span></div>
                   <div className={`rounded-xl border p-3 text-[10px] leading-relaxed ${detail.criteria.predictiveWarningMet ? 'border-amber-500/30 bg-amber-500/[0.06] text-amber-100/80' : 'border-[#303945] bg-[#101317] text-[#788493]'}`}>
                     {detail.criteria.predictiveWarningMet ? 'Configured baseline criteria are met. This is an analytical early warning, not a confirmed future condition or a violation.' : 'Configured baseline criteria are not met. No predictive warning is raised from this method.'}
                   </div>
@@ -243,11 +250,28 @@ export function PredictionsPage() {
             <Card>
               <CardHeader><CardTitle>Explainability</CardTitle><Badge tone="neutral">Not available</Badge></CardHeader>
               <div className="p-4">
-                <div className="flex items-center gap-2 text-[#5f6b78]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#95a1ae]">SHAP is unavailable</p></div>
-                <p className="mt-2 text-[10px] leading-relaxed text-[#788493]">
-                  SHAP values can only be computed by a trained model. No trained LightGBM artifact exists in this deployment. Generic feature
-                  importance is not shown in place of SHAP.
-                </p>
+                {trained && detail.shapValues.length ? (
+                  <>
+                    <div className="flex items-center gap-2 text-emerald-300"><CheckCircle2 className="h-4 w-4" /><p className="text-[11px] font-semibold">SHAP computed by the registered model</p></div>
+                    <div className="mt-3 space-y-1.5">
+                      {detail.shapValues.slice(0, 8).map((item) => (
+                        <div key={item.feature} className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="truncate text-[#a2adba]">{item.feature}</span>
+                          <span className={item.contribution >= 0 ? 'text-amber-300' : 'text-teal-300'}>{item.contribution >= 0 ? '+' : ''}{item.contribution.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[9px] leading-relaxed text-[#6f7c89]">SHAP contribution to the +3h prediction. Positive values push the forecast higher.</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-[#5f6b78]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#95a1ae]">SHAP is unavailable</p></div>
+                    <p className="mt-2 text-[10px] leading-relaxed text-[#788493]">
+                      SHAP values can only be computed by a trained model. No trained LightGBM artifact is active for this deployment. Generic feature
+                      importance is not shown in place of SHAP.
+                    </p>
+                  </>
+                )}
                 <div className="mt-4 rounded-xl border border-[#303945] bg-[#101317] p-3 text-[10px] leading-relaxed text-[#788493]">
                   <p className="font-semibold text-[#a2adba]">Actual vs forecast</p>
                   <p className="mt-1">{detail.forecastPerformance.reason}</p>

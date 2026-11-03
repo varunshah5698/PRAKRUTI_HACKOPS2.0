@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+server/dist
+web/dist
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+server/storage/evidence
+tmp
+coverage
+*.log
+.DS_Store
+ml/.venv
+ml/artifacts/*.joblib
+ml/data/*.csv

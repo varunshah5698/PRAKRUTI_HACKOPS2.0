@@ -70,7 +70,7 @@ interface StationDetail {
   nearbyReports: Array<{ id: string; public_ref: string; category: string; incident_type: string; status: string; verification_state: string; submitted_at: string; distance_m: number }>;
   alerts: Array<{ id: string; public_ref: string; category: string; level: string; state: string; trigger_type: string; title: string; summary: string; triggered_at: string; is_simulated: boolean }>;
   risk: { risk_score: number | null; risk_level: string; confidence_score: number | null; confidence_level: string; alert_state: string; method: string; supporting_evidence: unknown[]; missing_inputs: string[]; calculated_at: string; ruleset_version: string } | null;
-  forecastStatus: { trainedModel: string; availableMethod: string; note: string; shap: string };
+  forecastStatus: { trainedModel: string; availableMethod: string; note: string; shap: string; shapValues?: Array<{ feature: string; contribution: number }>; limitations?: string[]; modelVersion?: string | null };
   dataQuality: { stationHealth: string; latestObservedAt: string | null; isStale: boolean; simulated: boolean; note: string };
 }
 
@@ -362,8 +362,8 @@ function StationDrawer({
 
           {tab === 'forecast' ? (
             <div className="space-y-4 px-5 py-5">
-              <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3 text-[10px] leading-relaxed text-amber-100/80">
-                <strong className="text-amber-200">LightGBM models are NOT TRAINED.</strong> {detail.forecastStatus.note}
+              <div className={`rounded-xl border p-3 text-[10px] leading-relaxed ${detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? 'border-emerald-500/25 bg-emerald-500/[0.06] text-emerald-100/80' : 'border-amber-500/25 bg-amber-500/[0.06] text-amber-100/80'}`}>
+                <strong>{detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? `Trained model active${detail.forecastStatus.modelVersion ? ` · ${detail.forecastStatus.modelVersion}` : ''}.` : 'No trained LightGBM model is active.'}</strong> {detail.forecastStatus.note}
               </div>
               {detail.forecasts.length ? (
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -371,7 +371,7 @@ function StationDrawer({
                     <div key={forecast.horizonHours} className="rounded-xl border border-[#303945] bg-[#101317] p-3">
                       <DataLabel>+{forecast.horizonHours} hour</DataLabel>
                       <p className="mt-1 text-xl font-semibold text-[#f3f5f7]">{forecast.predictedValue} <span className="text-[10px] font-normal text-[#788493]">µg/m³</span></p>
-                      <p className="mt-1 text-[9px] text-[#6f7c89]">Band {forecast.lowerBound}–{forecast.upperBound}</p>
+                      <p className="mt-1 text-[9px] text-[#6f7c89]">{detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? 'Quantile 10–90' : 'Empirical band'} {forecast.lowerBound}–{forecast.upperBound}</p>
                       <p className="mt-2 text-[8px] uppercase tracking-[0.08em] text-amber-300/70">{forecast.method}</p>
                     </div>
                   ))}
