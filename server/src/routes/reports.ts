@@ -177,10 +177,13 @@ reportsRouter.post('/', optionalAuth, submitLimiter, upload.single('photo'), asy
       );
       const vision = await analyzeEvidenceImage(req.file.buffer, saved.mime);
       visionStatus = vision.status;
+      const visionModel = vision.provider.startsWith('google:')
+        ? vision.provider.slice('google:'.length)
+        : vision.provider === 'none' ? null : vision.provider;
       await query(
         `INSERT INTO ai_assessments (report_id, assessment_type, provider, model, status, output)
          VALUES ($1,'REPORT_VISUAL_ASSESSMENT',$2,$3,$4,$5::jsonb)`,
-        [row.id, vision.provider, vision.provider === 'none' ? null : vision.provider, vision.status, JSON.stringify(vision.output)],
+        [row.id, vision.provider, visionModel, vision.status, JSON.stringify(vision.output)],
       );
     } else {
       await query(
@@ -190,7 +193,7 @@ reportsRouter.post('/', optionalAuth, submitLimiter, upload.single('photo'), asy
           row.id,
           JSON.stringify({
             status: 'NOT_CONFIGURED',
-            reason: 'No photograph was attached, and no vision model is configured.',
+            reason: 'No photograph was attached, so no visual assessment was performed.',
             limitations: ['A photograph could not establish chemical composition, toxicity, concentration or legal responsibility.'],
           }),
         ],

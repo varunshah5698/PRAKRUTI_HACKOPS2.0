@@ -176,13 +176,47 @@ export function ReportDetailPage() {
           <Card>
             <CardHeader><CardTitle>AI assessment</CardTitle><Badge tone={data.aiAssessments.some((a) => a.status === 'COMPLETED') ? 'green' : 'amber'}>{data.aiAssessments[0]?.status ?? 'NOT_CONFIGURED'}</Badge></CardHeader>
             <div className="space-y-3 p-4">
-              {data.aiAssessments.map((assessment) => (
-                <div key={assessment.id} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#68786d]">
-                  <div className="flex items-center justify-between"><span className="font-semibold text-[#26362a]">{assessment.assessment_type.replace(/_/g, ' ')}</span><span>{assessment.provider} · {assessment.status}</span></div>
-                  <p className="mt-2 whitespace-pre-wrap">{String((assessment.output as { reason?: string }).reason ?? JSON.stringify(assessment.output))}</p>
-                  <p className="mt-2 text-[9px] text-[#7b8a80]">A photograph cannot establish chemical composition, toxicity, concentration or legal responsibility.</p>
-                </div>
-              ))}
+              {data.aiAssessments.map((assessment) => {
+                const output = assessment.output as {
+                  description?: unknown;
+                  visibleFeatures?: unknown;
+                  confidence?: unknown;
+                  limitations?: unknown;
+                  reason?: unknown;
+                };
+                const features = Array.isArray(output.visibleFeatures)
+                  ? output.visibleFeatures.filter((feature): feature is string => typeof feature === 'string')
+                  : [];
+                const limitations = Array.isArray(output.limitations)
+                  ? output.limitations.filter((limitation): limitation is string => typeof limitation === 'string')
+                  : [];
+                return (
+                  <div key={assessment.id} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#68786d]">
+                    <div className="flex items-center justify-between"><span className="font-semibold text-[#26362a]">{assessment.assessment_type.replace(/_/g, ' ')}</span><span>{assessment.provider} · {assessment.status}</span></div>
+                    {assessment.status === 'COMPLETED' && typeof output.description === 'string' ? (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-[11px] text-[#3f5145]">{output.description}</p>
+                        {features.length ? (
+                          <div className="flex flex-wrap gap-1">
+                            {features.map((feature) => (
+                              <span key={feature} className="rounded-full border border-[#dfe6db] px-2 py-0.5 text-[9px] text-[#68786d]">{feature}</span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {typeof output.confidence === 'string' ? <p className="text-[9px] text-[#7b8a80]">Confidence: {output.confidence}</p> : null}
+                        {limitations.length ? (
+                          <ul className="space-y-0.5 text-[9px] text-[#7b8a80]">
+                            {limitations.map((limitation) => <li key={limitation}>— {limitation}</li>)}
+                          </ul>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="mt-2 whitespace-pre-wrap">{String(output.reason ?? JSON.stringify(assessment.output))}</p>
+                    )}
+                    <p className="mt-2 text-[9px] text-[#7b8a80]">A photograph cannot establish chemical composition, toxicity, concentration or legal responsibility.</p>
+                  </div>
+                );
+              })}
               {data.aiAssessments.length === 0 ? <p className="text-[11px] text-[#74847a]">No AI assessment record.</p> : null}
             </div>
           </Card>
