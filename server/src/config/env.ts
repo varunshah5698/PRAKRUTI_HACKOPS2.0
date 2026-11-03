@@ -20,7 +20,7 @@ const EnvSchema = z.object({
   RIVER_API_KEY: z.string().default(''),
   VISION_BASE_URL: z.string().default(''),
   VISION_MODEL: z.string().default(''),
-  VISION_FALLBACK_MODELS: z.string().default('gemini-3.1-flash-lite'),
+  VISION_FALLBACK_MODELS: z.string().default('gemini-3.5-flash-lite'),
   VISION_API_KEY: z.string().default(''),
   DATA_GOV_IN_API_KEY: z.string().default(''),
   DATA_GOV_IN_AIR_RESOURCE_ID: z.string().default(''),

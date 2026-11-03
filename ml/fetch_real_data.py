@@ -19,10 +19,12 @@ import hashlib
 import json
 import math
 import os
+import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -82,8 +84,9 @@ class Client:
         self.api_key = api_key
         self.cache = cache
         self.min_interval = min_interval
-        self.last_request = 0.0
+        self.next_slot = 0.0
         self.requests = 0
+        self._lock = threading.Lock()
 
     def _cached(self, path: Path) -> dict | None:
         if path.exists():
@@ -92,6 +95,16 @@ class Client:
             except json.JSONDecodeError:
                 return None
         return None
+
+    def _reserve_slot(self) -> None:
+        # Reserve a global start slot so concurrent workers stay under the
+        # 60 requests/minute limit while still overlapping network latency.
+        with self._lock:
+            slot = max(time.monotonic(), self.next_slot)
+            self.next_slot = slot + self.min_interval
+        delay = slot - time.monotonic()
+        if delay > 0:
+            time.sleep(delay)
 
     def get(self, path: str, params: dict | None = None, cache_key: str | None = None) -> dict:
         cache_path = self.cache / cache_key if cache_key else None
@@ -102,21 +115,18 @@ class Client:
         url = OPENAQ + path + ("?" + urllib.parse.urlencode(params) if params else "")
         headers = {"X-API-Key": self.api_key, "Accept": "application/json"}
         for attempt in range(8):
-            wait = self.min_interval - (time.monotonic() - self.last_request)
-            if wait > 0:
-                time.sleep(wait)
+            self._reserve_slot()
             try:
                 request = urllib.request.Request(url, headers=headers)
                 with urllib.request.urlopen(request, timeout=90) as response:
                     payload = json.load(response)
-                    self.last_request = time.monotonic()
-                    self.requests += 1
+                    with self._lock:
+                        self.requests += 1
                 if cache_path:
                     cache_path.parent.mkdir(parents=True, exist_ok=True)
                     cache_path.write_text(json.dumps(payload))
                 return payload
             except urllib.error.HTTPError as error:
-                self.last_request = time.monotonic()
                 if error.code == 429:
                     reset = int(error.headers.get("X-Ratelimit-Reset", "60") or 60)
                     time.sleep(max(5, reset) + attempt * 5)
@@ -177,6 +187,101 @@ def converted_value(code: str, unit: str, value: float) -> tuple[float, str] | t
     if unit == "ppb" and factor:
         return value * factor, "ppb_converted"
     return None, None
+
+
+def archive_url(location_id: int, day) -> str:
+    return (
+        "https://openaq-data-archive.s3.amazonaws.com/records/csv.gz/"
+        f"locationid={location_id}/year={day.year}/month={day.month:02d}/"
+        f"location-{location_id}-{day.year}{day.month:02d}{day.day:02d}.csv.gz"
+    )
+
+
+def fetch_archive_location(location_id: int, start: str, end: str, workers: int) -> pd.DataFrame:
+    """Download the public OpenAQ daily archive files for one location.
+
+    One daily file holds every sensor at the location, so this is much faster
+    and less rate-limited than replaying the API page by page.
+    """
+    days = pd.date_range(start, end, freq="D", inclusive="left", tz="UTC")
+    cache_dir = CACHE / "archive" / f"location_{location_id}"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def download(day) -> Path:
+        day = day.date()
+        path = cache_dir / f"{day.isoformat()}.csv.gz"
+        if path.exists():
+            return path
+        try:
+            with urllib.request.urlopen(archive_url(location_id, day), timeout=90) as response:
+                payload = response.read()
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                path.write_bytes(b"")
+                return path
+            raise
+        path.write_bytes(payload)
+        return path
+
+    frames = []
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
+        for path in executor.map(download, days):
+            if path.stat().st_size == 0:
+                continue
+            try:
+                frames.append(pd.read_csv(path, compression="gzip"))
+            except Exception:
+                path.unlink(missing_ok=True)
+    if not frames:
+        return pd.DataFrame(columns=["sensors_id", "datetime", "parameter", "units", "value"])
+    frame = pd.concat(frames, ignore_index=True)
+    frame["datetime"] = pd.to_datetime(frame["datetime"], utc=True)
+    return frame
+
+
+def archive_series(frame: pd.DataFrame, sensor_id: int, code: str, unit: str) -> tuple[pd.Series, dict]:
+    quality = {"rows": 0, "out_of_bounds": 0, "bad_unit": 0, "low_coverage": 0}
+    if frame.empty:
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([], tz="UTC")), quality
+    rows = frame[frame["sensors_id"] == sensor_id].reset_index(drop=True)
+    quality["rows"] = int(len(rows))
+    if rows.empty:
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([], tz="UTC")), quality
+    values = pd.to_numeric(rows["value"], errors="coerce")
+    normalised = []
+    method = None
+    for value in values:
+        if not np.isfinite(value):
+            normalised.append(np.nan)
+            continue
+        converted, method = converted_value(code, unit, float(value))
+        if converted is None:
+            normalised.append(np.nan)
+            quality["bad_unit"] += 1
+            continue
+        low, high = BOUNDS[code]
+        if converted < low or converted > high:
+            normalised.append(np.nan)
+            quality["out_of_bounds"] += 1
+            continue
+        normalised.append(converted)
+    quality[f"method_{method}"] = int(np.isfinite(normalised).sum()) if method else 0
+    hourly = pd.DataFrame({"hour": rows["datetime"].dt.floor("h"), "value": normalised}).dropna()
+    if hourly.empty:
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([], tz="UTC")), quality
+    grouped = hourly.groupby("hour")["value"].agg(["mean", "count"])
+    # Keep hours with at least half the sensor's usual cadence; a single
+    # 15-minute reading is not a valid hourly mean.
+    if float(grouped["count"].median()) >= 2:
+        before = len(grouped)
+        grouped = grouped[grouped["count"] >= 2]
+        quality["low_coverage"] += before - len(grouped)
+    series = grouped["mean"].astype(float)
+    if not isinstance(series.index, pd.DatetimeIndex):
+        series.index = pd.DatetimeIndex([], tz="UTC")
+    elif series.index.tz is None:
+        series.index = series.index.tz_localize("UTC")
+    return series.sort_index(), quality
 
 
 def fetch_hours(client: Client, sensor_id: int, start: str, end: str) -> list[dict]:
@@ -293,11 +398,19 @@ def main() -> None:
     parser.add_argument("--min-pm25-coverage", type=float, default=0.30)
     parser.add_argument("--min-pm25-rows", type=int, default=2000)
     parser.add_argument("--max-stations", type=int, default=0, help="Smoke-test only: limit stations after selection.")
+    parser.add_argument("--workers", type=int, default=4, help="Concurrent OpenAQ requests (rate limit is global).")
+    parser.add_argument("--source", choices=("api", "archive"), default="api", help="Hourly API pages or the public S3 daily archive.")
+    parser.add_argument("--archive-workers", type=int, default=24, help="Concurrent S3 daily-file downloads.")
     parser.add_argument("--refresh", action="store_true")
     args = parser.parse_args()
 
     start, end = args.start, args.end
     CACHE.mkdir(parents=True, exist_ok=True)
+    if args.refresh:
+        # Refresh station/sensor discovery; historical pages stay cached.
+        (CACHE / "openaq" / "locations.json").unlink(missing_ok=True)
+        for path in (CACHE / "openaq").glob("latest_*.json"):
+            path.unlink()
     client = Client(load_api_key(), CACHE)
     boundary = json.loads(BOUNDARY.read_text())
     now = datetime.now(timezone.utc)
@@ -357,24 +470,44 @@ def main() -> None:
 
     print(f"{len(selected)} stations with an active PM2.5 sensor")
 
+    archive_frames: dict[int, pd.DataFrame] = {}
+    if args.source == "archive":
+        for item in selected:
+            location_id = item["location"]["id"]
+            print(f"  archive download {location_id} {item['location']['name'][:48]}")
+            archive_frames[location_id] = fetch_archive_location(location_id, start, end, args.archive_workers)
+
     # First pass: fetch PM2.5 so weak stations can be dropped before spending
     # rate limit on the other pollutants.
-    station_data: dict[int, dict] = {}
-    for item in selected:
+    expected = len(pd.date_range(start, end, freq="h", inclusive="left"))
+
+    def pm25_task(item: dict) -> tuple[int, dict]:
         location = item["location"]
         sensor = item["sensors"]["pm25"]
-        rows = fetch_hours(client, sensor["id"], start, end)
-        series, quality = series_from_hours(rows, "pm25", sensor["parameter"]["units"])
-        expected = len(pd.date_range(start, end, freq="h", inclusive="left"))
+        if args.source == "archive":
+            series, quality = archive_series(
+                archive_frames[location["id"]], sensor["id"], "pm25", sensor["parameter"]["units"]
+            )
+        else:
+            rows = fetch_hours(client, sensor["id"], start, end)
+            series, quality = series_from_hours(rows, "pm25", sensor["parameter"]["units"])
         coverage = len(series) / expected if expected else 0.0
-        station_data[location["id"]] = {
+        return location["id"], {
             "location": location,
             "sensors": item["sensors"],
             "series": {"pm25": series},
             "quality": {"pm25": quality},
             "coverage": {"pm25": coverage},
         }
-        print(f"  {location['id']} {location['name'][:48]:48s} pm25 {len(series):6d} rows ({coverage:5.1%})")
+
+    station_data: dict[int, dict] = {}
+    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
+        for station_id, data in executor.map(pm25_task, selected):
+            station_data[station_id] = data
+            location = data["location"]
+            series = data["series"]["pm25"]
+            coverage = data["coverage"]["pm25"]
+            print(f"  {location['id']} {location['name'][:48]:48s} pm25 {len(series):6d} rows ({coverage:5.1%})")
 
     keep = {
         station_id
@@ -388,19 +521,33 @@ def main() -> None:
     if not keep:
         raise SystemExit("No station passed the PM2.5 coverage gate; refusing to write an empty extract.")
 
-    for station_id in sorted(keep):
-        data = station_data[station_id]
-        location = data["location"]
-        for code, sensor in data["sensors"].items():
-            if code == "pm25":
-                continue
+    tasks = [
+        (station_id, code, sensor)
+        for station_id in sorted(keep)
+        for code, sensor in station_data[station_id]["sensors"].items()
+        if code != "pm25"
+    ]
+
+    def pollutant_task(task: tuple[int, str, dict]) -> tuple[int, str, pd.Series, dict, float]:
+        station_id, code, sensor = task
+        if args.source == "archive":
+            series, quality = archive_series(
+                archive_frames[station_id], sensor["id"], code, sensor["parameter"]["units"]
+            )
+        else:
             rows = fetch_hours(client, sensor["id"], start, end)
             series, quality = series_from_hours(rows, code, sensor["parameter"]["units"])
+        coverage = len(series) / expected if expected else 0.0
+        return station_id, code, series, quality, coverage
+
+    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
+        for station_id, code, series, quality, coverage in executor.map(pollutant_task, tasks):
+            data = station_data[station_id]
+            location = data["location"]
             data["series"][code] = series
             data["quality"][code] = quality
-            expected = len(pd.date_range(start, end, freq="h", inclusive="left"))
-            data["coverage"][code] = len(series) / expected if expected else 0.0
-            print(f"  {location['id']} {code:5s} {len(series):6d} rows ({data['coverage'][code]:5.1%})")
+            data["coverage"][code] = coverage
+            print(f"  {location['id']} {code:5s} {len(series):6d} rows ({coverage:5.1%})")
 
     index = pd.date_range(start, end, freq="h", inclusive="left", tz="UTC")
     frames = []
@@ -466,7 +613,11 @@ def main() -> None:
         "built_at": datetime.now(timezone.utc).isoformat(),
         "period": {"start": start, "end": end, "timezone": "UTC"},
         "sources": {
-            "air_quality": "OpenAQ v3 precomputed hourly measurements (provider CPCB; owners MPCB/BMC/IITM)",
+            "air_quality": (
+                "OpenAQ S3 daily archive, raw station measurements aggregated to hourly means (provider CPCB; owners MPCB/BMC/IITM)"
+                if args.source == "archive"
+                else "OpenAQ v3 precomputed hourly measurements (provider CPCB; owners MPCB/BMC/IITM)"
+            ),
             "weather": "Open-Meteo ERA5 archive reanalysis, not a station measurement",
         },
         "stations": stations_meta,
@@ -481,7 +632,11 @@ def main() -> None:
             "co_note": "CPCB CO feed is mg/m3; OpenAQ labels it ppb but values are ppm (legacy co-located sensor cross-check).",
         },
         "qc": {
-            "coverage_gate_per_hour": "OpenAQ percentComplete >= 50",
+            "coverage_gate_per_hour": (
+                "archived hours need >= 2 raw readings when the sensor cadence is sub-hourly"
+                if args.source == "archive"
+                else "OpenAQ percentComplete >= 50"
+            ),
             "pm25_station_gate": f">= {args.min_pm25_coverage:.0%} hourly coverage and >= {args.min_pm25_rows} rows",
             "bounds": BOUNDS,
             "mostly_zero_pollutant_dropped": "> 50% zero values",

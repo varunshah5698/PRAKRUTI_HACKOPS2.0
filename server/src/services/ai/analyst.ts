@@ -582,7 +582,10 @@ export async function analyzeEvidenceImage(
     return {
       status: 'FAILED',
       provider: visionConfig.model,
-      output: { error: error instanceof Error ? error.message : 'Vision analysis failed' },
+      output: {
+        reason: 'The vision provider is temporarily unavailable, so this photograph was not assessed. The report itself was saved.',
+        error: error instanceof Error ? error.message : 'Vision analysis failed',
+      },
     };
   }
 }
