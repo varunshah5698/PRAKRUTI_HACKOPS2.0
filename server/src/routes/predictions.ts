@@ -82,7 +82,11 @@ async function stationPrediction(stationId: string) {
 predictionsRouter.get('/', async (req, res, next) => {
   try {
     const snapshots = await getStationSnapshots('air');
-    const selected = typeof req.query.stationId === 'string' ? req.query.stationId : snapshots[0]?.id;
+    const defaultStation =
+      snapshots.find((station) => !station.isSimulated && station.values.pm25) ??
+      snapshots.find((station) => station.values.pm25) ??
+      snapshots[0];
+    const selected = typeof req.query.stationId === 'string' ? req.query.stationId : defaultStation?.id;
     const detail = selected ? await stationPrediction(selected) : null;
     const [models, mlStatus] = await Promise.all([
       query<Record<string, unknown>>(

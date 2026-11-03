@@ -637,7 +637,7 @@ export async function analyzeEvidenceImage(
         }
         parsed = parseJson(content);
         if (!parsed) {
-          console.error('[vision] unparseable content:', JSON.stringify(content).slice(0, 500));
+          console.error('[vision] unparseable content:', content.length, JSON.stringify(content.slice(-240)));
           lastError = 'Vision provider returned no parseable JSON';
           continue;
         }
