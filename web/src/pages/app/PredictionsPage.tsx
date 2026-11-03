@@ -146,12 +146,6 @@ export function PredictionsPage() {
             <Badge tone="neutral">{trained ? 'Quantile 10–90' : 'Intervals not calibrated'}</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Predictive environmental intelligence</h2>
-          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
-            Air pollution is the primary predictive application.{' '}
-            {trained
-              ? 'A registered LightGBM model is active. Forecasts and quantile intervals come from that model; the model card and metrics must be reviewed before operational use.'
-              : null}
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={stationId} onChange={(e) => { setStationId(e.target.value); load(e.target.value); }} className="h-9 w-[240px] text-[11px]">
