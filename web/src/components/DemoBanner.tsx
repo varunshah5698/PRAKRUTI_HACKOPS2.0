@@ -8,7 +8,7 @@ export function DemoBanner({ compact = false }: { compact?: boolean }) {
         <FlaskConical className="h-3 w-3" /> Demo mode
       </span>
       <span className="text-[#8d99a6]">
-        Station observations, reports, alerts and incidents are simulation-labelled. Weather and CAMS context are live/modelled. CPCB is not connected.
+        Synthetic demo records are labelled SIMULATION DATA. Weather and CAMS context are live/modelled. Check the source registry for CPCB/MPCB and other integrations.
       </span>
       {!compact ? (
         <Link to="/data-sources" className="ml-auto font-semibold text-[#b5e36b] underline-offset-2 hover:underline">

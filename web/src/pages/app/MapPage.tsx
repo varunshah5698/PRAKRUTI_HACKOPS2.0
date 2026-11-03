@@ -531,6 +531,11 @@ export function MapPage() {
   }, [playing, timeline.length]);
 
   const stations = useMemo(() => (data?.stations ?? []).map(stationToMap), [data]);
+  const stationDataMode = data?.stations.some((station) => station.isSimulated) && data?.stations.some((station) => !station.isSimulated)
+    ? 'MIXED'
+    : data?.stations.some((station) => !station.isSimulated)
+      ? 'LIVE_SOURCE'
+      : 'SIMULATION';
   const reports: MapReport[] = useMemo(() => (data?.reports ?? []).map((report) => ({ ...report, verification_state: report.verification_state })), [data]);
   const incidents: MapIncident[] = useMemo(() => data?.incidents ?? [], [data]);
   const current = timeline[timelineIndex];
@@ -555,7 +560,9 @@ export function MapPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="lime" dot>Mumbai boundary</Badge>
             <Badge tone={current.offset === 0 ? 'green' : current.offset > 0 ? 'teal' : 'neutral'}>{current.offset === 0 ? 'CURRENT' : current.offset > 0 ? 'FORECAST' : 'PAST'}</Badge>
-            <Badge tone="amber">Station data simulated</Badge>
+            <Badge tone={stationDataMode === 'SIMULATION' ? 'amber' : stationDataMode === 'MIXED' ? 'teal' : 'green'}>
+              {stationDataMode === 'SIMULATION' ? 'Station data simulated' : stationDataMode === 'MIXED' ? 'Mixed station sources' : 'Connected station source'}
+            </Badge>
           </div>
           <h2 className="display mt-2 text-[24px] font-bold tracking-[-0.04em]">Live environmental intelligence map</h2>
           <p className="mt-1 text-[11px] text-[#788493]">Measured, predicted, reported and official records are visually distinct. No interpolated pollution surface is drawn.</p>

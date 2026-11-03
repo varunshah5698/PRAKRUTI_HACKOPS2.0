@@ -130,12 +130,14 @@ The API serves `web/dist` when present.
 
 1. Push this repository to GitHub.
 2. In Render: **New → Blueprint**, select the repository, and click **Apply**.
-3. That is it. On boot the service applies `server/src/db/schema.sql`; if the database is empty and `DEMO_MODE` is on, the demo dataset is seeded in the background so the health check is not blocked.
+3. That is it. On boot the service applies `server/src/db/schema.sql`, retrying while Render's Postgres is still provisioning; if the database is empty and `DEMO_MODE` is on, the demo dataset is seeded in the background so the health check is not blocked.
 
 Notes:
 
+- `prakruti-ml` uses Render's Python runtime with `rootDir: ml` and `ml/requirements-serve.txt` (serving deps only; `shap` is optional at runtime). Render has no free Docker instances, so `ml/Dockerfile` is for local use only: `docker compose --profile ml up`.
 - The free web plan spins down when idle, so the first request after a pause is slow.
-- The ML service starts as `NOT_TRAINED` until trained artifacts are present in its image. The app then shows the labelled persistence baseline; it does not invent forecasts. Trained artifacts are gitignored by default, so add them to the image explicitly before expecting `TRAINED` output.
+- A free Postgres expires after 30 days of inactivity, and free plans have no persistent disk.
+- The ML service starts as `NOT_TRAINED` until trained artifacts are committed and pushed. The app then shows the labelled persistence baseline; it does not invent forecasts. Trained artifacts are gitignored by default (`ml/artifacts/*.joblib`), so force-add them before expecting `TRAINED` output.
 - If `JWT_SECRET` is not set, the server generates a temporary one so it can boot; sessions reset on restart. The blueprint generates a stable value.
 - Evidence photographs are stored on the service's local disk and are lost on redeploy or restart (free plans have no persistent disk).
 - Optional integrations (River AI, email, data.gov.in, OpenAQ) are added as environment variables in the Render dashboard; see `.env.example`.
@@ -168,6 +170,18 @@ Docker profile:
 ```bash
 ML_SERVICE_URL=http://ml:8000 docker compose --profile ml up --build
 ```
+
+## Live CPCB via data.gov.in
+
+The official CPCB real-time AQI resource ID is pre-filled (`3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69`). You still need a free data.gov.in API key:
+
+1. Register at https://www.data.gov.in/ and create an API key.
+2. Add `DATA_GOV_IN_API_KEY=...` to `.env.local`.
+3. Restart the API.
+4. Run `npm run integrations:check` to confirm Mumbai records are returned.
+5. Sign in as an authority admin and use **Data sources → Run ingestion**, or wait for the scheduled job.
+
+Ingested stations are stored with `DATA_GOV_IN:<station name>` internal codes and are shown as connected-source records, not demo records. The adapter validates Mumbai coordinates, units and timestamps; unsupported units are skipped rather than converted blindly.
 
 ## Integration checks
 

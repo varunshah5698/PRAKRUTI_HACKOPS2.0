@@ -2,7 +2,7 @@ import pg from 'pg';
 import { env } from '../config/env.js';
 
 const { Pool } = pg;
-export const pool = new Pool({ connectionString: env.DATABASE_URL, max: 10 });
+export const pool = new Pool({ connectionString: env.DATABASE_URL, max: 10, connectionTimeoutMillis: 10_000 });
 
 export type Queryable = Pick<pg.PoolClient, 'query'>;
 

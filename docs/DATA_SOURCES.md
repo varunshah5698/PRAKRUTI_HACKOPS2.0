@@ -34,7 +34,7 @@ The `data.gov.in` and OpenAQ adapters are implemented and will run only when con
 ### Configuring data.gov.in
 
 1. Create a free data.gov.in account and API key.
-2. Add `DATA_GOV_IN_API_KEY` and a verified CPCB air-quality resource ID to `.env.local`.
+2. Add `DATA_GOV_IN_API_KEY` to `.env.local`. The verified CPCB real-time AQI resource ID `3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69` is pre-filled; confirm it is still current on data.gov.in.
 3. Restart the API and run `npm run integrations:check`.
 4. Open `/data-sources` and trigger ingestion, or wait for the scheduled job.
 5. Verify Mumbai station names, coordinates, source timestamps and units before trusting a record.

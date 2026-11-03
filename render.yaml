@@ -1,9 +1,8 @@
 services:
   - type: web
-    name: prakruti
+    name: prakruti-hackops2-0
     runtime: node
     plan: free
-    region: singapore
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -24,7 +23,7 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         fromService:
-          name: prakruti
+          name: prakruti-hackops2-0
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: ML_SERVICE_URL
@@ -40,11 +39,12 @@ services:
 
   - type: web
     name: prakruti-ml
-    runtime: docker
+    runtime: python
     plan: free
-    region: singapore
-    dockerfilePath: ./ml/Dockerfile
-    dockerContext: ./ml
+    region: oregon
+    rootDir: ml
+    buildCommand: pip install -r requirements-serve.txt
+    startCommand: uvicorn serve:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: ML_SERVICE_API_KEY
@@ -55,6 +55,6 @@ databases:
     databaseName: prakruti
     user: prakruti
     plan: free
-    region: singapore
+    region: oregon
     postgresMajorVersion: '16'
     ipAllowList: []

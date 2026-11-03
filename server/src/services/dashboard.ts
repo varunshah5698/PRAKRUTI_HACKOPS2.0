@@ -301,6 +301,9 @@ export async function getDashboard() {
     camsMap.set(row.locality_id, existing);
   }
 
+  const simulatedStationCount = snapshots.filter((station) => station.isSimulated).length;
+  const connectedStationCount = snapshots.length - simulatedStationCount;
+  const stationDataMode = connectedStationCount > 0 && simulatedStationCount > 0 ? 'MIXED' : connectedStationCount > 0 ? 'LIVE_SOURCE' : 'SIMULATION';
   const activeStations = Number(activeStationRow?.count ?? 0);
   const previousActive = Number(previousActiveRow?.count ?? 0);
   const watchLocations = Number(watchRow?.count ?? 0);
@@ -312,7 +315,9 @@ export async function getDashboard() {
     generatedAt: new Date().toISOString(),
     demoMode: env.DEMO_MODE,
     dataMode: {
-      stationObservations: 'SIMULATION',
+      stationObservations: stationDataMode,
+      simulatedStations: simulatedStationCount,
+      connectedSourceStations: connectedStationCount,
       weather: 'LIVE_OPEN_METEO',
       cams: 'MODELLED_CAMS',
       cpcb: 'NOT_CONFIGURED',
@@ -326,7 +331,10 @@ export async function getDashboard() {
         window: 'Observed in the last 6 hours',
         dataTimestamp: activeStationRow?.latest ?? null,
         href: '/map',
-        note: 'All 15 demo stations are simulation-labelled. No CPCB station is connected.',
+        note:
+          connectedStationCount > 0
+            ? `${connectedStationCount} connected-source station(s) and ${simulatedStationCount} simulation-labelled demo station(s). Check each station's source label.`
+            : 'All stations are simulation-labelled demo stations. No CPCB station is connected.',
       },
       locationsUnderWatch: {
         value: watchLocations,

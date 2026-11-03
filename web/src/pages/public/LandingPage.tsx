@@ -33,6 +33,8 @@ import { AQI_COLORS, number } from '../../lib/format';
 
 interface Overview {
   demoMode: boolean;
+  stationDataMode?: 'SIMULATION' | 'MIXED' | 'LIVE_SOURCE';
+  stationCounts?: { simulated: number; connectedSource: number };
   stations: Array<{
     id: string;
     name: string;
@@ -179,6 +181,9 @@ export function LandingPage() {
   }));
 
   const activeAlerts = overview?.alertCounts.reduce((sum, row) => sum + row.count, 0) ?? 0;
+  const stationMode = overview?.stationDataMode ?? 'SIMULATION';
+  const cpcbConnected = overview?.sources.some((source) => ['cpcb-caaqms', 'data-gov-in-air', 'openaq'].includes(source.id) && source.status === 'CONNECTED');
+  const stationOverlay = stationMode === 'LIVE_SOURCE' ? 'Live stations' : stationMode === 'MIXED' ? 'Live + demo stations' : 'Demo stations';
   const reports7d = overview?.reportCounts.reduce((sum, row) => sum + row.count, 0) ?? 0;
   const demoStations = overview?.stations.length ?? 0;
   const weather = overview?.weather;
@@ -193,7 +198,7 @@ export function LandingPage() {
           <div className="relative z-10">
             <PublicBadge tone="outline" className="mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-[#32a879]" />
-              Mumbai-specific · Demo data clearly labelled
+              Mumbai-specific · Source-labelled data
             </PublicBadge>
             <h1 className="display max-w-[680px] text-[46px] font-bold leading-[0.95] tracking-[-0.055em] sm:text-[62px] lg:text-[76px]">
               Understand Mumbai&apos;s environment.
@@ -224,7 +229,7 @@ export function LandingPage() {
             <div className="mt-8 grid max-w-[540px] grid-cols-3 gap-4 border-t border-ink/15 pt-5">
               <div>
                 <p className="display text-2xl font-bold">{number(demoStations, 0)}</p>
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Demo stations</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Stations shown</p>
               </div>
               <div>
                 <p className="display text-2xl font-bold">{number(activeAlerts, 0)}</p>
@@ -236,15 +241,15 @@ export function LandingPage() {
               </div>
             </div>
             <p className="mt-3 text-[10px] leading-relaxed text-ink/40">
-              Counts are read from this deployment. Station observations and reports are simulation-labelled; weather is
-              live from Open-Meteo. CPCB is not connected.
+              Counts are read from this deployment. Synthetic demo records are labelled SIMULATION DATA; connected-source
+              records show their source and timestamp. Weather is live from Open-Meteo; check the source registry for CPCB/MPCB status.
             </p>
           </div>
 
           <div className="relative">
             <div className="relative overflow-hidden rounded-[32px] border border-ink/15 bg-[#dfe7d8] shadow-lift">
               <div className="absolute left-4 top-4 z-20 flex flex-col gap-2">
-                <PublicBadge tone="lime" className="shadow-sm">Demonstration map</PublicBadge>
+                <PublicBadge tone="lime" className="shadow-sm">{stationMode === 'SIMULATION' ? 'Demonstration map' : 'Mumbai station map'}</PublicBadge>
                 <span className="w-fit rounded-full border border-ink/15 bg-white/80 px-3 py-1 text-[10px] font-medium text-ink/60 backdrop-blur">
                   Greater Mumbai boundary · OSM
                 </span>
@@ -256,6 +261,7 @@ export function LandingPage() {
                 theme="light"
                 initialZoom={10.9}
                 initialPitch={26}
+                overlayLabel={stationOverlay}
               />
               <div className="absolute inset-x-4 bottom-9 z-20 grid gap-2 sm:grid-cols-3">
                 <div className="rounded-xl border border-ink/10 bg-white/90 p-3 backdrop-blur">
@@ -268,9 +274,9 @@ export function LandingPage() {
                 </div>
                 <div className="rounded-xl border border-ink/10 bg-white/90 p-3 backdrop-blur">
                   <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-ink/45">
-                    <Radio className="h-3 w-3" /> CPCB
+                    <Radio className="h-3 w-3" /> CPCB / source
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-amber-700">Not connected</p>
+                  <p className={`mt-1 text-sm font-semibold ${cpcbConnected ? 'text-emerald-700' : 'text-amber-700'}`}>{cpcbConnected ? 'Connected' : 'Not connected'}</p>
                 </div>
                 <div className="rounded-xl border border-ink/10 bg-white/90 p-3 backdrop-blur">
                   <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-ink/45">
@@ -382,6 +388,7 @@ export function LandingPage() {
                 theme="light"
                 initialZoom={11.2}
                 initialPitch={34}
+                overlayLabel={stationOverlay}
               />
               <div className="absolute bottom-9 right-4 z-20 max-w-[260px] rounded-xl border border-ink/10 bg-white/90 p-3 text-[10px] leading-relaxed text-ink/60 backdrop-blur">
                 <strong className="text-ink">No interpolated pollution surface.</strong> The monitoring network is sparse and

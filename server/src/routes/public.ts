@@ -26,8 +26,12 @@ publicRouter.get('/overview', async (_req, res, next) => {
          FROM weather_observations WHERE kind='OBSERVATION' ORDER BY observed_at DESC LIMIT 1`,
       ),
     ]);
+    const simulatedStationCount = snapshots.filter((station) => station.isSimulated).length;
+    const connectedStationCount = snapshots.length - simulatedStationCount;
     res.json({
       demoMode: env.DEMO_MODE,
+      stationDataMode: connectedStationCount > 0 && simulatedStationCount > 0 ? 'MIXED' : connectedStationCount > 0 ? 'LIVE_SOURCE' : 'SIMULATION',
+      stationCounts: { simulated: simulatedStationCount, connectedSource: connectedStationCount },
       stations: snapshots.map((s) => ({
         id: s.id,
         name: s.name,
@@ -45,7 +49,7 @@ publicRouter.get('/overview', async (_req, res, next) => {
       latestObservationAt: latest[0]?.latest ?? null,
       weather: weather[0] ?? null,
       sources: sources
-        .filter((s) => ['open-meteo-weather', 'open-meteo-cams', 'cpcb-caaqms', 'river-ai', 'ml-service', 'demo-network'].includes(s.id))
+        .filter((s) => ['open-meteo-weather', 'open-meteo-cams', 'cpcb-caaqms', 'data-gov-in-air', 'openaq', 'river-ai', 'ml-service', 'demo-network'].includes(s.id))
         .map((s) => ({
           id: s.id,
           name: s.name,

@@ -41,6 +41,9 @@ The following were exercised during implementation:
 - `POST /simulations` → step → email preview → simulated incident.
 - `GET /sources/status`, `/sources/jobs`.
 - `npm audit --omit=dev` → 0 vulnerabilities.
+- Docker Compose built and ran the full stack; `/api/health`, landing page, login and dashboard verified.
+- ML pipeline and FastAPI service trained/tested on a temporary synthetic extract to verify mechanics; artifacts deleted and not registered.
+- `npm run integrations:check` reports NOT_CONFIGURED for missing credentials without crashing.
 
 ## Manual acceptance checklist (DEMO A–G)
 

@@ -208,6 +208,18 @@ export async function ingestOpenMeteoCams(): Promise<IngestResult> {
   }
 }
 
+function normalisePollutantUnit(code: string, value: number, rawUnit: string): { value: number; unit: string } | null {
+  const unit = rawUnit.replace('µg/m3', 'µg/m³').replace('ug/m3', 'µg/m³').replace('mg/m3', 'mg/m³').trim();
+  if (code === 'co') {
+    if (unit === 'mg/m³') return { value, unit };
+    if (unit === 'µg/m³') return { value: value / 1000, unit: 'mg/m³' };
+    return null;
+  }
+  if (unit === 'µg/m³') return { value, unit };
+  if (unit === 'mg/m³') return { value: value * 1000, unit: 'µg/m³' };
+  return null;
+}
+
 const POLLUTANT_MAP: Record<string, string> = {
   'PM2.5': 'pm25',
   PM25: 'pm25',
@@ -248,10 +260,10 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
       const pollutantRaw = String(record.pollutant_id ?? '').toUpperCase();
       const pollutant = POLLUTANT_MAP[pollutantRaw];
       if (!pollutant) continue;
-      const value = Number(record.pollutant_avg);
-      if (!Number.isFinite(value)) continue;
-      const unit = String(record.pollutant_unit ?? '').replace('µg/m3', 'µg/m³').replace('mg/m3', 'mg/m³');
-      if (!unit) continue;
+      const rawValue = Number(record.pollutant_avg);
+      if (!Number.isFinite(rawValue)) continue;
+      const normalised = normalisePollutantUnit(pollutant, rawValue, String(record.pollutant_unit ?? ''));
+      if (!normalised) continue;
       const observedAt = new Date(String(record.last_update));
       if (!Number.isFinite(observedAt.getTime())) continue;
       const stationName = String(record.station ?? 'Unknown CPCB station');
@@ -266,6 +278,13 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
       );
       if (!station) continue;
       await query(
+        `UPDATE monitoring_stations s SET
+           locality_id=(SELECT l.id FROM localities l ORDER BY l.location <-> s.location LIMIT 1),
+           health_status='ONLINE', last_seen_at=GREATEST(COALESCE(s.last_seen_at, $2::timestamptz), $2::timestamptz)
+         WHERE s.id=$1`,
+        [station.id, observedAt.toISOString()],
+      );
+      await query(
         `INSERT INTO environmental_observations
            (station_id, category, pollutant_code, value, unit, observed_at, retrieved_at, quality_state,
             is_simulated, source_id, source_record_id, location, raw)
@@ -275,8 +294,8 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
         [
           station.id,
           pollutant,
-          value,
-          unit,
+          normalised.value,
+          normalised.unit,
           observedAt.toISOString(),
           sourceId,
           String(record.id ?? `${stationName}:${pollutant}:${observedAt.toISOString()}`),
@@ -340,10 +359,18 @@ export async function ingestOpenAq(): Promise<IngestResult> {
         [`OPENAQ-${location.id}`, location.name, lng, lat, JSON.stringify({ openaqLocationId: location.id })],
       );
       if (!station) continue;
+      await query(
+        `UPDATE monitoring_stations s SET
+           locality_id=(SELECT l.id FROM localities l ORDER BY l.location <-> s.location LIMIT 1),
+           health_status='ONLINE', last_seen_at=now()
+         WHERE s.id=$1`,
+        [station.id],
+      );
       for (const result of latest.results ?? []) {
         const code = POLLUTANT_MAP[String(result.parameter?.name ?? '').toUpperCase()];
         if (!code || result.value === undefined || !result.datetime?.utc) continue;
-        const unit = String(result.unit ?? 'µg/m³').replace('µg/m3', 'µg/m³');
+        const normalised = normalisePollutantUnit(code, result.value, String(result.unit ?? ''));
+        if (!normalised) continue;
         await query(
           `INSERT INTO environmental_observations
              (station_id, category, pollutant_code, value, unit, observed_at, retrieved_at, quality_state,
@@ -354,8 +381,8 @@ export async function ingestOpenAq(): Promise<IngestResult> {
           [
             station.id,
             code,
-            result.value,
-            unit,
+            normalised.value,
+            normalised.unit,
             result.datetime.utc,
             sourceId,
             `openaq:${location.id}:${code}:${result.datetime.utc}`,

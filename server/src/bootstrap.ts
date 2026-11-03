@@ -7,5 +7,18 @@ if (process.env.RENDER === 'true' && !process.env.JWT_SECRET) {
   console.warn('[config] JWT_SECRET is not set. Using an ephemeral secret; sessions will reset on restart.');
 }
 
-await import('./db/setup.js');
+const { main: setupDatabase } = await import('./db/setup.js');
+
+// Render's Postgres can still be provisioning when the first boot happens.
+for (let attempt = 1; ; attempt++) {
+  try {
+    await setupDatabase();
+    break;
+  } catch (error) {
+    if (attempt >= 20) throw error;
+    console.warn(`Database not ready (attempt ${attempt}/20): ${(error as Error).message}`);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+}
+
 await import('./index.js');

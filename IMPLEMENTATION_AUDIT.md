@@ -70,6 +70,15 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 - No interpolated risk zones; the network is too sparse and demo data is synthetic.
 - No public OSM tile server; OpenFreeMap is used with attribution.
 
+## Portable deployment and optional integrations
+
+- Added a multi-stage Dockerfile and full `docker-compose.yml` (PostGIS + API + built web). The stack was built and started successfully; `/api/health`, the landing page, login and dashboard were verified inside Docker. The compose file also exposes an optional `ml` profile.
+- Added `ml/serve.py`, a FastAPI inference service that loads trained artifacts and returns quantile intervals, deterioration probability and SHAP only when the model is actually trained.
+- Added `server/src/services/ml.ts` and `forecast-service.ts`; when `ML_SERVICE_URL` is configured and trained, the predictions page, station drawer and future map timeline use trained forecasts. Otherwise the labelled persistence baseline remains.
+- Added `npm run ml:register` to register real model metrics from `ml/artifacts/model_card.json`.
+- Added `npm run integrations:check` to verify database, data.gov.in, OpenAQ, River AI, vision configuration, SMTP and the ML service without printing secrets.
+- Trained the pipeline end-to-end on a temporary synthetic extract only to verify mechanics; those artifacts were deleted and **no synthetic model was registered**. Real training awaits a verified Mumbai CSV.
+
 ## Verification performed
 
 - Database schema applied successfully with PostGIS.

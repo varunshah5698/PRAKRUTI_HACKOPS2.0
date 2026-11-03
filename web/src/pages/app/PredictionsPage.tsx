@@ -177,10 +177,10 @@ export function PredictionsPage() {
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Card className="border-[#b5e36b]/20 bg-[#b5e36b]/[0.04] p-4">
-              <div className="flex items-center justify-between"><DataLabel>Current observed PM2.5</DataLabel><Badge tone="amber">Demo</Badge></div>
+              <div className="flex items-center justify-between"><DataLabel>Current observed PM2.5</DataLabel><Badge tone={detail.station.isSimulated ? 'amber' : 'green'}>{detail.station.isSimulated ? 'Demo' : 'Source'}</Badge></div>
               <p className="display mt-3 text-[34px] font-bold">{detail.current ? number(detail.current.value) : '—'} <span className="text-sm font-normal text-[#788493]">µg/m³</span></p>
               <p className="mt-1 text-[10px] text-[#788493]">{formatDate(detail.current?.observedAt)} · {detail.current?.qualityState}</p>
-              <p className="mt-2 text-[9px] text-[#6f7c89]">{detail.current?.isSimulated ? 'SIMULATION DATA — not a CPCB reading' : detail.current?.sourceId}</p>
+              <p className="mt-2 text-[9px] text-[#6f7c89]">{detail.current?.isSimulated ? 'SIMULATION DATA — not a CPCB reading' : `Connected source · ${detail.current?.sourceId ?? ''}`}</p>
             </Card>
             {[1, 3, 6].map((horizon) => {
               const forecast = detail.forecasts.find((f) => f.horizonHours === horizon);

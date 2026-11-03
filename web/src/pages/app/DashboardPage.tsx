@@ -217,9 +217,11 @@ export function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Badge tone="lime" dot>Simulation data</Badge>
+            <Badge tone={data.dataMode.stationObservations === 'SIMULATION' ? 'amber' : data.dataMode.stationObservations === 'MIXED' ? 'teal' : 'green'} dot>
+              {data.dataMode.stationObservations === 'SIMULATION' ? 'Simulation data' : data.dataMode.stationObservations === 'MIXED' ? 'Mixed station sources' : 'Connected station source'}
+            </Badge>
             <Badge tone="neutral">Weather live</Badge>
-            <Badge tone="amber">ML not trained</Badge>
+            <Badge tone="amber">{data.integrations?.ml === 'TRAINED' ? 'ML active' : 'ML not trained'}</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em] text-[#f3f5f7]">Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {user?.name?.split(' ')[1] ?? 'operator'}.</h2>
           <p className="mt-1 text-xs text-[#788493]">
@@ -333,6 +335,7 @@ export function DashboardPage() {
             autoFit={false}
             initialZoom={12.35}
             initialPitch={46}
+            overlayLabel={data.dataMode.stationObservations === 'SIMULATION' ? 'Demo stations' : data.dataMode.stationObservations === 'MIXED' ? 'Live + demo' : 'Live stations'}
           />
           <div className="grid grid-cols-2 gap-2 border-t border-[#2b333e] p-3 sm:grid-cols-4">
             <div className="rounded-xl bg-[#101317] p-3">
@@ -347,8 +350,10 @@ export function DashboardPage() {
             </div>
             <div className="rounded-xl bg-[#101317] p-3">
               <DataLabel>Station data</DataLabel>
-              <p className="mt-1 text-lg font-semibold text-amber-300">Simulated</p>
-              <p className="text-[9px] text-[#6f7c89]">Not CPCB readings</p>
+              <p className={`mt-1 text-lg font-semibold ${data.dataMode.stationObservations === 'SIMULATION' ? 'text-amber-300' : 'text-emerald-300'}`}>
+                {data.dataMode.stationObservations === 'SIMULATION' ? 'Simulated' : data.dataMode.stationObservations === 'MIXED' ? 'Mixed' : 'Connected'}
+              </p>
+              <p className="text-[9px] text-[#6f7c89]">{data.dataMode.stationObservations === 'SIMULATION' ? 'Not CPCB readings' : 'Per-station source labels'}</p>
             </div>
             <div className="rounded-xl bg-[#101317] p-3">
               <DataLabel>Forecast</DataLabel>
