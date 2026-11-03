@@ -466,6 +466,7 @@ export async function analyzeEvidenceImage(
     const isGemini = base.includes('generativelanguage.googleapis.com') || base.includes('googleapis.com');
     let content = '';
     let usedModel = visionConfig.model;
+    let parsed: Record<string, unknown> | null = null;
     if (isGemini) {
       const fallbacks = env.VISION_FALLBACK_MODELS.split(',').map((model) => model.trim()).filter(Boolean);
       const models = [visionConfig.model, ...fallbacks.filter((model) => model !== visionConfig.model)];
@@ -497,11 +498,31 @@ export async function analyzeEvidenceImage(
             continue;
           }
           const data = (await response.json()) as {
-            candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
+            candidates?: Array<{
+              content?: { parts?: Array<{ text?: string; thought?: boolean }> };
+              finishReason?: string;
+            }>;
           };
-          content = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ?? '';
+          content =
+            data.candidates?.[0]?.content?.parts
+              ?.filter((part) => !part.thought)
+              .map((part) => part.text ?? '')
+              .join('') ?? '';
           if (!content) {
             lastError = `Gemini vision returned no text (finish: ${data.candidates?.[0]?.finishReason ?? 'unknown'})`;
+            continue;
+          }
+          try {
+            const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            const candidate = (fenced ? fenced[1] : content).trim();
+            const start = candidate.indexOf('{');
+            const end = candidate.lastIndexOf('}');
+            parsed = start >= 0 && end > start ? (JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>) : null;
+          } catch {
+            parsed = null;
+          }
+          if (!parsed) {
+            lastError = 'Gemini vision returned no parseable JSON';
             continue;
           }
           usedModel = model;

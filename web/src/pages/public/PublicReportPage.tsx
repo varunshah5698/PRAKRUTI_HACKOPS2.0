@@ -244,7 +244,7 @@ export function PublicReportPage() {
               {[
                 'Locations must fall inside the Greater Mumbai boundary.',
                 'Photos are private by default and served only through authorised access.',
-                'AI vision is NOT CONFIGURED in this deployment. The River text model is not assumed to inspect images.',
+                'Photographs may receive an automated visual assessment. It cannot establish chemical composition, toxicity or legal responsibility.',
                 'A report is not an official violation. Verification requires an authorised reviewer.',
               ].map((line) => (
                 <p key={line} className="flex items-start gap-2"><ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {line}</p>

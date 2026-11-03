@@ -103,9 +103,9 @@ export function DataSourcesPage() {
         </p>
         <h2>Missing integrations</h2>
         <p>
-          River AI is configured through a server-side adapter but the API key is empty in this deployment. The AI Analyst
-          therefore returns a rule-based evidence digest labelled as such. No vision provider is configured. No LightGBM
-          model has been trained. The UI exposes these states instead of substituting fabricated output.
+          River AI and the vision provider are configured server-side through environment variables. If a key is absent,
+          the AI Analyst returns a rule-based evidence digest and photographs remain unassessed. No LightGBM model has been
+          trained. The UI exposes these states instead of substituting fabricated output.
         </p>
         <div className="flex flex-wrap gap-2">
           <PublicBadge tone="soft">OpenFreeMap · © OpenMapTiles</PublicBadge>

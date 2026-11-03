@@ -486,7 +486,7 @@ export function LandingPage() {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 border-t border-ink/10 pt-3 text-center">
-                  <div><p className="text-[9px] uppercase tracking-[0.1em] text-ink/35">AI vision</p><p className="mt-1 text-[11px] font-semibold text-amber-700">Not configured</p></div>
+                  <div><p className="text-[9px] uppercase tracking-[0.1em] text-ink/35">AI vision</p><p className="mt-1 text-[11px] font-semibold text-emerald-700">Assessed</p></div>
                   <div><p className="text-[9px] uppercase tracking-[0.1em] text-ink/35">Verification</p><p className="mt-1 text-[11px] font-semibold">Verified</p></div>
                   <div><p className="text-[9px] uppercase tracking-[0.1em] text-ink/35">Incident</p><p className="mt-1 text-[11px] font-semibold">Linked</p></div>
                 </div>

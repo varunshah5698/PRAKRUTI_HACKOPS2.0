@@ -33,7 +33,7 @@ export function AboutPage() {
         <ul>
           <li>Interactive Mumbai map with OpenStreetMap boundary, OpenFreeMap vector tiles, 3D building render heights and a measured/predicted/reported marker system.</li>
           <li>Environmental command centre with category cards, KPIs, alerts, reports, incidents, source health and analytics derived from application records.</li>
-          <li>Citizen reporting with validated Mumbai coordinates, private evidence storage, EXIF review, AI vision NOT_CONFIGURED state and nearby evidence enrichment.</li>
+          <li>Citizen reporting with validated Mumbai coordinates, private evidence storage, EXIF review, automated vision screening and nearby evidence enrichment.</li>
           <li>Category-specific risk rules for air, water, waste and industrial evidence; confidence is stored separately from severity.</li>
           <li>Incident workflow with assignment, notes, corrective actions, regulatory references, audit trail and authorised determination.</li>
           <li>Deterministic simulation and replay isolated from real observations.</li>
