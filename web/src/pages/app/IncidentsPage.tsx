@@ -56,12 +56,12 @@ export function IncidentsPage() {
         <div>
           <div className="flex items-center gap-2"><Badge tone="red" dot>Investigations</Badge><Badge tone="neutral">Audited lifecycle</Badge></div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Incident & compliance centre</h2>
-          <p className="mt-1 text-[11px] text-[#788493]">A report does not automatically become a violation. Assign, investigate, record corrective action and close with authorised approval.</p>
+          <p className="mt-1 text-[11px] text-[#6f7f74]">A report does not automatically become a violation. Assign, investigate, record corrective action and close with authorised approval.</p>
         </div>
         <Link to="/map"><Button variant="dark" size="sm">Map <ArrowUpRight className="h-3.5 w-3.5" /></Button></Link>
       </div>
 
-      <div className="grid gap-2 rounded-2xl border border-[#303945] bg-[#181d23] p-3 sm:grid-cols-2">
+      <div className="grid gap-2 rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-3 sm:grid-cols-2">
         <Select value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 text-[11px]">
           <option value="">All categories</option>
           {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -79,7 +79,7 @@ export function IncidentsPage() {
       ) : (
         <div className="space-y-2">
           {incidents.map((incident) => (
-            <Link key={incident.id} to={`/incidents/${incident.id}`} className="group block rounded-2xl border border-[#303945] bg-[#181d23] p-4 transition hover:border-[#b5e36b]/35">
+            <Link key={incident.id} to={`/incidents/${incident.id}`} className="group block rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4 transition hover:border-[#5b9e46]/35">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -89,16 +89,16 @@ export function IncidentsPage() {
                     {incident.has_determination ? <Badge tone="teal">Official determination recorded</Badge> : null}
                     {incident.is_simulated ? <Badge tone="amber">Simulation</Badge> : null}
                   </div>
-                  <p className="mt-2 text-sm font-semibold text-[#e8edf2]">{incident.title}</p>
-                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8d99a6]">{incident.description}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-[#6f7c89]">
+                  <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{incident.title}</p>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{incident.description}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-[#74847a]">
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {incident.locality_name ?? 'Mumbai'}</span>
                     <span>{incident.assigned_to_name ? `Assigned: ${incident.assigned_to_name}` : 'Unassigned'}</span>
                     <span>{incident.note_count} notes · {incident.action_count} actions</span>
                     <span>{timeAgo(incident.detected_at)}</span>
                   </div>
                 </div>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#5f6b78] group-hover:text-[#b5e36b]" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#7b8a80] group-hover:text-[#3f7d2a]" />
               </div>
             </Link>
           ))}
@@ -232,7 +232,7 @@ export function IncidentDetailPage() {
   if (loading) return <LoadingBlock className="min-h-[60vh]" label="Loading incident workspace" />;
   if (error || !data) return <EmptyState title="Incident unavailable" description={error ?? 'Incident not found.'} icon={<AlertTriangle className="h-5 w-5" />} action={<Button variant="lime" onClick={load}>Retry</Button>} />;
 
-  const marker: MapStation[] = [{ id: data.incident.id, name: data.incident.title, locality: data.incident.locality_name, lat: data.incident.lat, lng: data.incident.lng, color: '#dc555b', valueLabel: data.incident.public_ref, markerKind: 'OBSERVED', isSimulated: data.incident.is_simulated }];
+  const marker: MapStation[] = [{ id: data.incident.id, name: data.incident.title, locality: data.incident.locality_name, lat: data.incident.lat, lng: data.incident.lng, color: '#c94a50', valueLabel: data.incident.public_ref, markerKind: 'OBSERVED', isSimulated: data.incident.is_simulated }];
   const nextStatuses = (data.lifecycle[data.incident.status] ?? []).filter((status) => status !== 'CLOSED' || can(['AUTHORITY_ADMIN', 'SYSTEM_ADMIN']));
   const currentIndex = STATUS_FLOW.indexOf(data.incident.status);
 
@@ -248,7 +248,7 @@ export function IncidentDetailPage() {
             {data.incident.official_determination ? <Badge tone="teal">Official determination recorded</Badge> : null}
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">{data.incident.title}</h2>
-          <p className="mt-1 text-[11px] text-[#788493]">{categoryLabel(data.incident.category)} · {data.incident.locality_name ?? 'Mumbai'} · detected {formatDate(data.incident.detected_at)}</p>
+          <p className="mt-1 text-[11px] text-[#6f7f74]">{categoryLabel(data.incident.category)} · {data.incident.locality_name ?? 'Mumbai'} · detected {formatDate(data.incident.detected_at)}</p>
         </div>
         <Link to="/incidents"><Button variant="dark" size="sm"><ArrowLeft className="h-3.5 w-3.5" /> All incidents</Button></Link>
       </div>
@@ -258,10 +258,10 @@ export function IncidentDetailPage() {
           <div className="flex min-w-[760px] items-center gap-1">
             {STATUS_FLOW.map((status, index) => (
               <div key={status} className="flex flex-1 items-center gap-1">
-                <div className={`flex-1 rounded-lg border px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.06em] ${index <= currentIndex ? 'border-[#b5e36b]/30 bg-[#b5e36b]/10 text-[#c8ef8d]' : 'border-[#303945] bg-[#101317] text-[#5f6b78]'}`}>
+                <div className={`flex-1 rounded-lg border px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.06em] ${index <= currentIndex ? 'border-[#5b9e46]/30 bg-[#5b9e46]/10 text-[#3f7d2a]' : 'border-[#dfe6db] bg-[#f5f8f2] text-[#7b8a80]'}`}>
                   {status.replace(/_/g, ' ')}
                 </div>
-                {index < STATUS_FLOW.length - 1 ? <ArrowRight className={`h-3 w-3 shrink-0 ${index < currentIndex ? 'text-[#b5e36b]' : 'text-[#303945]'}`} /> : null}
+                {index < STATUS_FLOW.length - 1 ? <ArrowRight className={`h-3 w-3 shrink-0 ${index < currentIndex ? 'text-[#3f7d2a]' : 'text-[#dfe6db]'}`} /> : null}
               </div>
             ))}
           </div>
@@ -273,57 +273,57 @@ export function IncidentDetailPage() {
           <Card>
             <CardHeader><CardTitle>Incident overview</CardTitle><Badge tone="neutral">Source and reason preserved</Badge></CardHeader>
             <div className="p-4">
-              <p className="text-[12px] leading-relaxed text-[#c5d0db]">{data.incident.description}</p>
+              <p className="text-[12px] leading-relaxed text-[#405246]">{data.incident.description}</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-[#303945] bg-[#101317] p-3"><DataLabel>Assigned</DataLabel><p className="mt-1 text-[11px] font-medium">{data.incident.assigned_to_name ?? 'Unassigned'}</p></div>
-                <div className="rounded-xl border border-[#303945] bg-[#101317] p-3"><DataLabel>Source alert</DataLabel><p className="mt-1 text-[11px] font-medium">{data.incident.source_alert_ref ?? 'None'}</p></div>
-                <div className="rounded-xl border border-[#303945] bg-[#101317] p-3"><DataLabel>Source report</DataLabel><p className="mt-1 text-[11px] font-medium">{data.incident.source_report_ref ?? 'None'}</p></div>
+                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>Assigned</DataLabel><p className="mt-1 text-[11px] font-medium">{data.incident.assigned_to_name ?? 'Unassigned'}</p></div>
+                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>Source alert</DataLabel><p className="mt-1 text-[11px] font-medium">{data.incident.source_alert_ref ?? 'None'}</p></div>
+                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>Source report</DataLabel><p className="mt-1 text-[11px] font-medium">{data.incident.source_report_ref ?? 'None'}</p></div>
               </div>
               {data.incident.official_determination ? (
                 <div className="mt-4 rounded-xl border border-teal-500/25 bg-teal-500/[0.05] p-4">
-                  <div className="flex items-center gap-2 text-[#7dd8cc]"><ShieldCheck className="h-4 w-4" /><p className="text-[10px] font-semibold uppercase tracking-[0.1em]">Official determination</p></div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-[#c5d0db]">{data.incident.official_determination}</p>
-                  <p className="mt-1 text-[9px] text-[#6f7c89]">{data.incident.determination_by_name} · {formatDate(data.incident.official_determination_at)}</p>
+                  <div className="flex items-center gap-2 text-[#217a70]"><ShieldCheck className="h-4 w-4" /><p className="text-[10px] font-semibold uppercase tracking-[0.1em]">Official determination</p></div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-[#405246]">{data.incident.official_determination}</p>
+                  <p className="mt-1 text-[9px] text-[#74847a]">{data.incident.determination_by_name} · {formatDate(data.incident.official_determination_at)}</p>
                 </div>
               ) : null}
             </div>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Evidence & related records</CardTitle><FileSearch className="h-4 w-4 text-[#788493]" /></CardHeader>
+            <CardHeader><CardTitle>Evidence & related records</CardTitle><FileSearch className="h-4 w-4 text-[#6f7f74]" /></CardHeader>
             <div className="grid gap-3 p-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-[#303945] bg-[#101317] p-3">
+              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                 <DataLabel>Related reports</DataLabel>
                 <div className="mt-2 space-y-2">
                   {data.relatedReports.map((report) => (
-                    <Link key={report.id} to={`/reports/${report.id}`} className="block text-[10px] text-[#a2adba] hover:text-white">
-                      <span className="font-medium text-[#dbe2e9]">{report.public_ref}</span> · {report.incident_type.replace(/_/g, ' ')} · {report.verification_state}
+                    <Link key={report.id} to={`/reports/${report.id}`} className="block text-[10px] text-[#5a6a5f] hover:text-[#142016]">
+                      <span className="font-medium text-[#26362a]">{report.public_ref}</span> · {report.incident_type.replace(/_/g, ' ')} · {report.verification_state}
                     </Link>
                   ))}
-                  {data.relatedReports.length === 0 ? <p className="text-[10px] text-[#6f7c89]">No related reports.</p> : null}
+                  {data.relatedReports.length === 0 ? <p className="text-[10px] text-[#74847a]">No related reports.</p> : null}
                 </div>
               </div>
-              <div className="rounded-xl border border-[#303945] bg-[#101317] p-3">
+              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                 <DataLabel>Related alerts</DataLabel>
                 <div className="mt-2 space-y-2">
                   {data.relatedAlerts.map((alert) => (
-                    <Link key={alert.id} to={`/alerts/${alert.id}`} className="block text-[10px] text-[#a2adba] hover:text-white">
-                      <span className="font-medium text-[#dbe2e9]">{alert.public_ref}</span> · {alert.level} · {alert.title}
+                    <Link key={alert.id} to={`/alerts/${alert.id}`} className="block text-[10px] text-[#5a6a5f] hover:text-[#142016]">
+                      <span className="font-medium text-[#26362a]">{alert.public_ref}</span> · {alert.level} · {alert.title}
                     </Link>
                   ))}
-                  {data.relatedAlerts.length === 0 ? <p className="text-[10px] text-[#6f7c89]">No related alerts.</p> : null}
+                  {data.relatedAlerts.length === 0 ? <p className="text-[10px] text-[#74847a]">No related alerts.</p> : null}
                 </div>
               </div>
-              <div className="rounded-xl border border-[#303945] bg-[#101317] p-3 sm:col-span-2">
+              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 sm:col-span-2">
                 <DataLabel>Nearby readings</DataLabel>
                 <div className="mt-2 space-y-2">
                   {data.nearbyReadings.map((station) => (
-                    <div key={station.id} className="text-[10px] text-[#a2adba]">
-                      <p className="font-medium text-[#dbe2e9]">{station.name.replace(' demo air monitor', '')} · {Math.round(station.distance_m)} m</p>
-                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#6f7c89]">{Object.entries(station.latest_readings).slice(0, 4).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
+                    <div key={station.id} className="text-[10px] text-[#5a6a5f]">
+                      <p className="font-medium text-[#26362a]">{station.name.replace(' demo air monitor', '')} · {Math.round(station.distance_m)} m</p>
+                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#74847a]">{Object.entries(station.latest_readings).slice(0, 4).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
                     </div>
                   ))}
-                  {data.nearbyReadings.length === 0 ? <p className="text-[10px] text-[#6f7c89]">No nearby monitoring stations.</p> : null}
+                  {data.nearbyReadings.length === 0 ? <p className="text-[10px] text-[#74847a]">No nearby monitoring stations.</p> : null}
                 </div>
               </div>
             </div>
@@ -331,15 +331,15 @@ export function IncidentDetailPage() {
 
           <Card>
             <CardHeader><CardTitle>Investigation notes</CardTitle><Badge tone="neutral">{data.notes.length}</Badge></CardHeader>
-            <div className="divide-y divide-[#252d37]">
+            <div className="divide-y divide-[#e7ece3]">
               {data.notes.map((entry) => (
                 <div key={entry.id} className="p-4">
-                  <div className="flex items-center justify-between gap-2"><p className="text-[10px] font-semibold text-[#dbe2e9]">{entry.author_name ?? 'System'} <span className="font-normal text-[#6f7c89]">· {entry.author_role?.replace(/_/g, ' ') ?? ''}</span></p><span className="text-[8px] text-[#5f6b78]">{formatDate(entry.created_at)}</span></div>
-                  <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#a2adba]">{entry.note}</p>
+                  <div className="flex items-center justify-between gap-2"><p className="text-[10px] font-semibold text-[#26362a]">{entry.author_name ?? 'System'} <span className="font-normal text-[#74847a]">· {entry.author_role?.replace(/_/g, ' ') ?? ''}</span></p><span className="text-[8px] text-[#7b8a80]">{formatDate(entry.created_at)}</span></div>
+                  <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#5a6a5f]">{entry.note}</p>
                 </div>
               ))}
             </div>
-            <div className="border-t border-[#2b333e] p-3">
+            <div className="border-t border-[#e7ece3] p-3">
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Record an evidence-based investigation note…" />
               <Button variant="dark" size="sm" className="mt-2" onClick={addNote} disabled={working || note.trim().length < 3}>Add note</Button>
             </div>
@@ -347,15 +347,15 @@ export function IncidentDetailPage() {
 
           <Card>
             <CardHeader><CardTitle>Corrective actions</CardTitle><Badge tone="neutral">{data.correctiveActions.length}</Badge></CardHeader>
-            <div className="divide-y divide-[#252d37]">
+            <div className="divide-y divide-[#e7ece3]">
               {data.correctiveActions.map((action) => (
                 <div key={action.id} className="p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Badge tone={action.status === 'COMPLETED' || action.status === 'VERIFIED' ? 'green' : action.status === 'CANCELLED' ? 'red' : 'amber'}>{action.status.replace(/_/g, ' ')}</Badge>
-                    <span className="text-[8px] text-[#5f6b78]">Due {action.due_at ? formatDate(action.due_at) : '—'}</span>
+                    <span className="text-[8px] text-[#7b8a80]">Due {action.due_at ? formatDate(action.due_at) : '—'}</span>
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-[#c5d0db]">{action.description}</p>
-                  {action.evidence_note ? <p className="mt-1 text-[9px] text-[#788493]">{action.evidence_note}</p> : null}
+                  <p className="mt-2 text-[11px] leading-relaxed text-[#405246]">{action.description}</p>
+                  {action.evidence_note ? <p className="mt-1 text-[9px] text-[#6f7f74]">{action.evidence_note}</p> : null}
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {['IN_PROGRESS', 'COMPLETED', 'VERIFIED'].filter((status) => status !== action.status).map((status) => (
                       <Button key={status} variant="dark" size="sm" onClick={() => updateAction(action.id, status)} disabled={working}>{status.replace(/_/g, ' ')}</Button>
@@ -364,7 +364,7 @@ export function IncidentDetailPage() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-[#2b333e] p-3">
+            <div className="border-t border-[#e7ece3] p-3">
               <Textarea value={action} onChange={(e) => setAction(e.target.value)} rows={2} placeholder="Recommend a field inspection, repeat sampling, station calibration or follow-up monitoring…" />
               <Button variant="dark" size="sm" className="mt-2" onClick={addAction} disabled={working || action.trim().length < 5}>Add corrective action</Button>
             </div>
@@ -374,17 +374,17 @@ export function IncidentDetailPage() {
         <div className="space-y-4">
           <Card className="overflow-hidden">
             <CardHeader><CardTitle>Incident location</CardTitle><Badge tone="neutral">Mumbai</Badge></CardHeader>
-            <MumbaiMap stations={marker} className="h-[240px] w-full" compact theme="dark" initialZoom={13.2} initialPitch={20} overlayLabel="Incident location" autoFit={false} />
-            <p className="p-3 text-[9px] text-[#6f7c89]">{data.incident.lat.toFixed(5)}, {data.incident.lng.toFixed(5)} · validated inside Greater Mumbai</p>
+            <MumbaiMap stations={marker} className="h-[240px] w-full" compact theme="light" initialZoom={13.2} initialPitch={20} overlayLabel="Incident location" autoFit={false} />
+            <p className="p-3 text-[9px] text-[#74847a]">{data.incident.lat.toFixed(5)}, {data.incident.lng.toFixed(5)} · validated inside Greater Mumbai</p>
           </Card>
 
           {can(['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN', 'SYSTEM_ADMIN']) ? (
             <Card>
-              <CardHeader><CardTitle>Workflow actions</CardTitle><ClipboardCheck className="h-4 w-4 text-[#b5e36b]" /></CardHeader>
+              <CardHeader><CardTitle>Workflow actions</CardTitle><ClipboardCheck className="h-4 w-4 text-[#3f7d2a]" /></CardHeader>
               <div className="space-y-3 p-4">
                 {nextStatuses.length ? (
                   <>
-                    <p className="text-[10px] leading-relaxed text-[#8d99a6]">Next permitted transitions. A reason is required and recorded in the audit trail.</p>
+                    <p className="text-[10px] leading-relaxed text-[#68786d]">Next permitted transitions. A reason is required and recorded in the audit trail.</p>
                     <div className="flex flex-wrap gap-1.5">
                       {nextStatuses.map((status) => (
                         <Button key={status} variant={status === 'CLOSED' ? 'danger' : 'dark'} size="sm" onClick={() => transition(status)} disabled={working}>
@@ -393,9 +393,9 @@ export function IncidentDetailPage() {
                       ))}
                     </div>
                   </>
-                ) : <p className="text-[10px] text-[#6f7c89]">No further transitions. This incident is closed.</p>}
+                ) : <p className="text-[10px] text-[#74847a]">No further transitions. This incident is closed.</p>}
                 {can(['AUTHORITY_ADMIN', 'SYSTEM_ADMIN']) ? (
-                  <div className="border-t border-[#2b333e] pt-3">
+                  <div className="border-t border-[#e7ece3] pt-3">
                     <DataLabel>Assign investigator</DataLabel>
                     <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="mt-1 h-9 text-[11px]">
                       <option value="">Select authority user</option>
@@ -412,7 +412,7 @@ export function IncidentDetailPage() {
             <Card>
               <CardHeader><CardTitle>Official determination</CardTitle><Badge tone="neutral">Authorised only</Badge></CardHeader>
               <div className="space-y-2 p-4">
-                <p className="text-[9px] leading-relaxed text-[#788493]">Record the official determination only after reviewing evidence, standards and averaging periods. This is separate from automated risk scores.</p>
+                <p className="text-[9px] leading-relaxed text-[#6f7f74]">Record the official determination only after reviewing evidence, standards and averaging periods. This is separate from automated risk scores.</p>
                 <Textarea value={determination} onChange={(e) => setDetermination(e.target.value)} rows={3} placeholder="Official determination…" />
                 <Textarea value={basis} onChange={(e) => setBasis(e.target.value)} rows={2} placeholder="Basis and evidence references…" />
                 <Button variant="lime" size="sm" className="w-full" onClick={recordDetermination} disabled={working || determination.trim().length < 10 || basis.trim().length < 5}><ShieldCheck className="h-3.5 w-3.5" /> Record determination</Button>
@@ -422,12 +422,12 @@ export function IncidentDetailPage() {
 
           <Card>
             <CardHeader><CardTitle>Regulatory references</CardTitle><Badge tone="neutral">{data.standards.length}</Badge></CardHeader>
-            <div className="divide-y divide-[#252d37]">
+            <div className="divide-y divide-[#e7ece3]">
               {data.standards.slice(0, 8).map((standard) => (
-                <div key={standard.id} className="p-3 text-[9px] leading-relaxed text-[#8d99a6]">
-                  <p className="font-semibold text-[#dbe2e9]">{standard.parameter} {standard.operator} {standard.threshold_value ?? ''}{standard.threshold_max ? `–${standard.threshold_max}` : ''} {standard.unit}</p>
+                <div key={standard.id} className="p-3 text-[9px] leading-relaxed text-[#68786d]">
+                  <p className="font-semibold text-[#26362a]">{standard.parameter} {standard.operator} {standard.threshold_value ?? ''}{standard.threshold_max ? `–${standard.threshold_max}` : ''} {standard.unit}</p>
                   <p className="mt-0.5">{standard.document_title} · {standard.section_ref}</p>
-                  <p className="mt-0.5 text-[#5f6b78]">{standard.averaging_period} · {standard.verification_status}</p>
+                  <p className="mt-0.5 text-[#7b8a80]">{standard.averaging_period} · {standard.verification_status}</p>
                 </div>
               ))}
             </div>
@@ -437,8 +437,8 @@ export function IncidentDetailPage() {
             <CardHeader><CardTitle>Audit history</CardTitle><Badge tone="neutral">{data.audit.length}</Badge></CardHeader>
             <div className="scrollbar-thin max-h-[300px] overflow-auto p-3">
               {data.audit.map((event, index) => (
-                <div key={index} className="border-b border-[#252d37] py-2 text-[9px] leading-relaxed text-[#788493] last:border-0">
-                  <p className="font-semibold uppercase tracking-[0.06em] text-[#b5e36b]">{event.action.replace(/_/g, ' ')}</p>
+                <div key={index} className="border-b border-[#e7ece3] py-2 text-[9px] leading-relaxed text-[#6f7f74] last:border-0">
+                  <p className="font-semibold uppercase tracking-[0.06em] text-[#3f7d2a]">{event.action.replace(/_/g, ' ')}</p>
                   <p>{formatDate(event.created_at)}</p>
                 </div>
               ))}

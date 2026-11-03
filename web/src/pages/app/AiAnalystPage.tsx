@@ -111,7 +111,7 @@ export function AiAnalystPage() {
             <Badge tone="neutral">Grounded in application records</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">AI environmental analyst</h2>
-          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#788493]">
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
             Observation & anomaly, predictive explanation and compliance context are kept separate. The assistant explains supplied evidence;
             it cannot invent readings, create forecasts or override model output.
           </p>
@@ -132,20 +132,20 @@ export function AiAnalystPage() {
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <Card className="flex min-h-[620px] flex-col">
           <CardHeader>
-            <div><CardTitle>Grounded analysis</CardTitle><p className="mt-1 text-[10px] text-[#6f7c89]">Answers are labelled OBSERVED / PREDICTED / REPORTED / ESTIMATED / AI-GENERATED</p></div>
+            <div><CardTitle>Grounded analysis</CardTitle><p className="mt-1 text-[10px] text-[#74847a]">Answers are labelled OBSERVED / PREDICTED / REPORTED / ESTIMATED / AI-GENERATED</p></div>
             <Badge tone="teal">Evidence first</Badge>
           </CardHeader>
           <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 ? (
-              <div className="rounded-2xl border border-[#303945] bg-[#101317] p-5">
-                <div className="flex items-center gap-2 text-[#b5e36b]"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold">Ask about Mumbai evidence</span></div>
-                <p className="mt-2 text-[11px] leading-relaxed text-[#8d99a6]">
+              <div className="rounded-2xl border border-[#dfe6db] bg-[#f5f8f2] p-5">
+                <div className="flex items-center gap-2 text-[#3f7d2a]"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold">Ask about Mumbai evidence</span></div>
+                <p className="mt-2 text-[11px] leading-relaxed text-[#68786d]">
                   The analyst retrieves observations, forecasts, reports, alerts and reference standards from this application. If River AI is not configured,
                   the server returns a rule-based digest instead of pretending an LLM answered.
                 </p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {SUGGESTIONS.slice(0, 6).map((suggestion) => (
-                    <button key={suggestion} onClick={() => ask(suggestion)} className="rounded-xl border border-[#303945] bg-[#181d23] p-3 text-left text-[10px] leading-relaxed text-[#a2adba] hover:border-[#b5e36b]/35 hover:text-white">
+                    <button key={suggestion} onClick={() => ask(suggestion)} className="rounded-xl border border-[#dfe6db] bg-[#ffffff] p-3 text-left text-[10px] leading-relaxed text-[#5a6a5f] hover:border-[#5b9e46]/35 hover:text-[#142016]">
                       {suggestion}
                     </button>
                   ))}
@@ -155,22 +155,22 @@ export function AiAnalystPage() {
             {messages.map((message, index) =>
               message.role === 'user' ? (
                 <div key={index} className="flex justify-end gap-2">
-                  <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#b5e36b] px-4 py-2.5 text-[12px] font-medium text-[#111310]">{message.text}</div>
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#29323d] text-[#a2adba]"><UserRound className="h-3.5 w-3.5" /></span>
+                  <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#5b9e46] px-4 py-2.5 text-[12px] font-medium text-[#111310]">{message.text}</div>
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eaf2e4] text-[#5a6a5f]"><UserRound className="h-3.5 w-3.5" /></span>
                 </div>
               ) : message.answer ? (
                 <div key={index} className="flex gap-2">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#b5e36b]/15 text-[#b5e36b]"><Bot className="h-3.5 w-3.5" /></span>
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5b9e46]/15 text-[#3f7d2a]"><Bot className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1 space-y-2.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={message.answer.provider === 'RIVER_AI' ? 'lime' : 'amber'}>
                         {message.answer.provider === 'RIVER_AI' ? 'AI-generated explanation' : 'Rule-based evidence digest'}
                       </Badge>
                       <Badge tone={message.answer.status === 'COMPLETED' ? 'green' : 'neutral'}>{message.answer.status.replace(/_/g, ' ')}</Badge>
-                      <span className="text-[9px] text-[#5f6b78]">{formatDate(message.answer.generatedAt)}</span>
+                      <span className="text-[9px] text-[#7b8a80]">{formatDate(message.answer.generatedAt)}</span>
                     </div>
-                    <div className="rounded-2xl rounded-tl-sm border border-[#303945] bg-[#101317] p-4">
-                      <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#c5d0db]">{message.answer.narrative}</p>
+                    <div className="rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] p-4">
+                      <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#405246]">{message.answer.narrative}</p>
                       <div className="mt-3 space-y-2">
                         {[
                           ['OBSERVED', message.answer.sections.observed, 'green'],
@@ -181,41 +181,41 @@ export function AiAnalystPage() {
                           ['LIMITATIONS', message.answer.sections.limitations, 'red'],
                           ['SUGGESTED NEXT ACTIONS', message.answer.sections.nextActions, 'lime'],
                         ].map(([label, items, tone]) => Array.isArray(items) && items.length ? (
-                          <div key={String(label)} className="rounded-xl border border-[#2b333e] bg-[#181d23] p-3">
+                          <div key={String(label)} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
                             <Badge tone={tone as never}>{String(label)}</Badge>
-                            <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#a2adba]">
-                              {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#6f7c89]">—</span>{item}</li>)}
+                            <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
+                              {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#74847a]">—</span>{item}</li>)}
                             </ul>
                           </div>
                         ) : null)}
                       </div>
                       {message.answer.citations.length ? (
-                        <div className="mt-3 rounded-xl border border-[#2b333e] bg-[#181d23] p-3">
+                        <div className="mt-3 rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
                           <DataLabel>Citations</DataLabel>
-                          <ul className="mt-2 space-y-1 text-[10px] text-[#a2adba]">
+                          <ul className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
                             {message.answer.citations.map((citation, citationIndex) => (
-                              <li key={citationIndex}>{citation.title} · {citation.section} · {citation.authority}{citation.url ? <> · <a href={citation.url} target="_blank" rel="noreferrer" className="text-[#b5e36b] underline">source</a></> : null}</li>
+                              <li key={citationIndex}>{citation.title} · {citation.section} · {citation.authority}{citation.url ? <> · <a href={citation.url} target="_blank" rel="noreferrer" className="text-[#3f7d2a] underline">source</a></> : null}</li>
                             ))}
                           </ul>
                         </div>
                       ) : null}
-                      <p className="mt-3 text-[9px] leading-relaxed text-[#5f6b78]">{message.answer.disclaimer}</p>
+                      <p className="mt-3 text-[9px] leading-relaxed text-[#7b8a80]">{message.answer.disclaimer}</p>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div key={index} className="flex gap-2">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#29323d] text-[#a2adba]"><Bot className="h-3.5 w-3.5" /></span>
-                  <div className="rounded-2xl rounded-tl-sm border border-[#303945] bg-[#101317] px-4 py-3 text-[11px] text-[#8d99a6]">{message.text}</div>
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eaf2e4] text-[#5a6a5f]"><Bot className="h-3.5 w-3.5" /></span>
+                  <div className="rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] px-4 py-3 text-[11px] text-[#68786d]">{message.text}</div>
                 </div>
               ),
             )}
             {loading ? (
-              <div className="flex items-center gap-2 text-[11px] text-[#788493]"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#b5e36b]/10"><BrainCircuit className="h-3.5 w-3.5 animate-pulse text-[#b5e36b]" /></span> Retrieving application evidence and building the analysis…</div>
+              <div className="flex items-center gap-2 text-[11px] text-[#6f7f74]"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5b9e46]/10"><BrainCircuit className="h-3.5 w-3.5 animate-pulse text-[#3f7d2a]" /></span> Retrieving application evidence and building the analysis…</div>
             ) : null}
             <div ref={bottomRef} />
           </div>
-          <div className="border-t border-[#2b333e] p-3">
+          <div className="border-t border-[#e7ece3] p-3">
             <div className="flex gap-2">
               <Textarea
                 value={question}
@@ -230,19 +230,19 @@ export function AiAnalystPage() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="mt-1.5 text-[9px] text-[#5f6b78]">Enter to send · Shift+Enter for a new line · Prompt injection is treated as untrusted data.</p>
+            <p className="mt-1.5 text-[9px] text-[#7b8a80]">Enter to send · Shift+Enter for a new line · Prompt injection is treated as untrusted data.</p>
           </div>
         </Card>
 
         <div className="space-y-3">
           <Card>
             <CardHeader><CardTitle>Analyst status</CardTitle><Badge tone={status?.river === 'CONFIGURED' ? 'green' : 'amber'}>{status?.river ?? '—'}</Badge></CardHeader>
-            <div className="p-4 text-[10px] leading-relaxed text-[#8d99a6]">
+            <div className="p-4 text-[10px] leading-relaxed text-[#68786d]">
               <p>{status?.note ?? 'Loading status…'}</p>
-              <div className="mt-3 space-y-2 border-t border-[#2b333e] pt-3">
-                <div className="flex items-center justify-between"><span>Vision</span><span className="text-amber-300">{status?.vision ?? 'NOT_CONFIGURED'}</span></div>
-                <div className="flex items-center justify-between"><span>Mode</span><span className="text-[#dbe2e9]">{status?.mode ?? '—'}</span></div>
-                <div className="flex items-center justify-between"><span>Grounded evidence</span><span className="text-emerald-300">Required</span></div>
+              <div className="mt-3 space-y-2 border-t border-[#e7ece3] pt-3">
+                <div className="flex items-center justify-between"><span>Vision</span><span className="text-amber-600">{status?.vision ?? 'NOT_CONFIGURED'}</span></div>
+                <div className="flex items-center justify-between"><span>Mode</span><span className="text-[#26362a]">{status?.mode ?? '—'}</span></div>
+                <div className="flex items-center justify-between"><span>Grounded evidence</span><span className="text-emerald-600">Required</span></div>
               </div>
             </div>
           </Card>
@@ -250,20 +250,20 @@ export function AiAnalystPage() {
             <CardHeader><CardTitle>Suggested questions</CardTitle></CardHeader>
             <div className="space-y-1.5 p-3">
               {SUGGESTIONS.map((suggestion) => (
-                <button key={suggestion} onClick={() => ask(suggestion)} className="block w-full rounded-lg px-2.5 py-2 text-left text-[10px] leading-relaxed text-[#a2adba] hover:bg-[#29323d] hover:text-white">
+                <button key={suggestion} onClick={() => ask(suggestion)} className="block w-full rounded-lg px-2.5 py-2 text-left text-[10px] leading-relaxed text-[#5a6a5f] hover:bg-[#eaf2e4] hover:text-[#142016]">
                   {suggestion}
                 </button>
               ))}
             </div>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Response rules</CardTitle><ShieldAlert className="h-4 w-4 text-[#b5e36b]" /></CardHeader>
-            <div className="space-y-2 p-4 text-[10px] leading-relaxed text-[#788493]">
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#56c1b3]" /> Every numeric claim must come from supplied evidence.</p>
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#56c1b3]" /> Standards require exact document and section references.</p>
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#56c1b3]" /> Missing evidence is stated, not filled with assumptions.</p>
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#56c1b3]" /> No official violation is declared by the assistant.</p>
-              <Link to="/data-sources" className="mt-2 inline-flex items-center gap-1 font-semibold text-[#b5e36b]">Source status <ArrowUpRight className="h-3 w-3" /></Link>
+            <CardHeader><CardTitle>Response rules</CardTitle><ShieldAlert className="h-4 w-4 text-[#3f7d2a]" /></CardHeader>
+            <div className="space-y-2 p-4 text-[10px] leading-relaxed text-[#6f7f74]">
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Every numeric claim must come from supplied evidence.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Standards require exact document and section references.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Missing evidence is stated, not filled with assumptions.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> No official violation is declared by the assistant.</p>
+              <Link to="/data-sources" className="mt-2 inline-flex items-center gap-1 font-semibold text-[#3f7d2a]">Source status <ArrowUpRight className="h-3 w-3" /></Link>
             </div>
           </Card>
         </div>

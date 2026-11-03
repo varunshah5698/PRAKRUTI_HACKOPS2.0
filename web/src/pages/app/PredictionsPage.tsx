@@ -82,26 +82,26 @@ export function PredictionsPage() {
     return {
       grid: { ...chartGrid, top: 40, right: 20 },
       tooltip: chartTooltip,
-      legend: { top: 0, textStyle: { color: '#788493', fontSize: 10 } },
+      legend: { top: 0, textStyle: { color: '#6f7f74', fontSize: 10 } },
       xAxis: { type: 'category', data: times, ...chartAxis, axisLabel: { ...chartAxis.axisLabel, interval: Math.max(1, Math.floor(times.length / 8)) } },
-      yAxis: { type: 'value', name: 'µg/m³', nameTextStyle: { color: '#788493', fontSize: 10 }, ...chartAxis },
+      yAxis: { type: 'value', name: 'µg/m³', nameTextStyle: { color: '#6f7f74', fontSize: 10 }, ...chartAxis },
       series: [
         {
           name: 'Observed (demo)',
           type: 'line',
           data: historyValues,
           symbol: 'none',
-          lineStyle: { color: '#b5e36b', width: 2 },
-          areaStyle: { color: 'rgba(181,227,107,0.06)' },
+          lineStyle: { color: '#5b9e46', width: 2 },
+          areaStyle: { color: 'rgba(91,158,70,0.06)' },
           markLine: {
             silent: true,
             symbol: 'none',
-            data: [{ yAxis: 60, label: { formatter: '24h NAAQS 60', color: '#dc555b', fontSize: 9 }, lineStyle: { color: '#dc555b', type: 'dashed', opacity: 0.5 } }],
+            data: [{ yAxis: 60, label: { formatter: '24h NAAQS 60', color: '#c94a50', fontSize: 9 }, lineStyle: { color: '#c94a50', type: 'dashed', opacity: 0.5 } }],
           },
         },
-        { name: data.detail?.method === 'LIGHTGBM_TRAINED' ? 'Model median' : 'Baseline median', type: 'line', data: median, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#56c1b3', width: 2, type: 'dashed' }, itemStyle: { color: '#56c1b3' } },
-        { name: 'Lower band', type: 'line', data: lower, symbol: 'none', lineStyle: { color: 'rgba(86,193,179,0.35)', width: 1, type: 'dotted' } },
-        { name: 'Upper band', type: 'line', data: upper, symbol: 'none', lineStyle: { color: 'rgba(86,193,179,0.35)', width: 1, type: 'dotted' } },
+        { name: data.detail?.method === 'LIGHTGBM_TRAINED' ? 'Model median' : 'Baseline median', type: 'line', data: median, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#2f8f84', width: 2, type: 'dashed' }, itemStyle: { color: '#2f8f84' } },
+        { name: 'Lower band', type: 'line', data: lower, symbol: 'none', lineStyle: { color: 'rgba(47,143,132,0.35)', width: 1, type: 'dotted' } },
+        { name: 'Upper band', type: 'line', data: upper, symbol: 'none', lineStyle: { color: 'rgba(47,143,132,0.35)', width: 1, type: 'dotted' } },
       ],
     };
   }, [data]);
@@ -114,13 +114,13 @@ export function PredictionsPage() {
       grid: { ...chartGrid, top: 24 },
       tooltip: chartTooltip,
       xAxis: { type: 'category', data: ['Now', '+1h', '+3h', '+6h'], ...chartAxis },
-      yAxis: { type: 'value', name: 'µg/m³', nameTextStyle: { color: '#788493', fontSize: 10 }, ...chartAxis },
+      yAxis: { type: 'value', name: 'µg/m³', nameTextStyle: { color: '#6f7f74', fontSize: 10 }, ...chartAxis },
       series: [
         {
           type: 'bar',
-          data: values.map((value, index) => ({ value, itemStyle: { color: index === 0 ? '#b5e36b' : '#56c1b3', borderRadius: [5, 5, 0, 0], opacity: index === 0 ? 1 : 0.7 } })),
+          data: values.map((value, index) => ({ value, itemStyle: { color: index === 0 ? '#5b9e46' : '#2f8f84', borderRadius: [5, 5, 0, 0], opacity: index === 0 ? 1 : 0.7 } })),
           barWidth: '45%',
-          label: { show: true, position: 'top', color: '#a2adba', fontSize: 10 },
+          label: { show: true, position: 'top', color: '#5a6a5f', fontSize: 10 },
         },
       ],
     };
@@ -147,7 +147,7 @@ export function PredictionsPage() {
             <Badge tone="neutral">{trained ? 'Quantile 10–90' : 'Intervals not calibrated'}</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Predictive environmental intelligence</h2>
-          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#788493]">
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
             Air pollution is the primary predictive application.{' '}
             {trained
               ? 'A registered LightGBM model is active. Forecasts and quantile intervals come from that model; the model card and metrics must be reviewed before operational use.'
@@ -164,9 +164,9 @@ export function PredictionsPage() {
 
       <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4">
         <div className="flex items-start gap-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-          <div className="text-[11px] leading-relaxed text-amber-100/80">
-            <p className="font-semibold text-amber-200">Model status: {data.status.trainedModels}{data.status.modelVersion ? ` · ${data.status.modelVersion}` : ''}</p>
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div className="text-[11px] leading-relaxed text-amber-700/80">
+            <p className="font-semibold text-amber-700">Model status: {data.status.trainedModels}{data.status.modelVersion ? ` · ${data.status.modelVersion}` : ''}</p>
             <p className="mt-1">{data.status.reason}</p>
             <p className="mt-1">Available method: {data.status.available}. SHAP: {data.status.shap}. Quantile intervals: {data.status.quantileIntervals}. Deterioration classifier: {data.status.deteriorationClassifier}.</p>
           </div>
@@ -176,21 +176,21 @@ export function PredictionsPage() {
       {detail ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Card className="border-[#b5e36b]/20 bg-[#b5e36b]/[0.04] p-4">
+            <Card className="border-[#5b9e46]/20 bg-[#5b9e46]/[0.04] p-4">
               <div className="flex items-center justify-between"><DataLabel>Current observed PM2.5</DataLabel><Badge tone={detail.station.isSimulated ? 'amber' : 'green'}>{detail.station.isSimulated ? 'Demo' : 'Source'}</Badge></div>
-              <p className="display mt-3 text-[34px] font-bold">{detail.current ? number(detail.current.value) : '—'} <span className="text-sm font-normal text-[#788493]">µg/m³</span></p>
-              <p className="mt-1 text-[10px] text-[#788493]">{formatDate(detail.current?.observedAt)} · {detail.current?.qualityState}</p>
-              <p className="mt-2 text-[9px] text-[#6f7c89]">{detail.current?.isSimulated ? 'SIMULATION DATA — not a CPCB reading' : `Connected source · ${detail.current?.sourceId ?? ''}`}</p>
+              <p className="display mt-3 text-[34px] font-bold">{detail.current ? number(detail.current.value) : '—'} <span className="text-sm font-normal text-[#6f7f74]">µg/m³</span></p>
+              <p className="mt-1 text-[10px] text-[#6f7f74]">{formatDate(detail.current?.observedAt)} · {detail.current?.qualityState}</p>
+              <p className="mt-2 text-[9px] text-[#74847a]">{detail.current?.isSimulated ? 'SIMULATION DATA — not a CPCB reading' : `Connected source · ${detail.current?.sourceId ?? ''}`}</p>
             </Card>
             {[1, 3, 6].map((horizon) => {
               const forecast = detail.forecasts.find((f) => f.horizonHours === horizon);
               return (
                 <Card key={horizon} className="p-4">
                   <div className="flex items-center justify-between"><DataLabel>+{horizon} hour forecast</DataLabel><Badge tone="teal">{trained ? 'LightGBM' : 'Baseline'}</Badge></div>
-                  <p className="display mt-3 text-[30px] font-bold">{forecast ? number(forecast.predictedValue) : '—'} <span className="text-sm font-normal text-[#788493]">µg/m³</span></p>
-                  <p className="mt-1 text-[10px] text-[#788493]">{trained ? 'Quantile 10–90' : '80% band'} {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : 'unavailable'}</p>
-                  <div className="mt-3"><ProgressBar value={forecast ? Math.min(100, (forecast.predictedValue / 100) * 100) : 0} tone={forecast && forecast.predictedValue >= 60 ? '#e88a43' : '#56c1b3'} /></div>
-                  <p className="mt-2 text-[9px] text-[#6f7c89]">{forecast?.method ?? 'FORECAST UNAVAILABLE'}</p>
+                  <p className="display mt-3 text-[30px] font-bold">{forecast ? number(forecast.predictedValue) : '—'} <span className="text-sm font-normal text-[#6f7f74]">µg/m³</span></p>
+                  <p className="mt-1 text-[10px] text-[#6f7f74]">{trained ? 'Quantile 10–90' : '80% band'} {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : 'unavailable'}</p>
+                  <div className="mt-3"><ProgressBar value={forecast ? Math.min(100, (forecast.predictedValue / 100) * 100) : 0} tone={forecast && forecast.predictedValue >= 60 ? '#cf7227' : '#2f8f84'} /></div>
+                  <p className="mt-2 text-[9px] text-[#74847a]">{forecast?.method ?? 'FORECAST UNAVAILABLE'}</p>
                 </Card>
               );
             })}
@@ -199,7 +199,7 @@ export function PredictionsPage() {
           <div className="grid gap-4 xl:grid-cols-[1.4fr_0.6fr]">
             <Card>
               <CardHeader>
-                <div><CardTitle>Historical observations vs baseline forecast</CardTitle><p className="mt-1 text-[10px] text-[#6f7c89]">Stored demo observations · dashed median · dotted empirical band · not a calibrated prediction interval</p></div>
+                <div><CardTitle>Historical observations vs baseline forecast</CardTitle><p className="mt-1 text-[10px] text-[#74847a]">Stored demo observations · dashed median · dotted empirical band · not a calibrated prediction interval</p></div>
                 <Badge tone="amber">Not trained</Badge>
               </CardHeader>
               <div className="px-2 pb-2 pt-3"><Chart height={320} empty={detail.history.length === 0} option={chartOption} /></div>
@@ -215,16 +215,16 @@ export function PredictionsPage() {
               <CardHeader><CardTitle>Predictive warning decision</CardTitle><RiskBadge level={alertState} /></CardHeader>
               <div className="p-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Threshold</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.threshold} {detail.criteria.unit}</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Averaging basis</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.averaging}</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">+3h baseline</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.forecast3h ?? '—'} µg/m³</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Persistence readings</span><span className="font-semibold text-[#e8edf2]">{detail.criteria.persistence} / 6</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#788493]">Deterioration probability</span><span className="font-semibold text-amber-300">{detail.criteria.deteriorationProbability === null ? 'NOT AVAILABLE' : `${Math.round(detail.criteria.deteriorationProbability * 100)}%`}</span></div>
-                  <div className={`rounded-xl border p-3 text-[10px] leading-relaxed ${detail.criteria.predictiveWarningMet ? 'border-amber-500/30 bg-amber-500/[0.06] text-amber-100/80' : 'border-[#303945] bg-[#101317] text-[#788493]'}`}>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Threshold</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.threshold} {detail.criteria.unit}</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Averaging basis</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.averaging}</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">+3h baseline</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.forecast3h ?? '—'} µg/m³</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Persistence readings</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.persistence} / 6</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Deterioration probability</span><span className="font-semibold text-amber-600">{detail.criteria.deteriorationProbability === null ? 'NOT AVAILABLE' : `${Math.round(detail.criteria.deteriorationProbability * 100)}%`}</span></div>
+                  <div className={`rounded-xl border p-3 text-[10px] leading-relaxed ${detail.criteria.predictiveWarningMet ? 'border-amber-500/30 bg-amber-500/[0.06] text-amber-700/80' : 'border-[#dfe6db] bg-[#f5f8f2] text-[#6f7f74]'}`}>
                     {detail.criteria.predictiveWarningMet ? 'Configured baseline criteria are met. This is an analytical early warning, not a confirmed future condition or a violation.' : 'Configured baseline criteria are not met. No predictive warning is raised from this method.'}
                   </div>
                 </div>
-                <p className="mt-3 text-[9px] leading-relaxed text-[#5f6b78]">{detail.criteria.note}</p>
+                <p className="mt-3 text-[9px] leading-relaxed text-[#7b8a80]">{detail.criteria.note}</p>
               </div>
             </Card>
             <Card>
@@ -233,17 +233,17 @@ export function PredictionsPage() {
                 {detail.risk ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
-                      <div><DataLabel>Risk score</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.risk_score ?? '—'}</p><p className="text-[9px] text-[#6f7c89]">out of 100</p></div>
-                      <div><DataLabel>Confidence</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.confidence_score ?? '—'}</p><p className="text-[9px] text-[#6f7c89]">{detail.risk.confidence_level}</p></div>
+                      <div><DataLabel>Risk score</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.risk_score ?? '—'}</p><p className="text-[9px] text-[#74847a]">out of 100</p></div>
+                      <div><DataLabel>Confidence</DataLabel><p className="mt-1 text-3xl font-semibold">{detail.risk.confidence_score ?? '—'}</p><p className="text-[9px] text-[#74847a]">{detail.risk.confidence_level}</p></div>
                     </div>
-                    <p className="mt-3 text-[10px] leading-relaxed text-[#788493]">{detail.risk.method}</p>
-                    <p className="mt-2 text-[9px] text-[#6f7c89]">Calculated {formatDate(detail.risk.calculated_at)}. Confidence is separate from severity.</p>
+                    <p className="mt-3 text-[10px] leading-relaxed text-[#6f7f74]">{detail.risk.method}</p>
+                    <p className="mt-2 text-[9px] text-[#74847a]">Calculated {formatDate(detail.risk.calculated_at)}. Confidence is separate from severity.</p>
                   </>
-                ) : <p className="text-[11px] text-[#788493]">No risk assessment available.</p>}
-                <div className="mt-4 rounded-xl border border-[#303945] bg-[#101317] p-3">
+                ) : <p className="text-[11px] text-[#6f7f74]">No risk assessment available.</p>}
+                <div className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                   <DataLabel>Anomaly check</DataLabel>
                   <p className="mt-1 text-sm font-semibold">{detail.anomaly.status}</p>
-                  <p className="mt-1 text-[9px] text-[#6f7c89]">z = {detail.anomaly.zScore ?? '—'} · {detail.anomaly.method}</p>
+                  <p className="mt-1 text-[9px] text-[#74847a]">z = {detail.anomaly.zScore ?? '—'} · {detail.anomaly.method}</p>
                 </div>
               </div>
             </Card>
@@ -252,28 +252,28 @@ export function PredictionsPage() {
               <div className="p-4">
                 {trained && detail.shapValues.length ? (
                   <>
-                    <div className="flex items-center gap-2 text-emerald-300"><CheckCircle2 className="h-4 w-4" /><p className="text-[11px] font-semibold">SHAP computed by the registered model</p></div>
+                    <div className="flex items-center gap-2 text-emerald-600"><CheckCircle2 className="h-4 w-4" /><p className="text-[11px] font-semibold">SHAP computed by the registered model</p></div>
                     <div className="mt-3 space-y-1.5">
                       {detail.shapValues.slice(0, 8).map((item) => (
                         <div key={item.feature} className="flex items-center justify-between gap-2 text-[10px]">
-                          <span className="truncate text-[#a2adba]">{item.feature}</span>
-                          <span className={item.contribution >= 0 ? 'text-amber-300' : 'text-teal-300'}>{item.contribution >= 0 ? '+' : ''}{item.contribution.toFixed(2)}</span>
+                          <span className="truncate text-[#5a6a5f]">{item.feature}</span>
+                          <span className={item.contribution >= 0 ? 'text-amber-600' : 'text-teal-600'}>{item.contribution >= 0 ? '+' : ''}{item.contribution.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
-                    <p className="mt-2 text-[9px] leading-relaxed text-[#6f7c89]">SHAP contribution to the +3h prediction. Positive values push the forecast higher.</p>
+                    <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">SHAP contribution to the +3h prediction. Positive values push the forecast higher.</p>
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 text-[#5f6b78]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#95a1ae]">SHAP is unavailable</p></div>
-                    <p className="mt-2 text-[10px] leading-relaxed text-[#788493]">
+                    <div className="flex items-center gap-2 text-[#7b8a80]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#5f6f64]">SHAP is unavailable</p></div>
+                    <p className="mt-2 text-[10px] leading-relaxed text-[#6f7f74]">
                       SHAP values can only be computed by a trained model. No trained LightGBM artifact is active for this deployment. Generic feature
                       importance is not shown in place of SHAP.
                     </p>
                   </>
                 )}
-                <div className="mt-4 rounded-xl border border-[#303945] bg-[#101317] p-3 text-[10px] leading-relaxed text-[#788493]">
-                  <p className="font-semibold text-[#a2adba]">Actual vs forecast</p>
+                <div className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#6f7f74]">
+                  <p className="font-semibold text-[#5a6a5f]">Actual vs forecast</p>
                   <p className="mt-1">{detail.forecastPerformance.reason}</p>
                 </div>
               </div>
@@ -285,11 +285,11 @@ export function PredictionsPage() {
               <CardHeader><CardTitle>Model registry</CardTitle><Badge tone="neutral">{data.models.length} entries</Badge></CardHeader>
               <div className="scrollbar-thin max-h-[360px] overflow-auto">
                 <table className="w-full text-left text-[10px]">
-                  <thead className="sticky top-0 bg-[#181d23] text-[9px] uppercase tracking-[0.1em] text-[#6f7c89]"><tr><th className="px-4 py-2">Model</th><th className="px-4 py-2">Target</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Metrics</th></tr></thead>
-                  <tbody className="divide-y divide-[#252d37]">
+                  <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#74847a]"><tr><th className="px-4 py-2">Model</th><th className="px-4 py-2">Target</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Metrics</th></tr></thead>
+                  <tbody className="divide-y divide-[#e7ece3]">
                     {data.models.map((model) => (
-                      <tr key={model.id} className="text-[#a2adba]">
-                        <td className="px-4 py-2"><p className="font-medium text-[#dbe2e9]">{model.name}</p><p className="text-[9px] text-[#6f7c89]">{model.version}</p></td>
+                      <tr key={model.id} className="text-[#5a6a5f]">
+                        <td className="px-4 py-2"><p className="font-medium text-[#26362a]">{model.name}</p><p className="text-[9px] text-[#74847a]">{model.version}</p></td>
                         <td className="px-4 py-2">{model.target}{model.horizon_hours ? ` · ${model.horizon_hours}h` : ''}</td>
                         <td className="px-4 py-2"><Badge tone={model.status === 'BASELINE' ? 'teal' : model.status === 'TRAINED' ? 'green' : 'amber'}>{model.status.replace(/_/g, ' ')}</Badge></td>
                         <td className="px-4 py-2 text-[9px]">{model.metrics ? 'Available' : 'None — not evaluated'}</td>
@@ -301,25 +301,25 @@ export function PredictionsPage() {
             </Card>
             <Card>
               <CardHeader><CardTitle>External modelled context · CAMS</CardTitle><Badge tone="neutral">Modelled</Badge></CardHeader>
-              <div className="divide-y divide-[#252d37]">
+              <div className="divide-y divide-[#e7ece3]">
                 {data.externalContext.cams.slice(0, 8).map((row, index) => (
                   <div key={`${row.locality_name}-${row.pollutant_code}-${index}`} className="flex items-center justify-between px-4 py-2 text-[10px]">
-                    <span className="text-[#a2adba]">{row.locality_name} · {row.pollutant_code.toUpperCase()}</span>
-                    <span className="text-[#e8edf2]">{number(row.value)} {row.unit}</span>
+                    <span className="text-[#5a6a5f]">{row.locality_name} · {row.pollutant_code.toUpperCase()}</span>
+                    <span className="text-[#1b2a1f]">{number(row.value)} {row.unit}</span>
                   </div>
                 ))}
-                {data.externalContext.cams.length === 0 ? <p className="p-4 text-[10px] text-[#6f7c89]">CAMS context unavailable.</p> : null}
+                {data.externalContext.cams.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">CAMS context unavailable.</p> : null}
               </div>
-              <p className="border-t border-[#2b333e] px-4 py-2 text-[9px] leading-relaxed text-[#6f7c89]">
+              <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] leading-relaxed text-[#74847a]">
                 CAMS is a regional atmospheric model, not a Mumbai monitoring station. It is shown as context only and is never used as a CPCB reading or official AQI.
               </p>
             </Card>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#303945] bg-[#181d23] p-4 text-[10px] text-[#788493]">
-            <Sparkles className="h-4 w-4 text-[#b5e36b]" />
-            Need an explanation? The <Link to="/ai-analyst" className="font-semibold text-[#b5e36b] underline">AI analyst</Link> can explain this evidence, but it cannot create or override forecasts.
-            <Link to="/map" className="ml-auto inline-flex items-center gap-1 font-semibold text-[#b5e36b]">Open map <ArrowUpRight className="h-3 w-3" /></Link>
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4 text-[10px] text-[#6f7f74]">
+            <Sparkles className="h-4 w-4 text-[#3f7d2a]" />
+            Need an explanation? The <Link to="/ai-analyst" className="font-semibold text-[#3f7d2a] underline">AI analyst</Link> can explain this evidence, but it cannot create or override forecasts.
+            <Link to="/map" className="ml-auto inline-flex items-center gap-1 font-semibold text-[#3f7d2a]">Open map <ArrowUpRight className="h-3 w-3" /></Link>
           </div>
         </>
       ) : (

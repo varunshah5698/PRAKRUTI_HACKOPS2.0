@@ -35,10 +35,13 @@ const ProfilePage = lazy(() => import('./pages/app/SettingsPages').then((m) => (
 
 function Splash() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#101317]">
-      <Logo dark />
-      <Loader2 className="h-5 w-5 animate-spin text-[#b5e36b]" />
-      <p className="text-[10px] uppercase tracking-[0.16em] text-[#6f7c89]">Loading session</p>
+    <div className="relative flex min-h-screen flex-col items-center justify-center gap-4 overflow-hidden bg-[#eef3ec]">
+      <div className="app-sky" aria-hidden />
+      <div className="relative flex flex-col items-center gap-4">
+        <Logo />
+        <Loader2 className="h-5 w-5 animate-spin text-[#4e9b3f]" />
+        <p className="text-[10px] uppercase tracking-[0.16em] text-[#74847a]">Loading session</p>
+      </div>
     </div>
   );
 }

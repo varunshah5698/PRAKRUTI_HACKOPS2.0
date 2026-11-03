@@ -99,8 +99,8 @@ export function SimulationPage() {
         <div>
           <div className="flex items-center gap-2"><Badge tone="amber" dot>Isolated replay</Badge><Badge tone="neutral">Deterministic seed</Badge></div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Simulation & historical replay</h2>
-          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#788493]">
-            Demonstrate the full workflow without touching real observations. Every generated record is marked <code className="rounded bg-[#29323d] px-1">is_simulated=true</code> and carries a simulation session id. Reset never deletes real environmental records.
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
+            Demonstrate the full workflow without touching real observations. Every generated record is marked <code className="rounded bg-[#eaf2e4] px-1">is_simulated=true</code> and carries a simulation session id. Reset never deletes real environmental records.
           </p>
         </div>
       </div>
@@ -110,7 +110,7 @@ export function SimulationPage() {
       ) : (
         <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
           <Card>
-            <CardHeader><CardTitle>Start a simulation</CardTitle><FlaskConical className="h-4 w-4 text-[#b5e36b]" /></CardHeader>
+            <CardHeader><CardTitle>Start a simulation</CardTitle><FlaskConical className="h-4 w-4 text-[#3f7d2a]" /></CardHeader>
             <div className="space-y-3 p-4">
               <div>
                 <DataLabel>Scenario</DataLabel>
@@ -129,15 +129,15 @@ export function SimulationPage() {
                 <Input type="number" min={1} max={1000000} value={seed} onChange={(e) => setSeed(e.target.value)} className="mt-1 h-9 text-[11px]" />
               </div>
               {selected ? (
-                <div className="rounded-xl border border-[#303945] bg-[#101317] p-3 text-[10px] leading-relaxed text-[#8d99a6]">
-                  <p className="font-semibold text-[#dbe2e9]">{selected.name}</p>
+                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#68786d]">
+                  <p className="font-semibold text-[#26362a]">{selected.name}</p>
                   <p className="mt-1">{selected.description}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">{selected.demonstrates.map((item) => <Badge key={item} tone="neutral">{item}</Badge>)}</div>
-                  <p className="mt-2 text-[9px] text-[#5f6b78]">{selected.steps} steps · {selected.category}</p>
+                  <p className="mt-2 text-[9px] text-[#7b8a80]">{selected.steps} steps · {selected.category}</p>
                 </div>
               ) : null}
               <Button variant="lime" size="sm" className="w-full" onClick={create} disabled={creating}><Play className="h-3.5 w-3.5" /> {creating ? 'Creating…' : 'Create simulation session'}</Button>
-              <p className="text-[9px] leading-relaxed text-[#5f6b78]">Only configured demonstration recipients can receive replay emails. No real mailing list is used.</p>
+              <p className="text-[9px] leading-relaxed text-[#7b8a80]">Only configured demonstration recipients can receive replay emails. No real mailing list is used.</p>
             </div>
           </Card>
 
@@ -145,10 +145,10 @@ export function SimulationPage() {
             <CardHeader><CardTitle>Scenarios</CardTitle><Badge tone="neutral">{scenarios.length}</Badge></CardHeader>
             <div className="grid gap-2 p-3 sm:grid-cols-2">
               {scenarios.map((item) => (
-                <button key={item.id} onClick={() => setScenario(item.id)} className={`rounded-xl border p-3 text-left transition ${scenario === item.id ? 'border-[#b5e36b]/40 bg-[#b5e36b]/[0.05]' : 'border-[#303945] bg-[#101317] hover:border-[#46515e]'}`}>
-                  <div className="flex items-center justify-between"><Badge tone={item.category === 'air' ? 'lime' : 'neutral'}>{item.category}</Badge><span className="text-[9px] text-[#5f6b78]">{item.steps} steps</span></div>
-                  <p className="mt-2 text-[11px] font-semibold text-[#dbe2e9]">{item.name}</p>
-                  <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-[#6f7c89]">{item.description}</p>
+                <button key={item.id} onClick={() => setScenario(item.id)} className={`rounded-xl border p-3 text-left transition ${scenario === item.id ? 'border-[#5b9e46]/40 bg-[#5b9e46]/[0.05]' : 'border-[#dfe6db] bg-[#f5f8f2] hover:border-[#c3d0bf]'}`}>
+                  <div className="flex items-center justify-between"><Badge tone={item.category === 'air' ? 'lime' : 'neutral'}>{item.category}</Badge><span className="text-[9px] text-[#7b8a80]">{item.steps} steps</span></div>
+                  <p className="mt-2 text-[11px] font-semibold text-[#26362a]">{item.name}</p>
+                  <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-[#74847a]">{item.description}</p>
                 </button>
               ))}
             </div>
@@ -159,15 +159,15 @@ export function SimulationPage() {
       <Card>
         <CardHeader><CardTitle>Recent simulation sessions</CardTitle><Badge tone="neutral">{sessions.length}</Badge></CardHeader>
         {sessions.length === 0 ? <EmptyState title="No simulations yet" description="Create a scenario to demonstrate the workflow." /> : (
-          <div className="divide-y divide-[#252d37]">
+          <div className="divide-y divide-[#e7ece3]">
             {sessions.map((session) => (
-              <Link key={session.id} to={`/simulation/${session.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-[#1d242c]">
+              <Link key={session.id} to={`/simulation/${session.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-[#f3f7f0]">
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5"><Badge tone="amber">Simulation</Badge><Badge tone="neutral">{session.scenario}</Badge><Badge tone={session.status === 'COMPLETED' ? 'green' : 'amber'}>{session.status}</Badge></div>
-                  <p className="mt-1 text-[11px] font-medium text-[#dbe2e9]">{session.station_name} · {session.locality_name ?? 'Mumbai'}</p>
-                  <p className="mt-0.5 text-[9px] text-[#6f7c89]">Seed {session.seed} · step {session.current_step}/{session.total_steps - 1} · {formatDate(session.created_at)}</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#26362a]">{session.station_name} · {session.locality_name ?? 'Mumbai'}</p>
+                  <p className="mt-0.5 text-[9px] text-[#74847a]">Seed {session.seed} · step {session.current_step}/{session.total_steps - 1} · {formatDate(session.created_at)}</p>
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-[#5f6b78]" />
+                <ArrowUpRight className="h-4 w-4 text-[#7b8a80]" />
               </Link>
             ))}
           </div>
@@ -261,7 +261,7 @@ export function SimulationSessionPage() {
       tooltip: chartTooltip,
       xAxis: { type: 'category', data: points.map((p) => `Step ${p.step}`), ...chartAxis, axisLabel: { ...chartAxis.axisLabel, interval: Math.max(1, Math.floor(points.length / 8)) } },
       yAxis: { type: 'value', ...chartAxis },
-      series: [{ type: 'line', smooth: 0.3, symbol: 'circle', symbolSize: 4, data: points.map((p) => p.value), lineStyle: { color: '#b5e36b', width: 2 }, areaStyle: { color: 'rgba(181,227,107,0.08)' }, itemStyle: { color: '#b5e36b' } }],
+      series: [{ type: 'line', smooth: 0.3, symbol: 'circle', symbolSize: 4, data: points.map((p) => p.value), lineStyle: { color: '#5b9e46', width: 2 }, areaStyle: { color: 'rgba(91,158,70,0.08)' }, itemStyle: { color: '#5b9e46' } }],
     };
   }, [data]);
 
@@ -283,7 +283,7 @@ export function SimulationSessionPage() {
             <Badge tone="neutral">Seed {data.session.seed}</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">{data.session.station_name}</h2>
-          <p className="mt-1 text-[11px] text-[#788493]">{data.session.locality_name ?? 'Mumbai'} · step {data.session.current_step}/{data.session.total_steps - 1} · created by {data.session.created_by_name ?? '—'}</p>
+          <p className="mt-1 text-[11px] text-[#6f7f74]">{data.session.locality_name ?? 'Mumbai'} · step {data.session.current_step}/{data.session.total_steps - 1} · created by {data.session.created_by_name ?? '—'}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link to="/simulation"><Button variant="dark" size="sm"><ArrowLeft className="h-3.5 w-3.5" /> Sessions</Button></Link>
@@ -295,7 +295,7 @@ export function SimulationSessionPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-2.5 text-[10px] leading-relaxed text-amber-100/80">
+      <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-2.5 text-[10px] leading-relaxed text-amber-700/80">
         {data.isolation.note} Every event below is simulation-labelled. Emails are previews or SIMULATED records only.
       </div>
 
@@ -304,11 +304,11 @@ export function SimulationSessionPage() {
           <Card>
             <CardHeader><CardTitle>Replay timeline</CardTitle><Badge tone="neutral">{data.events.length} events revealed</Badge></CardHeader>
             <div className="px-2 pb-3 pt-2"><Chart height={260} empty={data.events.length === 0} option={chartOption} /></div>
-            <div className="border-t border-[#2b333e] p-3">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-[#29323d]">
-                <div className="h-full rounded-full bg-[#b5e36b] transition-all" style={{ width: `${(data.session.current_step / Math.max(1, data.session.total_steps - 1)) * 100}%` }} />
+            <div className="border-t border-[#e7ece3] p-3">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#eaf2e4]">
+                <div className="h-full rounded-full bg-[#5b9e46] transition-all" style={{ width: `${(data.session.current_step / Math.max(1, data.session.total_steps - 1)) * 100}%` }} />
               </div>
-              <div className="mt-1 flex justify-between text-[8px] text-[#5f6b78]"><span>Step 0</span><span>Step {data.session.total_steps - 1}</span></div>
+              <div className="mt-1 flex justify-between text-[8px] text-[#7b8a80]"><span>Step 0</span><span>Step {data.session.total_steps - 1}</span></div>
             </div>
           </Card>
 
@@ -318,26 +318,26 @@ export function SimulationSessionPage() {
               <div className="p-4">
                 <div className="grid gap-2 sm:grid-cols-3">
                   {Object.entries(latest.values).map(([code, value]) => (
-                    <div key={code} className="rounded-xl border border-[#303945] bg-[#101317] p-3">
+                    <div key={code} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                       <DataLabel>{code.toUpperCase()}</DataLabel>
-                      <p className="mt-1 text-lg font-semibold">{number(value.value)} <span className="text-[10px] font-normal text-[#788493]">{value.unit}</span></p>
-                      <p className={`mt-1 text-[9px] ${value.qualityState === 'SUSPECT' ? 'text-amber-300' : 'text-[#6f7c89]'}`}>{value.qualityState}</p>
+                      <p className="mt-1 text-lg font-semibold">{number(value.value)} <span className="text-[10px] font-normal text-[#6f7f74]">{value.unit}</span></p>
+                      <p className={`mt-1 text-[9px] ${value.qualityState === 'SUSPECT' ? 'text-amber-600' : 'text-[#74847a]'}`}>{value.qualityState}</p>
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-[11px] leading-relaxed text-[#c5d0db]">{latest.note}</p>
-                {latest.neighbour ? <p className="mt-2 rounded-xl border border-[#56c1b3]/20 bg-[#56c1b3]/[0.04] p-3 text-[10px] leading-relaxed text-[#8dd7ce]">{latest.neighbour.name}: {latest.neighbour.pm25} µg/m³. {latest.neighbour.note}</p> : null}
+                <p className="mt-3 text-[11px] leading-relaxed text-[#405246]">{latest.note}</p>
+                {latest.neighbour ? <p className="mt-2 rounded-xl border border-[#2f8f84]/20 bg-[#2f8f84]/[0.04] p-3 text-[10px] leading-relaxed text-[#217a70]">{latest.neighbour.name}: {latest.neighbour.pm25} µg/m³. {latest.neighbour.note}</p> : null}
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-xl border border-[#303945] bg-[#101317] p-3">
+                  <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                     <DataLabel>Risk assessment</DataLabel>
                     <p className="mt-1 text-sm font-semibold">{latest.risk.riskScore ?? '—'}/100 · {latest.risk.riskLevel}</p>
-                    <p className="mt-1 text-[9px] text-[#6f7c89]">{latest.risk.method}</p>
-                    {latest.risk.missingInputs.length ? <p className="mt-1 text-[9px] text-amber-300/70">Missing: {latest.risk.missingInputs.join('; ')}</p> : null}
+                    <p className="mt-1 text-[9px] text-[#74847a]">{latest.risk.method}</p>
+                    {latest.risk.missingInputs.length ? <p className="mt-1 text-[9px] text-amber-600/70">Missing: {latest.risk.missingInputs.join('; ')}</p> : null}
                   </div>
-                  <div className="rounded-xl border border-[#303945] bg-[#101317] p-3">
+                  <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                     <DataLabel>Confidence</DataLabel>
                     <p className="mt-1 text-sm font-semibold">{latest.risk.confidenceScore ?? '—'}/100 · {latest.risk.confidenceLevel}</p>
-                    <p className="mt-1 text-[9px] text-[#6f7c89]">Confidence is separate from severity. {latest.suppressAlert ? 'Alert suppressed due to data quality.' : ''}</p>
+                    <p className="mt-1 text-[9px] text-[#74847a]">Confidence is separate from severity. {latest.suppressAlert ? 'Alert suppressed due to data quality.' : ''}</p>
                   </div>
                 </div>
               </div>
@@ -348,12 +348,12 @@ export function SimulationSessionPage() {
             <CardHeader><CardTitle>Event history</CardTitle><Badge tone="neutral">{data.events.length}</Badge></CardHeader>
             <div className="scrollbar-thin max-h-[340px] overflow-auto">
               {data.events.map((event) => (
-                <div key={event.step} className="border-b border-[#252d37] px-4 py-2.5 last:border-0">
+                <div key={event.step} className="border-b border-[#e7ece3] px-4 py-2.5 last:border-0">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2"><span className="text-[9px] font-semibold text-[#b5e36b]">STEP {event.payload.step}</span><RiskBadge level={event.payload.risk.alertState} /><span className="text-[8px] text-[#5f6b78]">{formatDate(event.payload.observedAt)}</span></div>
+                    <div className="flex items-center gap-2"><span className="text-[9px] font-semibold text-[#3f7d2a]">STEP {event.payload.step}</span><RiskBadge level={event.payload.risk.alertState} /><span className="text-[8px] text-[#7b8a80]">{formatDate(event.payload.observedAt)}</span></div>
                     {event.payload.suppressAlert ? <Badge tone="amber">Alert suppressed</Badge> : null}
                   </div>
-                  <p className="mt-1 text-[10px] leading-relaxed text-[#8d99a6]">{event.payload.note}</p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-[#68786d]">{event.payload.note}</p>
                 </div>
               ))}
             </div>
@@ -363,50 +363,50 @@ export function SimulationSessionPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Simulated alerts</CardTitle><Badge tone="neutral">{data.alerts.length}</Badge></CardHeader>
-            <div className="divide-y divide-[#252d37]">
+            <div className="divide-y divide-[#e7ece3]">
               {data.alerts.map((alert) => (
                 <div key={alert.id} className="p-3">
                   <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><Badge tone="neutral">{alert.trigger_type}</Badge></div>
-                  <p className="mt-1 text-[10px] font-medium text-[#dbe2e9]">{alert.title}</p>
-                  <p className="mt-0.5 text-[8px] text-[#5f6b78]">{alert.public_ref} · {formatDate(alert.triggered_at)}</p>
+                  <p className="mt-1 text-[10px] font-medium text-[#26362a]">{alert.title}</p>
+                  <p className="mt-0.5 text-[8px] text-[#7b8a80]">{alert.public_ref} · {formatDate(alert.triggered_at)}</p>
                 </div>
               ))}
-              {data.alerts.length === 0 ? <p className="p-4 text-[10px] text-[#6f7c89]">No simulated alert yet. Advance the replay until an alert transition occurs.</p> : null}
+              {data.alerts.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No simulated alert yet. Advance the replay until an alert transition occurs.</p> : null}
             </div>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Replay actions</CardTitle><Sparkles className="h-4 w-4 text-[#b5e36b]" /></CardHeader>
+            <CardHeader><CardTitle>Replay actions</CardTitle><Sparkles className="h-4 w-4 text-[#3f7d2a]" /></CardHeader>
             <div className="space-y-2 p-4">
               <Button variant="dark" size="sm" className="w-full" onClick={previewEmail} disabled={data.alerts.length === 0}><Mail className="h-3.5 w-3.5" /> Preview early-warning / critical email</Button>
               <Button variant="lime" size="sm" className="w-full" onClick={createIncident} disabled={working || data.alerts.length === 0}><ShieldAlert className="h-3.5 w-3.5" /> Create simulated incident</Button>
-              <p className="text-[9px] leading-relaxed text-[#5f6b78]">Incident creation uses the real incident service but writes only simulation-labelled records with this session id.</p>
+              <p className="text-[9px] leading-relaxed text-[#7b8a80]">Incident creation uses the real incident service but writes only simulation-labelled records with this session id.</p>
             </div>
           </Card>
 
           <Card>
             <CardHeader><CardTitle>Simulated notifications</CardTitle><Badge tone="neutral">{data.notifications.length}</Badge></CardHeader>
-            <div className="divide-y divide-[#252d37]">
+            <div className="divide-y divide-[#e7ece3]">
               {data.notifications.slice(0, 6).map((notification) => (
                 <div key={notification.id} className="px-3 py-2">
-                  <div className="flex items-center justify-between gap-2"><span className="text-[9px] text-[#a2adba]">{notification.audience} · {notification.template.replace(/_/g, ' ')}</span><Badge tone={notification.status === 'SIMULATED' ? 'amber' : 'neutral'}>{notification.status}</Badge></div>
-                  <p className="mt-0.5 truncate text-[8px] text-[#5f6b78]">{notification.subject}</p>
+                  <div className="flex items-center justify-between gap-2"><span className="text-[9px] text-[#5a6a5f]">{notification.audience} · {notification.template.replace(/_/g, ' ')}</span><Badge tone={notification.status === 'SIMULATED' ? 'amber' : 'neutral'}>{notification.status}</Badge></div>
+                  <p className="mt-0.5 truncate text-[8px] text-[#7b8a80]">{notification.subject}</p>
                 </div>
               ))}
-              {data.notifications.length === 0 ? <p className="p-4 text-[10px] text-[#6f7c89]">No simulated notifications yet.</p> : null}
+              {data.notifications.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No simulated notifications yet.</p> : null}
             </div>
           </Card>
 
           <Card>
             <CardHeader><CardTitle>Simulated incidents</CardTitle><Badge tone="neutral">{data.incidents.length}</Badge></CardHeader>
-            <div className="divide-y divide-[#252d37]">
+            <div className="divide-y divide-[#e7ece3]">
               {data.incidents.map((incident) => (
-                <Link key={incident.id} to={`/incidents/${incident.id}`} className="block px-3 py-2 hover:bg-[#1d242c]">
-                  <div className="flex items-center justify-between gap-2"><RiskBadge level={incident.risk_level} /><span className="text-[8px] text-[#5f6b78]">{incident.status.replace(/_/g, ' ')}</span></div>
-                  <p className="mt-1 text-[10px] text-[#dbe2e9]">{incident.title}</p>
+                <Link key={incident.id} to={`/incidents/${incident.id}`} className="block px-3 py-2 hover:bg-[#f3f7f0]">
+                  <div className="flex items-center justify-between gap-2"><RiskBadge level={incident.risk_level} /><span className="text-[8px] text-[#7b8a80]">{incident.status.replace(/_/g, ' ')}</span></div>
+                  <p className="mt-1 text-[10px] text-[#26362a]">{incident.title}</p>
                 </Link>
               ))}
-              {data.incidents.length === 0 ? <p className="p-4 text-[10px] text-[#6f7c89]">No simulated incident created.</p> : null}
+              {data.incidents.length === 0 ? <p className="p-4 text-[10px] text-[#74847a]">No simulated incident created.</p> : null}
             </div>
           </Card>
         </div>
@@ -416,8 +416,8 @@ export function SimulationSessionPage() {
         <DialogContent title="Replay email preview" description="Simulation-generated email. Not sent to a real mailing list." className="max-w-4xl">
           {preview ? (
             <div className="grid gap-3 lg:grid-cols-2">
-              <div><DataLabel>Public email</DataLabel><p className="mt-1 text-[10px] text-[#8d99a6]">{preview.public.subject}</p><iframe title="Public email preview" srcDoc={preview.public.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#303945] bg-white" /></div>
-              <div><DataLabel>Authority email</DataLabel><p className="mt-1 text-[10px] text-[#8d99a6]">{preview.authority.subject}</p><iframe title="Authority email preview" srcDoc={preview.authority.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#303945] bg-white" /></div>
+              <div><DataLabel>Public email</DataLabel><p className="mt-1 text-[10px] text-[#68786d]">{preview.public.subject}</p><iframe title="Public email preview" srcDoc={preview.public.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#dfe6db] bg-white" /></div>
+              <div><DataLabel>Authority email</DataLabel><p className="mt-1 text-[10px] text-[#68786d]">{preview.authority.subject}</p><iframe title="Authority email preview" srcDoc={preview.authority.html} sandbox="" className="mt-2 h-[50vh] w-full rounded-xl border border-[#dfe6db] bg-white" /></div>
             </div>
           ) : null}
         </DialogContent>

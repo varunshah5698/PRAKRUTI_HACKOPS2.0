@@ -14,7 +14,7 @@ Source status is shown in the application at `/data-sources` and via `GET /api/v
 | `open-meteo-cams` | CAMS regional air quality | CONNECTED | 20 (seed) | Modelled PM2.5/PM10, not a station measurement. |
 | `demo-network` | प्रकृति demo network | CONNECTED | 4,566 (seed) | All records `is_simulated=true`. |
 | `river-ai` | River AI | CONNECTED locally | — | `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified against `zai-org/GLM-5.3-Flash`. Empty by default in `.env.example`; rule-based fallback remains if absent. |
-| `vision-ai` | AI image assessment | NOT_CONFIGURED | — | No separate vision model. |
+| `vision-ai` | AI image assessment | CONNECTED locally | — | Google Gemini `gemini-3.5-flash` with `gemini-3.1-flash-lite` fallback. Key is only in the gitignored `.env.local`; `.env.example` remains empty. |
 | `ml-service` | LightGBM forecasting service | NOT_CONFIGURED | — | Models NOT_TRAINED; persistence baseline only. |
 | `email` | Email delivery | NOT_CONFIGURED | — | Notifications stored as SIMULATED. |
 | `evidence-storage` | Evidence storage | CONNECTED | — | Local private storage. |
@@ -99,9 +99,11 @@ Uses OpenAQ v3 `locations` with a Mumbai coordinate/radius and `locations/:id/la
 
 ## Vision AI
 
-- Separate `VISION_BASE_URL`, `VISION_MODEL`, `VISION_API_KEY`.
+- Separate `VISION_BASE_URL`, `VISION_MODEL`, `VISION_API_KEY` and optional `VISION_FALLBACK_MODELS`.
 - The River text model is not assumed to support images.
+- This workspace uses Google Gemini `gemini-3.5-flash` with `gemini-3.1-flash-lite` as fallback; the key is only in `.env.local`.
 - Without configuration, image analysis is `NOT_CONFIGURED`; the report still stores the private image and metadata.
+- The adapter returns only visible-feature descriptions and limitations. It cannot establish chemical composition, toxicity, concentration or legal responsibility.
 
 ## Email
 

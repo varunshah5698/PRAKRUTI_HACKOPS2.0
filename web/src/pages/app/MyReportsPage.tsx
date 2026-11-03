@@ -104,7 +104,7 @@ function Tracker({ report }: { report: ReportRow }) {
   };
 
   return (
-    <article className="rounded-2xl border border-[#303945] bg-[#181d23] p-4">
+    <article className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -114,13 +114,13 @@ function Tracker({ report }: { report: ReportRow }) {
             <Badge tone="neutral">{categoryLabel(report.category)}</Badge>
             {report.is_simulated ? <Badge tone="amber">Demo record</Badge> : null}
           </div>
-          <p className="mt-2 text-sm font-semibold text-[#e8edf2]">{report.incident_type.replace(/_/g, ' ')}</p>
-          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8d99a6]">{report.description}</p>
+          <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{report.incident_type.replace(/_/g, ' ')}</p>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{report.description}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[#6f7c89]">Reference</p>
-          <p className="font-mono text-[11px] text-[#dbe2e9]">{report.public_ref}</p>
-          <p className="mt-1 text-[9px] text-[#6f7c89]">{timeAgo(report.submitted_at)}</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#74847a]">Reference</p>
+          <p className="font-mono text-[11px] text-[#26362a]">{report.public_ref}</p>
+          <p className="mt-1 text-[9px] text-[#74847a]">{timeAgo(report.submitted_at)}</p>
         </div>
       </div>
 
@@ -128,11 +128,11 @@ function Tracker({ report }: { report: ReportRow }) {
         {STEPS.map((step, index) => {
           const reached = index <= current;
           const isFinal = step === 'VERIFIED';
-          const tone = rejected && isFinal ? 'bg-[#e5484d]' : reached ? 'bg-[#b5e36b]' : 'bg-[#303945]';
+          const tone = rejected && isFinal ? 'bg-[#c94a50]' : reached ? 'bg-[#5b9e46]' : 'bg-[#dfe6db]';
           return (
             <li key={step} className="flex-1">
               <div className={`h-1 rounded-full ${tone}`} />
-              <p className={`mt-1.5 text-[8px] uppercase tracking-[0.1em] ${reached ? 'text-[#a2adba]' : 'text-[#5f6b78]'}`}>
+              <p className={`mt-1.5 text-[8px] uppercase tracking-[0.1em] ${reached ? 'text-[#5a6a5f]' : 'text-[#7b8a80]'}`}>
                 {rejected && isFinal ? 'Not verified' : step.replace(/_/g, ' ')}
               </p>
             </li>
@@ -140,7 +140,7 @@ function Tracker({ report }: { report: ReportRow }) {
         })}
       </ol>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#2b333e] pt-3 text-[9px] text-[#6f7c89]">
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#e7ece3] pt-3 text-[9px] text-[#74847a]">
         <span><DataLabel>Locality</DataLabel><br />{report.locality_name ?? '—'}</span>
         <span><DataLabel>Evidence</DataLabel><br />{report.evidence_count ? `${report.evidence_count} file${report.evidence_count > 1 ? 's' : ''}` : 'None'}</span>
         <span><DataLabel>Screened</DataLabel><br />{report.ai_assessed ? 'Yes' : 'Pending'}</span>
@@ -157,7 +157,7 @@ function Tracker({ report }: { report: ReportRow }) {
       </div>
 
       {open ? (
-        <div className="mt-3 border-t border-[#2b333e] pt-3">
+        <div className="mt-3 border-t border-[#e7ece3] pt-3">
           {loading ? (
             <LoadingBlock label="Loading updates" />
           ) : detail ? (
@@ -165,22 +165,22 @@ function Tracker({ report }: { report: ReportRow }) {
               {detail.audit.map((row) => {
                 const update = authorityUpdate(row);
                 return (
-                  <li key={row.id} className="rounded-xl border border-[#2b333e] bg-[#101317] p-3">
+                  <li key={row.id} className="rounded-xl border border-[#e7ece3] bg-[#f5f8f2] p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold text-[#dbe2e9]">{update.label}</p>
-                      <span className="text-[9px] text-[#6f7c89]">{formatDate(row.created_at)}</span>
+                      <p className="text-[11px] font-semibold text-[#26362a]">{update.label}</p>
+                      <span className="text-[9px] text-[#74847a]">{formatDate(row.created_at)}</span>
                     </div>
-                    {update.reason ? <p className="mt-1 text-[10px] leading-relaxed text-[#a2adba]">Officer note: {update.reason}</p> : null}
+                    {update.reason ? <p className="mt-1 text-[10px] leading-relaxed text-[#5a6a5f]">Officer note: {update.reason}</p> : null}
                     {update.verification ? (
-                      <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#6f7c89]">verification {update.verification}</p>
+                      <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#74847a]">verification {update.verification}</p>
                     ) : null}
                   </li>
                 );
               })}
-              {detail.audit.length === 0 ? <p className="text-[11px] text-[#6f7c89]">No updates recorded yet.</p> : null}
+              {detail.audit.length === 0 ? <p className="text-[11px] text-[#74847a]">No updates recorded yet.</p> : null}
             </ol>
           ) : null}
-          <p className="mt-2 text-[9px] leading-relaxed text-[#6f7c89]">
+          <p className="mt-2 text-[9px] leading-relaxed text-[#74847a]">
             This trail is the same record authorities see. A report is only an official violation once it is verified.
           </p>
         </div>
@@ -244,7 +244,7 @@ export function MyReportsPage() {
             {counts.done ? <Badge tone="green">{counts.done} actioned</Badge> : null}
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Track the problems you flagged</h2>
-          <p className="mt-1 max-w-2xl text-[11px] text-[#788493]">
+          <p className="mt-1 max-w-2xl text-[11px] text-[#6f7f74]">
             Every report you submit is stored with its reference and moves through the same verification trail authority
             officers use. Open a report to read their updates.
           </p>
@@ -261,14 +261,14 @@ export function MyReportsPage() {
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-2xl border border-[#303945] bg-[#181d23] p-3 sm:grid-cols-[1fr_auto]">
-        <div className="flex items-center gap-2 rounded-xl border border-[#303945] bg-[#101317] px-3">
-          <Search className="h-3.5 w-3.5 text-[#6f7c89]" />
+      <div className="grid gap-2 rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-3 sm:grid-cols-[1fr_auto]">
+        <div className="flex items-center gap-2 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] px-3">
+          <Search className="h-3.5 w-3.5 text-[#74847a]" />
           <input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder="Search reference, type or description"
-            className="h-9 w-full bg-transparent text-[11px] text-[#e8edf2] outline-none placeholder:text-[#5f6b78]"
+            className="h-9 w-full bg-transparent text-[11px] text-[#1b2a1f] outline-none placeholder:text-[#7b8a80]"
           />
         </div>
         <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="h-9 w-[190px] text-[11px]">
@@ -303,7 +303,7 @@ export function MyReportsPage() {
       )}
 
       {total > 20 ? (
-        <div className="flex items-center justify-between rounded-xl border border-[#303945] bg-[#181d23] px-4 py-2 text-[10px] text-[#788493]">
+        <div className="flex items-center justify-between rounded-xl border border-[#dfe6db] bg-[#ffffff] px-4 py-2 text-[10px] text-[#6f7f74]">
           <span>{total} reports · page {page}</span>
           <div className="flex gap-2">
             <Button variant="dark" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
@@ -312,7 +312,7 @@ export function MyReportsPage() {
         </div>
       ) : null}
 
-      <div className="flex items-start gap-2 rounded-xl border border-[#303945] bg-[#101317] p-3 text-[10px] leading-relaxed text-[#788493]">
+      <div className="flex items-start gap-2 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#6f7f74]">
         <Camera className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <p>
           Photos stay private. Officers see them only through the authorised evidence route, and every access is written

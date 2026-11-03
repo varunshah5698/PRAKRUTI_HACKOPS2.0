@@ -51,7 +51,7 @@ export function SourcesPage() {
         <div>
           <div className="flex items-center gap-2"><Badge tone="amber" dot>Source health</Badge><Badge tone="neutral">Missing keys never crash the app</Badge></div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Data sources & ingestion</h2>
-          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#788493]">
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
             A source is only shown CONNECTED after recent successful ingestion. CPCB and MPCB are not configured. The demo network is explicitly simulation-labelled.
           </p>
         </div>
@@ -64,20 +64,20 @@ export function SourcesPage() {
             <div className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-[#e8edf2]">{source.name}</p>
-                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#6f7c89]">{source.provider} · {source.category}</p>
+                  <p className="text-sm font-semibold text-[#1b2a1f]">{source.name}</p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#74847a]">{source.provider} · {source.category}</p>
                 </div>
                 <SourceBadge status={source.status} />
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-[#8d99a6]">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-[#68786d]">
                 <div><DataLabel>Last attempt</DataLabel><p className="mt-1">{source.lastAttemptAt ? timeAgo(source.lastAttemptAt) : '—'}</p></div>
                 <div><DataLabel>Last success</DataLabel><p className="mt-1">{source.lastSuccessAt ? formatDate(source.lastSuccessAt) : '—'}</p></div>
                 <div><DataLabel>Records</DataLabel><p className="mt-1">{source.recordCount ?? 0}</p></div>
                 <div><DataLabel>Attribution</DataLabel><p className="mt-1 truncate">{source.attribution ?? '—'}</p></div>
               </div>
-              {source.notes ? <p className="mt-3 text-[9px] leading-relaxed text-[#6f7c89]">{source.notes}</p> : null}
-              {source.errorMessage ? <p className="mt-2 rounded-lg border border-red-500/25 bg-red-500/10 p-2 text-[9px] text-red-200">{source.errorMessage}</p> : null}
-              {source.documentationUrl ? <a href={source.documentationUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[9px] text-[#b5e36b] underline">Documentation <ExternalLink className="h-3 w-3" /></a> : null}
+              {source.notes ? <p className="mt-3 text-[9px] leading-relaxed text-[#74847a]">{source.notes}</p> : null}
+              {source.errorMessage ? <p className="mt-2 rounded-lg border border-red-500/25 bg-red-500/10 p-2 text-[9px] text-red-700">{source.errorMessage}</p> : null}
+              {source.documentationUrl ? <a href={source.documentationUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[9px] text-[#3f7d2a] underline">Documentation <ExternalLink className="h-3 w-3" /></a> : null}
             </div>
           </Card>
         ))}
@@ -88,15 +88,15 @@ export function SourcesPage() {
         {jobs.length === 0 ? <EmptyState title="No ingestion jobs" description="Trigger ingestion or wait for a scheduled job." /> : (
           <div className="scrollbar-thin max-h-[400px] overflow-auto">
             <table className="w-full text-left text-[10px]">
-              <thead className="sticky top-0 bg-[#181d23] text-[9px] uppercase tracking-[0.1em] text-[#6f7c89]"><tr><th className="px-4 py-2">Source</th><th className="px-4 py-2">Started</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Records</th><th className="px-4 py-2">Error</th></tr></thead>
-              <tbody className="divide-y divide-[#252d37]">
+              <thead className="sticky top-0 bg-[#ffffff] text-[9px] uppercase tracking-[0.1em] text-[#74847a]"><tr><th className="px-4 py-2">Source</th><th className="px-4 py-2">Started</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Records</th><th className="px-4 py-2">Error</th></tr></thead>
+              <tbody className="divide-y divide-[#e7ece3]">
                 {jobs.map((job) => (
-                  <tr key={job.id} className="text-[#a2adba]">
+                  <tr key={job.id} className="text-[#5a6a5f]">
                     <td className="px-4 py-2">{job.source_name}</td>
                     <td className="px-4 py-2">{formatDate(job.started_at)}</td>
                     <td className="px-4 py-2"><Badge tone={job.status === 'SUCCESS' ? 'green' : job.status === 'FAILED' ? 'red' : 'amber'}>{job.status}</Badge></td>
                     <td className="px-4 py-2">{job.records}</td>
-                    <td className="px-4 py-2 text-[9px] text-red-300/70">{job.error ?? '—'}</td>
+                    <td className="px-4 py-2 text-[9px] text-red-600/70">{job.error ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -105,7 +105,7 @@ export function SourcesPage() {
         )}
       </Card>
 
-      <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.05] p-4 text-[10px] leading-relaxed text-amber-100/75">
+      <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.05] p-4 text-[10px] leading-relaxed text-amber-700/75">
         <ShieldAlert className="mb-1 h-3.5 w-3.5" />
         No CPCB or MPCB credential is configured. The system does not invent endpoints or station identifiers. Weather is live Open-Meteo; CAMS is modelled context; the demo network is synthetic.
       </div>

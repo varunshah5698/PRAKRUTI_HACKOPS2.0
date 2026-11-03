@@ -28,7 +28,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | LightGBM / quantile / deterioration / anomaly models | **NOT TRAINED** — no verified Mumbai historical extract supplied |
 | Forecasts shown | **PERSISTENCE_BASELINE_V1** — labelled, empirical band, not calibrated |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
-| Vision AI | **NOT_CONFIGURED** — the River text model is not assumed to inspect images |
+| Vision AI | **CONFIGURED locally** — Google Gemini (`gemini-3.5-flash`, fallback `gemini-3.1-flash-lite`); key only in `.env.local`. The River text model is still not assumed to inspect images. |
 | Email | **SIMULATED** — no provider configured; records are stored, not sent |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |

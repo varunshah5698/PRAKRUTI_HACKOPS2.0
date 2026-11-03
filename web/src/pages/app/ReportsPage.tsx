@@ -45,7 +45,7 @@ export function ReportsPage() {
         <div>
           <div className="flex items-center gap-2"><Badge tone="amber" dot>Evidence</Badge><Badge tone="neutral">{isAuthority() ? 'All reports' : 'Your reports'}</Badge></div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Citizen reports & evidence</h2>
-          <p className="mt-1 text-[11px] text-[#788493]">Verification state is preserved. A report is never automatically an official violation.</p>
+          <p className="mt-1 text-[11px] text-[#6f7f74]">Verification state is preserved. A report is never automatically an official violation.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="dark" size="sm" onClick={load}><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
@@ -53,7 +53,7 @@ export function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-2xl border border-[#303945] bg-[#181d23] p-3 sm:grid-cols-3">
+      <div className="grid gap-2 rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-3 sm:grid-cols-3">
         <Select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} className="h-9 text-[11px]">
           <option value="">All categories</option>
           {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -77,7 +77,7 @@ export function ReportsPage() {
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {reports.map((report) => (
-            <Link key={report.id} to={`/reports/${report.id}`} className="group rounded-2xl border border-[#303945] bg-[#181d23] p-4 transition hover:border-[#b5e36b]/35">
+            <Link key={report.id} to={`/reports/${report.id}`} className="group rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4 transition hover:border-[#5b9e46]/35">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -85,12 +85,12 @@ export function ReportsPage() {
                     <Badge tone={report.verification_state === 'VERIFIED' ? 'green' : report.verification_state === 'REJECTED' ? 'red' : 'amber'}>{report.verification_state}</Badge>
                     {report.is_simulated ? <Badge tone="amber">Sim</Badge> : null}
                   </div>
-                  <p className="mt-2 text-sm font-semibold text-[#e8edf2]">{report.incident_type.replace(/_/g, ' ')}</p>
-                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8d99a6]">{report.description}</p>
+                  <p className="mt-2 text-sm font-semibold text-[#1b2a1f]">{report.incident_type.replace(/_/g, ' ')}</p>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#68786d]">{report.description}</p>
                 </div>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#5f6b78] transition group-hover:text-[#b5e36b]" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-[#7b8a80] transition group-hover:text-[#3f7d2a]" />
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#2b333e] pt-2.5 text-[9px] text-[#6f7c89]">
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#e7ece3] pt-2.5 text-[9px] text-[#74847a]">
                 <span><DataLabel>Locality</DataLabel><br />{report.locality_name ?? '—'}</span>
                 <span><DataLabel>Evidence</DataLabel><br />{report.evidence_count ? `${report.evidence_count} photo` : 'None'}</span>
                 <span><DataLabel>Submitted</DataLabel><br />{timeAgo(report.submitted_at)}</span>
@@ -100,7 +100,7 @@ export function ReportsPage() {
         </div>
       )}
       {total > 20 ? (
-        <div className="flex items-center justify-between rounded-xl border border-[#303945] bg-[#181d23] px-4 py-2 text-[10px] text-[#788493]">
+        <div className="flex items-center justify-between rounded-xl border border-[#dfe6db] bg-[#ffffff] px-4 py-2 text-[10px] text-[#6f7f74]">
           <span>{total} reports · page {page}</span>
           <div className="flex gap-2">
             <Button variant="dark" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
