@@ -18,6 +18,7 @@ const MapPage = lazy(() => import('./pages/app/MapPage').then((m) => ({ default:
 const PredictionsPage = lazy(() => import('./pages/app/PredictionsPage').then((m) => ({ default: m.PredictionsPage })));
 const AiAnalystPage = lazy(() => import('./pages/app/AiAnalystPage').then((m) => ({ default: m.AiAnalystPage })));
 const ReportsPage = lazy(() => import('./pages/app/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const MyReportsPage = lazy(() => import('./pages/app/MyReportsPage').then((m) => ({ default: m.MyReportsPage })));
 const ReportDetailPage = lazy(() => import('./pages/app/ReportDetailPage').then((m) => ({ default: m.ReportDetailPage })));
 const AlertsPage = lazy(() => import('./pages/app/AlertsPage').then((m) => ({ default: m.AlertsPage })));
 const AlertDetailPage = lazy(() => import('./pages/app/AlertsPage').then((m) => ({ default: m.AlertDetailPage })));
@@ -55,6 +56,12 @@ function Protected({ children }: { children: React.ReactNode }) {
 function StationRoute() {
   const { stationId } = useParams();
   return <Navigate to={`/map?station=${stationId}`} replace />;
+}
+
+function ReportsRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'PUBLIC') return <Navigate to="/my-reports" replace />;
+  return <ReportsPage />;
 }
 
 function DataSourcesRoute() {
@@ -112,7 +119,8 @@ export default function App() {
         <Route path="/map/stations/:stationId" element={<StationRoute />} />
         <Route path="/intelligence/predictions" element={<PredictionsPage />} />
         <Route path="/ai-analyst" element={<AiAnalystPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports" element={<ReportsRoute />} />
+        <Route path="/my-reports" element={<MyReportsPage />} />
         <Route path="/reports/:reportId" element={<ReportDetailPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/alerts/:alertId" element={<AlertDetailPage />} />

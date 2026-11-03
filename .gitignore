@@ -14,3 +14,6 @@ ml/data/*.csv
 __pycache__/
 *.pyc
 tmp/
+
+# Local scratch scripts
+tmp-*.ts

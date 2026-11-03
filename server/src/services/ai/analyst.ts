@@ -459,44 +459,80 @@ export async function analyzeEvidenceImage(
       },
     };
   }
+  const base = visionConfig.baseURL.replace(/\/$/, '');
+  const prompt =
+    'Provide an initial visual assessment of this citizen environmental report photograph. Describe only visible features such as smoke-like appearance, visible waste, water discolouration or foam, dust, or flames. Do not identify people, number plates or addresses. Do not claim chemical composition, toxicity, pollutant concentration or legal responsibility. Return strict JSON with keys visibleFeatures (array of short strings), description (string), confidence (LOW, MEDIUM or HIGH), and limitations (array of strings).';
   try {
-    const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
-    const response = await fetch(`${visionConfig.baseURL.replace(/\/$/, '')}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${visionConfig.apiKey}` },
-      body: JSON.stringify({
-        model: visionConfig.model,
-        max_tokens: 700,
-        messages: [
-          {
-            role: 'user',
-            content: [
+    const isGemini = base.includes('generativelanguage.googleapis.com') || base.includes('googleapis.com');
+    let content = '';
+    if (isGemini) {
+      const response = await fetch(
+        `${base}/models/${encodeURIComponent(visionConfig.model)}:generateContent?key=${encodeURIComponent(visionConfig.apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
               {
-                type: 'text',
-                text: 'Provide an initial visual assessment of this citizen environmental report photo. Describe only visible features (smoke-like appearance, visible waste, water discolouration, dust). Return JSON with visibleFeatures, confidence, limitations. Do not claim chemical composition, toxicity, concentration or legal responsibility.',
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  { inline_data: { mime_type: mimeType, data: buffer.toString('base64') } },
+                ],
               },
-              { type: 'image_url', image_url: { url: dataUrl } },
             ],
-          },
-        ],
-      }),
-      signal: AbortSignal.timeout(45_000),
-    });
-    if (!response.ok) throw new Error(`Vision provider HTTP ${response.status}`);
-    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const content = data.choices?.[0]?.message?.content ?? '';
+            generationConfig: { temperature: 0.1, maxOutputTokens: 700, responseMimeType: 'application/json' },
+          }),
+          signal: AbortSignal.timeout(45_000),
+        },
+      );
+      if (!response.ok) throw new Error(`Gemini vision HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`);
+      const data = (await response.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
+      };
+      content = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ?? '';
+      if (!content) throw new Error(`Gemini vision returned no text (finish: ${data.candidates?.[0]?.finishReason ?? 'unknown'})`);
+    } else {
+      const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      const response = await fetch(`${base}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${visionConfig.apiKey}` },
+        body: JSON.stringify({
+          model: visionConfig.model,
+          max_tokens: 700,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: dataUrl } },
+              ],
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (!response.ok) throw new Error(`Vision provider HTTP ${response.status}`);
+      const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      content = data.choices?.[0]?.message?.content ?? '';
+    }
     let parsed: Record<string, unknown> = { raw: content };
     try {
-      parsed = JSON.parse(content.replace(/^```json\s*/i, '').replace(/```$/, '').trim()) as Record<string, unknown>;
+      const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      const candidate = (fenced ? fenced[1] : content).trim();
+      const start = candidate.indexOf('{');
+      const end = candidate.lastIndexOf('}');
+      parsed = start >= 0 && end > start ? (JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>) : { description: content };
     } catch {
-      // Keep raw text.
+      parsed = { description: content };
     }
     return {
       status: 'COMPLETED',
-      provider: visionConfig.model,
+      provider: `google:${visionConfig.model}`,
       output: {
         ...parsed,
         limitations: [
+          ...(Array.isArray(parsed.limitations) ? parsed.limitations : []),
           'Initial visual assessment only. It cannot establish chemical composition, toxicity, pollutant concentration or legal responsibility.',
         ],
       },
@@ -515,6 +551,7 @@ export function aiStatus() {
     river: riverConfig.configured ? 'CONFIGURED' : 'NOT_CONFIGURED',
     model: riverConfig.configured ? riverConfig.model : null,
     vision: visionConfig.configured ? 'CONFIGURED' : 'NOT_CONFIGURED',
+    visionModel: visionConfig.configured ? visionConfig.model : null,
     mode: riverConfig.configured ? 'RIVER_AI' : 'RULE_BASED_EVIDENCE_DIGEST',
     note: riverConfig.configured
       ? 'River AI adapter configured server-side. Responses are grounded in retrieved evidence.'
