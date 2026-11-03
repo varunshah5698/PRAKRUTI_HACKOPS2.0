@@ -1,14 +1,14 @@
 {
   "dataset": "Mumbai PM2.5 forecasting extract",
-  "built_at": "2026-11-03T07:49:51.301915+00:00",
+  "built_at": "2026-11-03T08:19:27.194279+00:00",
   "period": {
-    "start": "2025-11-01T00:00:00Z",
+    "start": "2025-03-01T00:00:00Z",
     "end": "2026-10-27T00:00:00Z",
     "timezone": "UTC"
   },
   "sources": {
     "air_quality": "OpenAQ S3 daily archive, raw station measurements aggregated to hourly means (provider CPCB; owners MPCB/BMC/IITM)",
-    "weather": "Open-Meteo ERA5 archive reanalysis, not a station measurement"
+    "weather": "Co-located OpenAQ station weather measurements where available; Open-Meteo ERA5 reanalysis fills missing hours. Per-station measured fractions are recorded in stations[].weather."
   },
   "stations": [
     {
@@ -58,55 +58,79 @@
         }
       },
       "coverage": {
-        "co": 0.2969,
-        "no2": 0.273,
-        "o3": 0.0972,
-        "pm10": 0.4494,
-        "pm25": 0.4718,
-        "so2": 0.111
+        "co": 0.4235,
+        "no2": 0.4601,
+        "o3": 0.2078,
+        "pm10": 0.5977,
+        "pm25": 0.6317,
+        "so2": 0.1254
       },
       "quality": {
         "co": {
-          "rows": 6262,
+          "rows": 14702,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 899,
-          "method_ppb_labelled_ppm": 6262
+          "low_coverage": 1921,
+          "method_ppb_labelled_ppm": 14702
         },
         "no2": {
-          "rows": 6925,
+          "rows": 18803,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 321,
-          "method_ppb_converted": 6925
+          "low_coverage": 1040,
+          "method_ppb_converted": 18803
         },
         "o3": {
-          "rows": 2470,
+          "rows": 7944,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 784,
-          "method_mass": 2470
+          "low_coverage": 1832,
+          "method_mass": 7944
         },
         "pm10": {
-          "rows": 12723,
-          "out_of_bounds": 0,
+          "rows": 28231,
+          "out_of_bounds": 41,
           "bad_unit": 0,
-          "low_coverage": 277,
-          "method_mass": 12723
+          "low_coverage": 656,
+          "method_mass": 28190
         },
         "pm25": {
-          "rows": 15096,
-          "out_of_bounds": 0,
+          "rows": 34159,
+          "out_of_bounds": 9,
           "bad_unit": 0,
-          "low_coverage": 105,
-          "method_mass": 15096
+          "low_coverage": 221,
+          "method_mass": 34150
         },
         "so2": {
-          "rows": 3487,
+          "rows": 6012,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 900,
-          "method_ppb_converted": 3487
+          "low_coverage": 1639,
+          "method_ppb_converted": 6012
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235929,
+          "source_unit": "c",
+          "coverage": 0.003,
+          "outliers_removed": 4
+        },
+        "humidity": {
+          "sensor_id": 12235927,
+          "source_unit": "%",
+          "coverage": 0.003,
+          "outliers_removed": 44
+        },
+        "wind_speed": {
+          "sensor_id": 14341962,
+          "source_unit": "m/s",
+          "coverage": 0.0007
+        },
+        "wind_dir": {
+          "sensor_id": 14341961,
+          "source_unit": "deg",
+          "coverage": 0.0007
         }
       }
     },
@@ -157,55 +181,80 @@
         }
       },
       "coverage": {
-        "co": 0.7529,
-        "no2": 0.7606,
-        "o3": 0.7521,
-        "pm10": 0.6976,
-        "pm25": 0.7037,
-        "so2": 0.7541
+        "co": 0.7751,
+        "no2": 0.786,
+        "o3": 0.7743,
+        "pm10": 0.7454,
+        "pm25": 0.7532,
+        "so2": 0.7423
       },
       "quality": {
         "co": {
-          "rows": 23215,
+          "rows": 40138,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 166,
-          "method_ppb_labelled_ppm": 23215
+          "low_coverage": 331,
+          "method_ppb_labelled_ppm": 40138
         },
         "no2": {
-          "rows": 24058,
+          "rows": 41725,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 140,
-          "method_ppb_converted": 24058
+          "low_coverage": 261,
+          "method_ppb_converted": 41725
         },
         "o3": {
-          "rows": 23028,
+          "rows": 39820,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 171,
-          "method_mass": 23028
+          "low_coverage": 339,
+          "method_mass": 39820
         },
         "pm10": {
-          "rows": 21701,
+          "rows": 38976,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 161,
-          "method_mass": 21701
+          "low_coverage": 303,
+          "method_mass": 38976
         },
         "pm25": {
-          "rows": 22511,
+          "rows": 40546,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 121,
-          "method_mass": 22511
+          "low_coverage": 221,
+          "method_mass": 40546
         },
         "so2": {
-          "rows": 23413,
+          "rows": 38669,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 171,
-          "method_ppb_converted": 23413
+          "low_coverage": 302,
+          "method_ppb_converted": 38669
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235836,
+          "source_unit": "c",
+          "coverage": 0.7829,
+          "outliers_removed": 10056
+        },
+        "humidity": {
+          "sensor_id": 12235835,
+          "source_unit": "%",
+          "coverage": 0.7829,
+          "outliers_removed": 2938
+        },
+        "wind_speed": {
+          "sensor_id": 14340924,
+          "source_unit": "m/s",
+          "coverage": 0.0413,
+          "outliers_removed": 29
+        },
+        "wind_dir": {
+          "sensor_id": 14340923,
+          "source_unit": "deg",
+          "coverage": 0.4808
         }
       }
     },
@@ -256,55 +305,79 @@
         }
       },
       "coverage": {
-        "co": 0.0938,
-        "no2": 0.6947,
-        "o3": 0.3282,
-        "pm10": 0.6266,
-        "pm25": 0.6091,
-        "so2": 0.666
+        "co": 0.3368,
+        "no2": 0.6992,
+        "o3": 0.4742,
+        "pm10": 0.6773,
+        "pm25": 0.6702,
+        "so2": 0.6773
       },
       "quality": {
         "co": {
-          "rows": 2812,
+          "rows": 17423,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 30,
-          "method_ppb_labelled_ppm": 2812
+          "low_coverage": 237,
+          "method_ppb_labelled_ppm": 17423
         },
         "no2": {
-          "rows": 22177,
+          "rows": 37343,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 170,
-          "method_ppb_converted": 22177
+          "low_coverage": 355,
+          "method_ppb_converted": 37343
         },
         "o3": {
-          "rows": 9936,
+          "rows": 24367,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 150,
-          "method_mass": 9936
+          "low_coverage": 365,
+          "method_mass": 24367
         },
         "pm10": {
-          "rows": 19624,
+          "rows": 35721,
           "out_of_bounds": 104,
           "bad_unit": 0,
-          "low_coverage": 186,
-          "method_mass": 19520
+          "low_coverage": 287,
+          "method_mass": 35617
         },
         "pm25": {
-          "rows": 19698,
+          "rows": 36406,
           "out_of_bounds": 106,
           "bad_unit": 0,
-          "low_coverage": 126,
-          "method_mass": 19592
+          "low_coverage": 193,
+          "method_mass": 36300
         },
         "so2": {
-          "rows": 22062,
-          "out_of_bounds": 1109,
+          "rows": 36775,
+          "out_of_bounds": 1129,
           "bad_unit": 0,
-          "low_coverage": 195,
-          "method_ppb_converted": 20953
+          "low_coverage": 396,
+          "method_ppb_converted": 35646
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235899,
+          "source_unit": "c",
+          "coverage": 0.6798,
+          "outliers_removed": 4278
+        },
+        "humidity": {
+          "sensor_id": 12235897,
+          "source_unit": "%",
+          "coverage": 0.6122,
+          "outliers_removed": 1104
+        },
+        "wind_speed": {
+          "sensor_id": 14340936,
+          "source_unit": "m/s",
+          "coverage": 0.4034
+        },
+        "wind_dir": {
+          "sensor_id": 14340935,
+          "source_unit": "deg",
+          "coverage": 0.4034
         }
       }
     },
@@ -349,47 +422,71 @@
         }
       },
       "coverage": {
-        "co": 0.7678,
-        "no2": 0.7569,
-        "o3": 0.7666,
-        "pm10": 0.764,
-        "pm25": 0.7678
+        "co": 0.7978,
+        "no2": 0.7877,
+        "o3": 0.7971,
+        "pm10": 0.7957,
+        "pm25": 0.7975
       },
       "quality": {
         "co": {
-          "rows": 24864,
+          "rows": 43683,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 343,
-          "method_ppb_labelled_ppm": 24864
+          "low_coverage": 637,
+          "method_ppb_labelled_ppm": 43683
         },
         "no2": {
-          "rows": 24597,
+          "rows": 43202,
           "out_of_bounds": 27,
           "bad_unit": 0,
-          "low_coverage": 349,
-          "method_ppb_converted": 24570
+          "low_coverage": 642,
+          "method_ppb_converted": 43175
         },
         "o3": {
-          "rows": 24832,
+          "rows": 43662,
           "out_of_bounds": 3,
           "bad_unit": 0,
-          "low_coverage": 339,
-          "method_mass": 24829
+          "low_coverage": 630,
+          "method_mass": 43659
         },
         "pm10": {
-          "rows": 24826,
+          "rows": 43653,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 339,
-          "method_mass": 24826
+          "low_coverage": 631,
+          "method_mass": 43653
         },
         "pm25": {
-          "rows": 24944,
+          "rows": 43742,
           "out_of_bounds": 4,
           "bad_unit": 0,
-          "low_coverage": 339,
-          "method_mass": 24940
+          "low_coverage": 637,
+          "method_mass": 43738
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236437,
+          "source_unit": "c",
+          "coverage": 0.0855,
+          "outliers_removed": 1
+        },
+        "humidity": {
+          "sensor_id": 12236436,
+          "source_unit": "%",
+          "coverage": 0.347,
+          "outliers_removed": 4960
+        },
+        "wind_speed": {
+          "sensor_id": 14342067,
+          "source_unit": "m/s",
+          "coverage": 0.2815
+        },
+        "wind_dir": {
+          "sensor_id": 14342066,
+          "source_unit": "deg",
+          "coverage": 0.2815
         }
       }
     },
@@ -440,55 +537,80 @@
         }
       },
       "coverage": {
-        "co": 0.5574,
-        "no2": 0.5554,
-        "o3": 0.1936,
-        "pm10": 0.5453,
-        "pm25": 0.5559,
-        "so2": 0.5495
+        "co": 0.5946,
+        "no2": 0.621,
+        "o3": 0.3277,
+        "pm10": 0.6082,
+        "pm25": 0.6293,
+        "so2": 0.6062
       },
       "quality": {
         "co": {
-          "rows": 17417,
+          "rows": 31333,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 234,
-          "method_ppb_labelled_ppm": 17417
+          "low_coverage": 479,
+          "method_ppb_labelled_ppm": 31333
         },
         "no2": {
-          "rows": 17583,
+          "rows": 33025,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 186,
-          "method_ppb_converted": 17583
+          "low_coverage": 336,
+          "method_ppb_converted": 33025
         },
         "o3": {
-          "rows": 5945,
+          "rows": 17156,
           "out_of_bounds": 7,
           "bad_unit": 0,
-          "low_coverage": 97,
-          "method_mass": 5938
+          "low_coverage": 310,
+          "method_mass": 17149
         },
         "pm10": {
-          "rows": 17203,
+          "rows": 32261,
           "out_of_bounds": 7,
           "bad_unit": 0,
-          "low_coverage": 198,
-          "method_mass": 17196
+          "low_coverage": 382,
+          "method_mass": 32254
         },
         "pm25": {
-          "rows": 17792,
+          "rows": 34024,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 171,
-          "method_mass": 17792
+          "low_coverage": 241,
+          "method_mass": 34024
         },
         "so2": {
-          "rows": 17288,
+          "rows": 32053,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 206,
-          "method_ppb_converted": 17288
+          "low_coverage": 406,
+          "method_ppb_converted": 32053
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12252661,
+          "source_unit": "c",
+          "coverage": 0.2471,
+          "outliers_removed": 362
+        },
+        "humidity": {
+          "sensor_id": 12252659,
+          "source_unit": "%",
+          "coverage": 0.1183,
+          "outliers_removed": 799
+        },
+        "wind_speed": {
+          "sensor_id": 14341951,
+          "source_unit": "m/s",
+          "coverage": 0.2357,
+          "outliers_removed": 1043
+        },
+        "wind_dir": {
+          "sensor_id": 14341950,
+          "source_unit": "deg",
+          "coverage": 0.0176
         }
       }
     },
@@ -539,55 +661,79 @@
         }
       },
       "coverage": {
-        "co": 0.7351,
-        "no2": 0.6991,
-        "o3": 0.3605,
-        "pm10": 0.7043,
-        "pm25": 0.7146,
-        "so2": 0.6109
+        "co": 0.7061,
+        "no2": 0.6798,
+        "o3": 0.455,
+        "pm10": 0.6899,
+        "pm25": 0.6995,
+        "so2": 0.6327
       },
       "quality": {
         "co": {
-          "rows": 23161,
+          "rows": 37282,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 237,
-          "method_ppb_labelled_ppm": 23161
+          "low_coverage": 358,
+          "method_ppb_labelled_ppm": 37282
         },
         "no2": {
-          "rows": 22298,
-          "out_of_bounds": 0,
+          "rows": 36857,
+          "out_of_bounds": 512,
           "bad_unit": 0,
-          "low_coverage": 190,
-          "method_ppb_converted": 22298
+          "low_coverage": 271,
+          "method_ppb_converted": 36345
         },
         "o3": {
-          "rows": 11029,
+          "rows": 23605,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 153,
-          "method_mass": 11029
+          "low_coverage": 275,
+          "method_mass": 23605
         },
         "pm10": {
-          "rows": 22160,
+          "rows": 36478,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 212,
-          "method_mass": 22160
+          "low_coverage": 311,
+          "method_mass": 36478
         },
         "pm25": {
-          "rows": 23006,
+          "rows": 37869,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 178,
-          "method_mass": 23006
+          "low_coverage": 249,
+          "method_mass": 37869
         },
         "so2": {
-          "rows": 19390,
+          "rows": 33590,
           "out_of_bounds": 14,
           "bad_unit": 0,
-          "low_coverage": 357,
-          "method_ppb_converted": 19376
+          "low_coverage": 470,
+          "method_ppb_converted": 33576
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12243933,
+          "source_unit": "c",
+          "coverage": 0.622,
+          "outliers_removed": 661
+        },
+        "humidity": {
+          "sensor_id": 12243931,
+          "source_unit": "%",
+          "coverage": 0.6724,
+          "outliers_removed": 229
+        },
+        "wind_speed": {
+          "sensor_id": 14340940,
+          "source_unit": "m/s",
+          "coverage": 0.4866
+        },
+        "wind_dir": {
+          "sensor_id": 14340939,
+          "source_unit": "deg",
+          "coverage": 0.4865
         }
       }
     },
@@ -632,47 +778,67 @@
         }
       },
       "coverage": {
-        "co": 0.8689,
-        "no2": 0.8432,
-        "o3": 0.8455,
-        "pm10": 0.8623,
-        "pm25": 0.8668
+        "co": 0.8809,
+        "no2": 0.8595,
+        "o3": 0.8671,
+        "pm10": 0.8774,
+        "pm25": 0.88
       },
       "quality": {
         "co": {
-          "rows": 27710,
-          "out_of_bounds": 0,
+          "rows": 47298,
+          "out_of_bounds": 7,
           "bad_unit": 0,
-          "low_coverage": 180,
-          "method_ppb_labelled_ppm": 27710
+          "low_coverage": 247,
+          "method_ppb_labelled_ppm": 47291
         },
         "no2": {
-          "rows": 26953,
-          "out_of_bounds": 0,
+          "rows": 46223,
+          "out_of_bounds": 13,
           "bad_unit": 0,
-          "low_coverage": 165,
-          "method_ppb_converted": 26953
+          "low_coverage": 230,
+          "method_ppb_converted": 46210
         },
         "o3": {
-          "rows": 26931,
-          "out_of_bounds": 0,
+          "rows": 46517,
+          "out_of_bounds": 2,
           "bad_unit": 0,
-          "low_coverage": 190,
-          "method_mass": 26931
+          "low_coverage": 257,
+          "method_mass": 46515
         },
         "pm10": {
-          "rows": 27600,
-          "out_of_bounds": 12,
+          "rows": 47241,
+          "out_of_bounds": 20,
           "bad_unit": 0,
-          "low_coverage": 183,
-          "method_mass": 27588
+          "low_coverage": 245,
+          "method_mass": 47221
         },
         "pm25": {
-          "rows": 27741,
-          "out_of_bounds": 0,
+          "rows": 47380,
+          "out_of_bounds": 7,
           "bad_unit": 0,
-          "low_coverage": 185,
-          "method_mass": 27741
+          "low_coverage": 248,
+          "method_mass": 47373
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236420,
+          "coverage": 0.0
+        },
+        "humidity": {
+          "sensor_id": 12236419,
+          "coverage": 0.0
+        },
+        "wind_speed": {
+          "sensor_id": 14342060,
+          "source_unit": "m/s",
+          "coverage": 0.0037
+        },
+        "wind_dir": {
+          "sensor_id": 14342059,
+          "source_unit": "deg",
+          "coverage": 0.0037
         }
       }
     },
@@ -723,55 +889,75 @@
         }
       },
       "coverage": {
-        "co": 0.8662,
-        "no2": 0.841,
-        "o3": 0.8639,
-        "pm10": 0.8515,
-        "pm25": 0.861,
-        "so2": 0.8501
+        "co": 0.8356,
+        "no2": 0.8664,
+        "o3": 0.8894,
+        "pm10": 0.8822,
+        "pm25": 0.888,
+        "so2": 0.8803
       },
       "quality": {
         "co": {
-          "rows": 27629,
-          "out_of_bounds": 17,
+          "rows": 44736,
+          "out_of_bounds": 24,
           "bad_unit": 0,
-          "low_coverage": 164,
-          "method_ppb_labelled_ppm": 27612
+          "low_coverage": 220,
+          "method_ppb_labelled_ppm": 44712
         },
         "no2": {
-          "rows": 26850,
-          "out_of_bounds": 0,
+          "rows": 46423,
+          "out_of_bounds": 6,
           "bad_unit": 0,
-          "low_coverage": 163,
-          "method_ppb_converted": 26850
+          "low_coverage": 225,
+          "method_ppb_converted": 46417
         },
         "o3": {
-          "rows": 27485,
+          "rows": 47520,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 162,
-          "method_mass": 27485
+          "low_coverage": 222,
+          "method_mass": 47520
         },
         "pm10": {
-          "rows": 27294,
-          "out_of_bounds": 0,
+          "rows": 47515,
+          "out_of_bounds": 12,
           "bad_unit": 0,
-          "low_coverage": 164,
-          "method_mass": 27294
+          "low_coverage": 221,
+          "method_mass": 47503
         },
         "pm25": {
-          "rows": 27584,
+          "rows": 47793,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 166,
-          "method_mass": 27584
+          "low_coverage": 222,
+          "method_mass": 47793
         },
         "so2": {
-          "rows": 27111,
-          "out_of_bounds": 47,
+          "rows": 47171,
+          "out_of_bounds": 111,
           "bad_unit": 0,
-          "low_coverage": 175,
-          "method_ppb_converted": 27064
+          "low_coverage": 238,
+          "method_ppb_converted": 47060
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236429,
+          "coverage": 0.0
+        },
+        "humidity": {
+          "sensor_id": 12236427,
+          "coverage": 0.0
+        },
+        "wind_speed": {
+          "sensor_id": 14342064,
+          "source_unit": "m/s",
+          "coverage": 0.0012
+        },
+        "wind_dir": {
+          "sensor_id": 14342063,
+          "source_unit": "deg",
+          "coverage": 0.0012
         }
       }
     },
@@ -822,55 +1008,79 @@
         }
       },
       "coverage": {
-        "co": 0.8623,
-        "no2": 0.8398,
-        "o3": 0.8628,
-        "pm10": 0.8618,
-        "pm25": 0.8601,
-        "so2": 0.8306
+        "co": 0.8616,
+        "no2": 0.8428,
+        "o3": 0.862,
+        "pm10": 0.8441,
+        "pm25": 0.8431,
+        "so2": 0.842
       },
       "quality": {
         "co": {
-          "rows": 27572,
+          "rows": 46276,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 150,
-          "method_ppb_labelled_ppm": 27572
+          "low_coverage": 229,
+          "method_ppb_labelled_ppm": 46276
         },
         "no2": {
-          "rows": 26831,
-          "out_of_bounds": 0,
+          "rows": 45252,
+          "out_of_bounds": 2,
           "bad_unit": 0,
-          "low_coverage": 150,
-          "method_ppb_converted": 26831
+          "low_coverage": 227,
+          "method_ppb_converted": 45250
         },
         "o3": {
-          "rows": 27579,
+          "rows": 46277,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 154,
-          "method_mass": 27579
+          "low_coverage": 233,
+          "method_mass": 46277
         },
         "pm10": {
-          "rows": 27569,
-          "out_of_bounds": 26,
+          "rows": 45423,
+          "out_of_bounds": 33,
           "bad_unit": 0,
-          "low_coverage": 150,
-          "method_mass": 27543
+          "low_coverage": 229,
+          "method_mass": 45390
         },
         "pm25": {
-          "rows": 27478,
-          "out_of_bounds": 9,
+          "rows": 45327,
+          "out_of_bounds": 10,
           "bad_unit": 0,
-          "low_coverage": 148,
-          "method_mass": 27469
+          "low_coverage": 227,
+          "method_mass": 45317
         },
         "so2": {
-          "rows": 26324,
-          "out_of_bounds": 30,
+          "rows": 45035,
+          "out_of_bounds": 70,
           "bad_unit": 0,
-          "low_coverage": 237,
-          "method_ppb_converted": 26294
+          "low_coverage": 317,
+          "method_ppb_converted": 44965
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236412,
+          "source_unit": "c",
+          "coverage": 0.5664,
+          "outliers_removed": 2493
+        },
+        "humidity": {
+          "sensor_id": 12236410,
+          "source_unit": "%",
+          "coverage": 0.5784,
+          "outliers_removed": 3953
+        },
+        "wind_speed": {
+          "sensor_id": 14341019,
+          "source_unit": "m/s",
+          "coverage": 0.2675
+        },
+        "wind_dir": {
+          "sensor_id": 14341018,
+          "source_unit": "deg",
+          "coverage": 0.2675
         }
       }
     },
@@ -921,55 +1131,79 @@
         }
       },
       "coverage": {
-        "co": 0.8329,
-        "no2": 0.8127,
-        "o3": 0.8233,
-        "pm10": 0.8274,
-        "pm25": 0.5706,
-        "so2": 0.8216
+        "co": 0.8076,
+        "no2": 0.7904,
+        "o3": 0.8021,
+        "pm10": 0.8039,
+        "pm25": 0.4474,
+        "so2": 0.8001
       },
       "quality": {
         "co": {
-          "rows": 26324,
+          "rows": 43658,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 307,
-          "method_ppb_labelled_ppm": 26324
+          "low_coverage": 592,
+          "method_ppb_labelled_ppm": 43658
         },
         "no2": {
-          "rows": 25664,
+          "rows": 42738,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 318,
-          "method_ppb_converted": 25664
+          "low_coverage": 602,
+          "method_ppb_converted": 42738
         },
         "o3": {
-          "rows": 26069,
-          "out_of_bounds": 0,
+          "rows": 43481,
+          "out_of_bounds": 1,
           "bad_unit": 0,
-          "low_coverage": 335,
-          "method_mass": 26069
+          "low_coverage": 616,
+          "method_mass": 43480
         },
         "pm10": {
-          "rows": 26080,
+          "rows": 43398,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 331,
-          "method_mass": 26080
+          "low_coverage": 620,
+          "method_mass": 43398
         },
         "pm25": {
-          "rows": 17686,
+          "rows": 23631,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 190,
-          "method_mass": 17686
+          "low_coverage": 295,
+          "method_mass": 23631
         },
         "so2": {
-          "rows": 25974,
-          "out_of_bounds": 48,
+          "rows": 43324,
+          "out_of_bounds": 92,
           "bad_unit": 0,
-          "low_coverage": 343,
-          "method_ppb_converted": 25926
+          "low_coverage": 631,
+          "method_ppb_converted": 43232
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236397,
+          "source_unit": "c",
+          "coverage": 0.6837,
+          "outliers_removed": 661
+        },
+        "humidity": {
+          "sensor_id": 12236395,
+          "source_unit": "%",
+          "coverage": 0.6835,
+          "outliers_removed": 7582
+        },
+        "wind_speed": {
+          "sensor_id": 14342058,
+          "source_unit": "m/s",
+          "coverage": 0.0037
+        },
+        "wind_dir": {
+          "sensor_id": 14342057,
+          "source_unit": "deg",
+          "coverage": 0.0037
         }
       }
     },
@@ -1014,47 +1248,71 @@
         }
       },
       "coverage": {
-        "co": 0.0278,
-        "no2": 0.6413,
-        "pm10": 0.2734,
-        "pm25": 0.7273,
-        "so2": 0.2133
+        "co": 0.0201,
+        "no2": 0.6612,
+        "pm10": 0.2985,
+        "pm25": 0.764,
+        "so2": 0.2087
       },
       "quality": {
         "co": {
-          "rows": 325,
+          "rows": 496,
           "out_of_bounds": 0,
           "bad_unit": 0,
           "low_coverage": 0,
-          "method_ppb_labelled_ppm": 325
+          "method_ppb_labelled_ppm": 496
         },
         "no2": {
-          "rows": 14939,
+          "rows": 25862,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 910,
-          "method_ppb_converted": 14939
+          "low_coverage": 1488,
+          "method_ppb_converted": 25862
         },
         "pm10": {
-          "rows": 6464,
-          "out_of_bounds": 0,
+          "rows": 11554,
+          "out_of_bounds": 289,
           "bad_unit": 0,
-          "low_coverage": 1650,
-          "method_mass": 6464
+          "low_coverage": 2434,
+          "method_mass": 11265
         },
         "pm25": {
-          "rows": 23370,
+          "rows": 41380,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 202,
-          "method_mass": 23370
+          "low_coverage": 299,
+          "method_mass": 41380
         },
         "so2": {
-          "rows": 2590,
+          "rows": 4536,
           "out_of_bounds": 0,
           "bad_unit": 0,
           "low_coverage": 0,
-          "method_ppb_converted": 2590
+          "method_ppb_converted": 4536
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236484,
+          "source_unit": "c",
+          "coverage": 0.5236,
+          "outliers_removed": 2
+        },
+        "humidity": {
+          "sensor_id": 12236482,
+          "source_unit": "%",
+          "coverage": 0.5236,
+          "outliers_removed": 116
+        },
+        "wind_speed": {
+          "sensor_id": 14342084,
+          "source_unit": "m/s",
+          "coverage": 0.3018
+        },
+        "wind_dir": {
+          "sensor_id": 14342083,
+          "source_unit": "deg",
+          "coverage": 0.3018
         }
       }
     },
@@ -1105,55 +1363,79 @@
         }
       },
       "coverage": {
-        "co": 0.7291,
-        "no2": 0.7286,
-        "o3": 0.7116,
-        "pm10": 0.7072,
-        "pm25": 0.6322,
-        "so2": 0.7015
+        "co": 0.6848,
+        "no2": 0.7086,
+        "o3": 0.6306,
+        "pm10": 0.6757,
+        "pm25": 0.6787,
+        "so2": 0.6704
       },
       "quality": {
         "co": {
-          "rows": 23099,
+          "rows": 36536,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 130,
-          "method_ppb_labelled_ppm": 23099
+          "low_coverage": 314,
+          "method_ppb_labelled_ppm": 36536
         },
         "no2": {
-          "rows": 23186,
+          "rows": 37925,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 137,
-          "method_ppb_converted": 23186
+          "low_coverage": 295,
+          "method_ppb_converted": 37925
         },
         "o3": {
-          "rows": 22813,
+          "rows": 33902,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 275,
-          "method_mass": 22813
+          "low_coverage": 437,
+          "method_mass": 33902
         },
         "pm10": {
-          "rows": 22540,
+          "rows": 36177,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 174,
-          "method_mass": 22540
+          "low_coverage": 320,
+          "method_mass": 36177
         },
         "pm25": {
-          "rows": 20379,
+          "rows": 36955,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 233,
-          "method_mass": 20379
+          "low_coverage": 310,
+          "method_mass": 36955
         },
         "so2": {
-          "rows": 22182,
+          "rows": 35693,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 187,
-          "method_ppb_converted": 22182
+          "low_coverage": 344,
+          "method_ppb_converted": 35693
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235917,
+          "source_unit": "c",
+          "coverage": 0.6917,
+          "outliers_removed": 18
+        },
+        "humidity": {
+          "sensor_id": 12235915,
+          "source_unit": "%",
+          "coverage": 0.6419,
+          "outliers_removed": 862
+        },
+        "wind_speed": {
+          "sensor_id": 14341956,
+          "source_unit": "m/s",
+          "coverage": 0.4726
+        },
+        "wind_dir": {
+          "sensor_id": 14341955,
+          "source_unit": "deg",
+          "coverage": 0.4726
         }
       }
     },
@@ -1204,55 +1486,79 @@
         }
       },
       "coverage": {
-        "co": 0.5704,
-        "no2": 0.5565,
-        "o3": 0.573,
-        "pm10": 0.5626,
-        "pm25": 0.5541,
-        "so2": 0.5661
+        "co": 0.5981,
+        "no2": 0.584,
+        "o3": 0.5997,
+        "pm10": 0.5934,
+        "pm25": 0.5882,
+        "so2": 0.5955
       },
       "quality": {
         "co": {
-          "rows": 17337,
+          "rows": 31837,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 541,
-          "method_ppb_labelled_ppm": 17337
+          "low_coverage": 772,
+          "method_ppb_labelled_ppm": 31837
         },
         "no2": {
-          "rows": 16921,
-          "out_of_bounds": 0,
+          "rows": 31097,
+          "out_of_bounds": 1,
           "bad_unit": 0,
-          "low_coverage": 528,
-          "method_ppb_converted": 16921
+          "low_coverage": 756,
+          "method_ppb_converted": 31096
         },
         "o3": {
-          "rows": 17466,
-          "out_of_bounds": 0,
+          "rows": 31969,
+          "out_of_bounds": 2,
           "bad_unit": 0,
-          "low_coverage": 544,
-          "method_mass": 17466
+          "low_coverage": 774,
+          "method_mass": 31967
         },
         "pm10": {
-          "rows": 17141,
-          "out_of_bounds": 0,
+          "rows": 31636,
+          "out_of_bounds": 3,
           "bad_unit": 0,
-          "low_coverage": 540,
-          "method_mass": 17141
+          "low_coverage": 772,
+          "method_mass": 31633
         },
         "pm25": {
-          "rows": 16848,
-          "out_of_bounds": 0,
+          "rows": 31346,
+          "out_of_bounds": 6,
           "bad_unit": 0,
-          "low_coverage": 535,
-          "method_mass": 16848
+          "low_coverage": 769,
+          "method_mass": 31340
         },
         "so2": {
-          "rows": 17224,
+          "rows": 31725,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 559,
-          "method_ppb_converted": 17224
+          "low_coverage": 788,
+          "method_ppb_converted": 31725
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12708249,
+          "source_unit": "c",
+          "coverage": 0.0015,
+          "outliers_removed": 19
+        },
+        "humidity": {
+          "sensor_id": 12708247,
+          "source_unit": "%",
+          "coverage": 0.0021,
+          "outliers_removed": 23
+        },
+        "wind_speed": {
+          "sensor_id": 14342049,
+          "source_unit": "m/s",
+          "coverage": 0.0167
+        },
+        "wind_dir": {
+          "sensor_id": 14342048,
+          "source_unit": "deg",
+          "coverage": 0.0189
         }
       }
     },
@@ -1303,55 +1609,75 @@
         }
       },
       "coverage": {
-        "co": 0.8383,
-        "no2": 0.8322,
-        "o3": 0.8281,
-        "pm10": 0.8345,
-        "pm25": 0.8259,
-        "so2": 0.8331
+        "co": 0.753,
+        "no2": 0.7707,
+        "o3": 0.7497,
+        "pm10": 0.7738,
+        "pm25": 0.7687,
+        "so2": 0.7522
       },
       "quality": {
         "co": {
-          "rows": 26686,
-          "out_of_bounds": 0,
+          "rows": 40388,
+          "out_of_bounds": 151,
           "bad_unit": 0,
-          "low_coverage": 148,
-          "method_ppb_labelled_ppm": 26686
+          "low_coverage": 239,
+          "method_ppb_labelled_ppm": 40237
         },
         "no2": {
-          "rows": 26349,
-          "out_of_bounds": 3,
+          "rows": 41010,
+          "out_of_bounds": 16,
           "bad_unit": 0,
-          "low_coverage": 150,
-          "method_ppb_converted": 26346
+          "low_coverage": 248,
+          "method_ppb_converted": 40994
         },
         "o3": {
-          "rows": 26280,
-          "out_of_bounds": 0,
+          "rows": 39977,
+          "out_of_bounds": 2,
           "bad_unit": 0,
-          "low_coverage": 160,
-          "method_mass": 26280
+          "low_coverage": 251,
+          "method_mass": 39975
         },
         "pm10": {
-          "rows": 26761,
+          "rows": 41609,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 159,
-          "method_mass": 26761
+          "low_coverage": 253,
+          "method_mass": 41609
         },
         "pm25": {
-          "rows": 26443,
+          "rows": 41282,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 167,
-          "method_mass": 26443
+          "low_coverage": 261,
+          "method_mass": 41282
         },
         "so2": {
-          "rows": 26527,
-          "out_of_bounds": 0,
+          "rows": 40232,
+          "out_of_bounds": 21,
           "bad_unit": 0,
-          "low_coverage": 162,
-          "method_ppb_converted": 26527
+          "low_coverage": 256,
+          "method_ppb_converted": 40211
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236388,
+          "coverage": 0.0
+        },
+        "humidity": {
+          "sensor_id": 12236386,
+          "coverage": 0.0
+        },
+        "wind_speed": {
+          "sensor_id": 14341013,
+          "source_unit": "m/s",
+          "coverage": 0.2
+        },
+        "wind_dir": {
+          "sensor_id": 14341012,
+          "source_unit": "deg",
+          "coverage": 0.1999
         }
       }
     },
@@ -1402,55 +1728,79 @@
         }
       },
       "coverage": {
-        "co": 0.7686,
-        "no2": 0.7668,
-        "o3": 0.7693,
-        "pm10": 0.7652,
-        "pm25": 0.765,
-        "so2": 0.7586
+        "co": 0.8256,
+        "no2": 0.8245,
+        "o3": 0.826,
+        "pm10": 0.8236,
+        "pm25": 0.823,
+        "so2": 0.8196
       },
       "quality": {
         "co": {
-          "rows": 24543,
+          "rows": 44617,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 263,
-          "method_ppb_labelled_ppm": 24543
+          "low_coverage": 362,
+          "method_ppb_labelled_ppm": 44617
         },
         "no2": {
-          "rows": 24507,
-          "out_of_bounds": 2,
+          "rows": 44613,
+          "out_of_bounds": 4,
           "bad_unit": 0,
-          "low_coverage": 266,
-          "method_ppb_converted": 24505
+          "low_coverage": 364,
+          "method_ppb_converted": 44609
         },
         "o3": {
-          "rows": 24565,
-          "out_of_bounds": 1,
+          "rows": 44624,
+          "out_of_bounds": 9,
           "bad_unit": 0,
-          "low_coverage": 263,
-          "method_mass": 24564
+          "low_coverage": 362,
+          "method_mass": 44615
         },
         "pm10": {
-          "rows": 24573,
-          "out_of_bounds": 76,
+          "rows": 44771,
+          "out_of_bounds": 95,
           "bad_unit": 0,
-          "low_coverage": 274,
-          "method_mass": 24497
+          "low_coverage": 374,
+          "method_mass": 44676
         },
         "pm25": {
-          "rows": 24564,
-          "out_of_bounds": 85,
+          "rows": 44754,
+          "out_of_bounds": 128,
           "bad_unit": 0,
-          "low_coverage": 270,
-          "method_mass": 24479
+          "low_coverage": 373,
+          "method_mass": 44626
         },
         "so2": {
-          "rows": 24221,
-          "out_of_bounds": 0,
+          "rows": 44314,
+          "out_of_bounds": 1,
           "bad_unit": 0,
-          "low_coverage": 266,
-          "method_ppb_converted": 24221
+          "low_coverage": 365,
+          "method_ppb_converted": 44313
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238351,
+          "source_unit": "c",
+          "coverage": 0.8263,
+          "outliers_removed": 438
+        },
+        "humidity": {
+          "sensor_id": 12238349,
+          "source_unit": "%",
+          "coverage": 0.8001,
+          "outliers_removed": 2596
+        },
+        "wind_speed": {
+          "sensor_id": 14341566,
+          "source_unit": "m/s",
+          "coverage": 0.4956
+        },
+        "wind_dir": {
+          "sensor_id": 14341565,
+          "source_unit": "deg",
+          "coverage": 0.4933
         }
       }
     },
@@ -1501,55 +1851,79 @@
         }
       },
       "coverage": {
-        "co": 0.7914,
-        "no2": 0.7873,
-        "o3": 0.8012,
-        "pm10": 0.7983,
-        "pm25": 0.7882,
-        "so2": 0.7995
+        "co": 0.8224,
+        "no2": 0.82,
+        "o3": 0.8282,
+        "pm10": 0.8234,
+        "pm25": 0.8202,
+        "so2": 0.8271
       },
       "quality": {
         "co": {
-          "rows": 25074,
-          "out_of_bounds": 6,
+          "rows": 43915,
+          "out_of_bounds": 7,
           "bad_unit": 0,
-          "low_coverage": 257,
-          "method_ppb_labelled_ppm": 25068
+          "low_coverage": 412,
+          "method_ppb_labelled_ppm": 43908
         },
         "no2": {
-          "rows": 24896,
+          "rows": 43771,
           "out_of_bounds": 45,
           "bad_unit": 0,
-          "low_coverage": 273,
-          "method_ppb_converted": 24851
+          "low_coverage": 427,
+          "method_ppb_converted": 43726
         },
         "o3": {
-          "rows": 25385,
-          "out_of_bounds": 1,
+          "rows": 44215,
+          "out_of_bounds": 2,
           "bad_unit": 0,
-          "low_coverage": 270,
-          "method_mass": 25384
+          "low_coverage": 425,
+          "method_mass": 44213
         },
         "pm10": {
-          "rows": 25497,
-          "out_of_bounds": 77,
+          "rows": 44511,
+          "out_of_bounds": 269,
           "bad_unit": 0,
-          "low_coverage": 263,
-          "method_mass": 25420
+          "low_coverage": 418,
+          "method_mass": 44242
         },
         "pm25": {
-          "rows": 25484,
-          "out_of_bounds": 387,
+          "rows": 44482,
+          "out_of_bounds": 431,
           "bad_unit": 0,
-          "low_coverage": 268,
-          "method_mass": 25097
+          "low_coverage": 424,
+          "method_mass": 44051
         },
         "so2": {
-          "rows": 25442,
-          "out_of_bounds": 125,
+          "rows": 44297,
+          "out_of_bounds": 137,
           "bad_unit": 0,
-          "low_coverage": 271,
-          "method_ppb_converted": 25317
+          "low_coverage": 426,
+          "method_ppb_converted": 44160
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238378,
+          "source_unit": "c",
+          "coverage": 0.7632,
+          "outliers_removed": 601
+        },
+        "humidity": {
+          "sensor_id": 12238376,
+          "source_unit": "%",
+          "coverage": 0.828,
+          "outliers_removed": 4324
+        },
+        "wind_speed": {
+          "sensor_id": 14341575,
+          "source_unit": "m/s",
+          "coverage": 0.5149
+        },
+        "wind_dir": {
+          "sensor_id": 14341574,
+          "source_unit": "deg",
+          "coverage": 0.5145
         }
       }
     },
@@ -1600,55 +1974,79 @@
         }
       },
       "coverage": {
-        "co": 0.7733,
-        "no2": 0.7816,
-        "o3": 0.7253,
-        "pm10": 0.7812,
-        "pm25": 0.7778,
-        "so2": 0.7782
+        "co": 0.8058,
+        "no2": 0.811,
+        "o3": 0.7774,
+        "pm10": 0.8111,
+        "pm25": 0.809,
+        "so2": 0.807
       },
       "quality": {
         "co": {
-          "rows": 24483,
-          "out_of_bounds": 68,
+          "rows": 43082,
+          "out_of_bounds": 70,
           "bad_unit": 0,
-          "low_coverage": 188,
-          "method_ppb_labelled_ppm": 24415
+          "low_coverage": 302,
+          "method_ppb_labelled_ppm": 43012
         },
         "no2": {
-          "rows": 24748,
-          "out_of_bounds": 0,
+          "rows": 43444,
+          "out_of_bounds": 3,
           "bad_unit": 0,
-          "low_coverage": 169,
-          "method_ppb_converted": 24748
+          "low_coverage": 280,
+          "method_ppb_converted": 43441
         },
         "o3": {
-          "rows": 22874,
-          "out_of_bounds": 1,
+          "rows": 41543,
+          "out_of_bounds": 27,
           "bad_unit": 0,
-          "low_coverage": 178,
-          "method_mass": 22873
+          "low_coverage": 291,
+          "method_mass": 41516
         },
         "pm10": {
-          "rows": 24816,
+          "rows": 43606,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 167,
-          "method_mass": 24816
+          "low_coverage": 280,
+          "method_mass": 43606
         },
         "pm25": {
-          "rows": 24803,
+          "rows": 43580,
           "out_of_bounds": 111,
           "bad_unit": 0,
-          "low_coverage": 169,
-          "method_mass": 24692
+          "low_coverage": 283,
+          "method_mass": 43469
         },
         "so2": {
-          "rows": 24615,
-          "out_of_bounds": 1,
+          "rows": 43294,
+          "out_of_bounds": 129,
           "bad_unit": 0,
-          "low_coverage": 193,
-          "method_ppb_converted": 24614
+          "low_coverage": 318,
+          "method_ppb_converted": 43165
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238387,
+          "source_unit": "c",
+          "coverage": 0.7729,
+          "outliers_removed": 486
+        },
+        "humidity": {
+          "sensor_id": 12238385,
+          "source_unit": "%",
+          "coverage": 0.7985,
+          "outliers_removed": 577
+        },
+        "wind_speed": {
+          "sensor_id": 14341578,
+          "source_unit": "m/s",
+          "coverage": 0.5022
+        },
+        "wind_dir": {
+          "sensor_id": 14341577,
+          "source_unit": "deg",
+          "coverage": 0.5021
         }
       }
     },
@@ -1699,55 +2097,80 @@
         }
       },
       "coverage": {
-        "co": 0.814,
-        "no2": 0.82,
-        "o3": 0.8159,
-        "pm10": 0.819,
-        "pm25": 0.8181,
-        "so2": 0.8132
+        "co": 0.8443,
+        "no2": 0.8493,
+        "o3": 0.8466,
+        "pm10": 0.8497,
+        "pm25": 0.8488,
+        "so2": 0.8449
       },
       "quality": {
         "co": {
-          "rows": 25678,
-          "out_of_bounds": 0,
+          "rows": 44692,
+          "out_of_bounds": 34,
           "bad_unit": 0,
-          "low_coverage": 227,
-          "method_ppb_labelled_ppm": 25678
+          "low_coverage": 413,
+          "method_ppb_labelled_ppm": 44658
         },
         "no2": {
-          "rows": 25936,
+          "rows": 45052,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 210,
-          "method_ppb_converted": 25936
+          "low_coverage": 383,
+          "method_ppb_converted": 45052
         },
         "o3": {
-          "rows": 25789,
-          "out_of_bounds": 10,
+          "rows": 44875,
+          "out_of_bounds": 19,
           "bad_unit": 0,
-          "low_coverage": 213,
-          "method_mass": 25779
+          "low_coverage": 389,
+          "method_mass": 44856
         },
         "pm10": {
-          "rows": 25947,
-          "out_of_bounds": 0,
+          "rows": 45214,
+          "out_of_bounds": 1,
           "bad_unit": 0,
-          "low_coverage": 213,
-          "method_mass": 25947
+          "low_coverage": 377,
+          "method_mass": 45213
         },
         "pm25": {
-          "rows": 25917,
-          "out_of_bounds": 12,
+          "rows": 45164,
+          "out_of_bounds": 31,
           "bad_unit": 0,
-          "low_coverage": 216,
-          "method_mass": 25905
+          "low_coverage": 382,
+          "method_mass": 45133
         },
         "so2": {
-          "rows": 25735,
-          "out_of_bounds": 0,
+          "rows": 44840,
+          "out_of_bounds": 20,
           "bad_unit": 0,
-          "low_coverage": 230,
-          "method_ppb_converted": 25735
+          "low_coverage": 405,
+          "method_ppb_converted": 44820
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238414,
+          "source_unit": "c",
+          "coverage": 0.8503,
+          "outliers_removed": 6
+        },
+        "humidity": {
+          "sensor_id": 12238412,
+          "source_unit": "%",
+          "coverage": 0.8499,
+          "outliers_removed": 522
+        },
+        "wind_speed": {
+          "sensor_id": 14341587,
+          "source_unit": "m/s",
+          "coverage": 0.5213,
+          "outliers_removed": 18
+        },
+        "wind_dir": {
+          "sensor_id": 14341586,
+          "source_unit": "deg",
+          "coverage": 0.524
         }
       }
     },
@@ -1798,55 +2221,78 @@
         }
       },
       "coverage": {
-        "co": 0.7799,
-        "no2": 0.7878,
-        "o3": 0.7978,
-        "pm10": 0.812,
-        "pm25": 0.8079,
-        "so2": 0.7814
+        "co": 0.8176,
+        "no2": 0.821,
+        "o3": 0.8282,
+        "pm10": 0.8384,
+        "pm25": 0.8365,
+        "so2": 0.8112
       },
       "quality": {
         "co": {
-          "rows": 25063,
+          "rows": 44317,
           "out_of_bounds": 125,
           "bad_unit": 0,
-          "low_coverage": 236,
-          "method_ppb_labelled_ppm": 24938
+          "low_coverage": 305,
+          "method_ppb_labelled_ppm": 44192
         },
         "no2": {
-          "rows": 25273,
-          "out_of_bounds": 0,
+          "rows": 44432,
+          "out_of_bounds": 39,
           "bad_unit": 0,
-          "low_coverage": 267,
-          "method_ppb_converted": 25273
+          "low_coverage": 336,
+          "method_ppb_converted": 44393
         },
         "o3": {
-          "rows": 25515,
-          "out_of_bounds": 3,
+          "rows": 44749,
+          "out_of_bounds": 4,
           "bad_unit": 0,
-          "low_coverage": 237,
-          "method_mass": 25512
+          "low_coverage": 305,
+          "method_mass": 44745
         },
         "pm10": {
-          "rows": 26109,
-          "out_of_bounds": 0,
+          "rows": 45526,
+          "out_of_bounds": 46,
           "bad_unit": 0,
-          "low_coverage": 242,
-          "method_mass": 26109
+          "low_coverage": 294,
+          "method_mass": 45480
         },
         "pm25": {
-          "rows": 25978,
+          "rows": 45378,
           "out_of_bounds": 7,
           "bad_unit": 0,
-          "low_coverage": 236,
-          "method_mass": 25971
+          "low_coverage": 287,
+          "method_mass": 45371
         },
         "so2": {
-          "rows": 24836,
-          "out_of_bounds": 2,
+          "rows": 44105,
+          "out_of_bounds": 448,
           "bad_unit": 0,
-          "low_coverage": 251,
-          "method_ppb_converted": 24834
+          "low_coverage": 331,
+          "method_ppb_converted": 43657
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238570,
+          "source_unit": "c",
+          "coverage": 0.8379
+        },
+        "humidity": {
+          "sensor_id": 12238568,
+          "source_unit": "%",
+          "coverage": 0.8373,
+          "outliers_removed": 19
+        },
+        "wind_speed": {
+          "sensor_id": 14341641,
+          "source_unit": "m/s",
+          "coverage": 0.5209
+        },
+        "wind_dir": {
+          "sensor_id": 14341640,
+          "source_unit": "deg",
+          "coverage": 0.5197
         }
       }
     },
@@ -1897,55 +2343,80 @@
         }
       },
       "coverage": {
-        "co": 0.7992,
-        "no2": 0.8112,
-        "o3": 0.8296,
-        "pm10": 0.8296,
-        "pm25": 0.8391,
-        "so2": 0.7922
+        "co": 0.8329,
+        "no2": 0.8419,
+        "o3": 0.8565,
+        "pm10": 0.8589,
+        "pm25": 0.8616,
+        "so2": 0.8293
       },
       "quality": {
         "co": {
-          "rows": 26841,
-          "out_of_bounds": 1236,
+          "rows": 46398,
+          "out_of_bounds": 1594,
           "bad_unit": 0,
-          "low_coverage": 170,
-          "method_ppb_labelled_ppm": 25605
+          "low_coverage": 289,
+          "method_ppb_labelled_ppm": 44804
         },
         "no2": {
-          "rows": 25909,
+          "rows": 45138,
           "out_of_bounds": 1,
           "bad_unit": 0,
-          "low_coverage": 221,
-          "method_ppb_converted": 25908
+          "low_coverage": 363,
+          "method_ppb_converted": 45137
         },
         "o3": {
-          "rows": 26611,
-          "out_of_bounds": 13,
+          "rows": 46133,
+          "out_of_bounds": 53,
           "bad_unit": 0,
-          "low_coverage": 158,
-          "method_mass": 26598
+          "low_coverage": 261,
+          "method_mass": 46080
         },
         "pm10": {
-          "rows": 26881,
-          "out_of_bounds": 110,
+          "rows": 46762,
+          "out_of_bounds": 158,
           "bad_unit": 0,
-          "low_coverage": 132,
-          "method_mass": 26771
+          "low_coverage": 201,
+          "method_mass": 46604
         },
         "pm25": {
-          "rows": 27233,
-          "out_of_bounds": 85,
+          "rows": 47081,
+          "out_of_bounds": 281,
           "bad_unit": 0,
-          "low_coverage": 121,
-          "method_mass": 27148
+          "low_coverage": 199,
+          "method_mass": 46800
         },
         "so2": {
-          "rows": 25247,
-          "out_of_bounds": 8,
+          "rows": 44388,
+          "out_of_bounds": 22,
           "bad_unit": 0,
-          "low_coverage": 295,
-          "method_ppb_converted": 25239
+          "low_coverage": 446,
+          "method_ppb_converted": 44366
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238579,
+          "source_unit": "c",
+          "coverage": 0.8475,
+          "outliers_removed": 843
+        },
+        "humidity": {
+          "sensor_id": 12238577,
+          "source_unit": "%",
+          "coverage": 0.8473,
+          "outliers_removed": 486
+        },
+        "wind_speed": {
+          "sensor_id": 14341644,
+          "source_unit": "m/s",
+          "coverage": 0.5254,
+          "outliers_removed": 81
+        },
+        "wind_dir": {
+          "sensor_id": 14341643,
+          "source_unit": "deg",
+          "coverage": 0.5249
         }
       }
     },
@@ -1996,55 +2467,80 @@
         }
       },
       "coverage": {
-        "co": 0.5426,
-        "no2": 0.4961,
-        "o3": 0.5333,
-        "pm10": 0.6259,
-        "pm25": 0.6219,
-        "so2": 0.5381
+        "co": 0.6535,
+        "no2": 0.6109,
+        "o3": 0.6413,
+        "pm10": 0.7222,
+        "pm25": 0.7173,
+        "so2": 0.6535
       },
       "quality": {
         "co": {
-          "rows": 17003,
+          "rows": 33462,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 881,
-          "method_ppb_labelled_ppm": 17003
+          "low_coverage": 1389,
+          "method_ppb_labelled_ppm": 33462
         },
         "no2": {
-          "rows": 15679,
+          "rows": 31362,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 820,
-          "method_ppb_converted": 15679
+          "low_coverage": 1442,
+          "method_ppb_converted": 31362
         },
         "o3": {
-          "rows": 16803,
-          "out_of_bounds": 8,
+          "rows": 33144,
+          "out_of_bounds": 242,
           "bad_unit": 0,
-          "low_coverage": 910,
-          "method_mass": 16795
+          "low_coverage": 1425,
+          "method_mass": 32902
         },
         "pm10": {
-          "rows": 18993,
+          "rows": 36407,
           "out_of_bounds": 8,
           "bad_unit": 0,
-          "low_coverage": 731,
-          "method_mass": 18985
+          "low_coverage": 1048,
+          "method_mass": 36399
         },
         "pm25": {
-          "rows": 18972,
-          "out_of_bounds": 12,
+          "rows": 36258,
+          "out_of_bounds": 13,
           "bad_unit": 0,
-          "low_coverage": 783,
-          "method_mass": 18960
+          "low_coverage": 1126,
+          "method_mass": 36245
         },
         "so2": {
-          "rows": 16755,
+          "rows": 33327,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 903,
-          "method_ppb_converted": 16755
+          "low_coverage": 1384,
+          "method_ppb_converted": 33327
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238588,
+          "source_unit": "c",
+          "coverage": 0.6894,
+          "outliers_removed": 4
+        },
+        "humidity": {
+          "sensor_id": 12238586,
+          "source_unit": "%",
+          "coverage": 0.6779,
+          "outliers_removed": 517
+        },
+        "wind_speed": {
+          "sensor_id": 14342263,
+          "source_unit": "m/s",
+          "coverage": 0.4,
+          "outliers_removed": 39
+        },
+        "wind_dir": {
+          "sensor_id": 14342262,
+          "source_unit": "deg",
+          "coverage": 0.391
         }
       }
     },
@@ -2095,55 +2591,79 @@
         }
       },
       "coverage": {
-        "co": 0.5714,
-        "no2": 0.5679,
-        "o3": 0.5859,
-        "pm10": 0.622,
-        "pm25": 0.6207,
-        "so2": 0.5725
+        "co": 0.5091,
+        "no2": 0.5028,
+        "o3": 0.5187,
+        "pm10": 0.5515,
+        "pm25": 0.5461,
+        "so2": 0.5123
       },
       "quality": {
         "co": {
-          "rows": 17643,
-          "out_of_bounds": 5,
+          "rows": 26235,
+          "out_of_bounds": 21,
           "bad_unit": 0,
-          "low_coverage": 850,
-          "method_ppb_labelled_ppm": 17638
+          "low_coverage": 1534,
+          "method_ppb_labelled_ppm": 26214
         },
         "no2": {
-          "rows": 17622,
-          "out_of_bounds": 10,
+          "rows": 26095,
+          "out_of_bounds": 12,
           "bad_unit": 0,
-          "low_coverage": 912,
-          "method_ppb_converted": 17612
+          "low_coverage": 1561,
+          "method_ppb_converted": 26083
         },
         "o3": {
-          "rows": 18061,
+          "rows": 26710,
           "out_of_bounds": 1,
           "bad_unit": 0,
-          "low_coverage": 923,
-          "method_mass": 18060
+          "low_coverage": 1601,
+          "method_mass": 26709
         },
         "pm10": {
-          "rows": 19202,
-          "out_of_bounds": 2,
+          "rows": 28433,
+          "out_of_bounds": 6,
           "bad_unit": 0,
-          "low_coverage": 850,
-          "method_mass": 19200
+          "low_coverage": 1588,
+          "method_mass": 28427
         },
         "pm25": {
-          "rows": 19193,
+          "rows": 28127,
           "out_of_bounds": 5,
           "bad_unit": 0,
-          "low_coverage": 866,
-          "method_mass": 19188
+          "low_coverage": 1545,
+          "method_mass": 28122
         },
         "so2": {
-          "rows": 17523,
+          "rows": 26238,
           "out_of_bounds": 0,
           "bad_unit": 0,
-          "low_coverage": 861,
-          "method_ppb_converted": 17523
+          "low_coverage": 1529,
+          "method_ppb_converted": 26238
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238597,
+          "source_unit": "c",
+          "coverage": 0.4486,
+          "outliers_removed": 1759
+        },
+        "humidity": {
+          "sensor_id": 12238595,
+          "source_unit": "%",
+          "coverage": 0.5175,
+          "outliers_removed": 2705
+        },
+        "wind_speed": {
+          "sensor_id": 14342266,
+          "source_unit": "m/s",
+          "coverage": 0.4008
+        },
+        "wind_dir": {
+          "sensor_id": 14342265,
+          "source_unit": "deg",
+          "coverage": 0.3937
         }
       }
     },
@@ -2194,82 +2714,106 @@
         }
       },
       "coverage": {
-        "co": 0.8176,
-        "no2": 0.8149,
-        "o3": 0.8316,
-        "pm10": 0.8135,
-        "pm25": 0.823,
-        "so2": 0.8137
+        "co": 0.836,
+        "no2": 0.8353,
+        "o3": 0.8464,
+        "pm10": 0.8377,
+        "pm25": 0.843,
+        "so2": 0.8358
       },
       "quality": {
         "co": {
-          "rows": 26483,
-          "out_of_bounds": 122,
+          "rows": 45476,
+          "out_of_bounds": 266,
           "bad_unit": 0,
-          "low_coverage": 112,
-          "method_ppb_labelled_ppm": 26361
+          "low_coverage": 182,
+          "method_ppb_labelled_ppm": 45210
         },
         "no2": {
-          "rows": 26161,
+          "rows": 44965,
           "out_of_bounds": 6,
           "bad_unit": 0,
-          "low_coverage": 133,
-          "method_ppb_converted": 26155
+          "low_coverage": 210,
+          "method_ppb_converted": 44959
         },
         "o3": {
-          "rows": 26547,
-          "out_of_bounds": 2,
+          "rows": 45511,
+          "out_of_bounds": 16,
           "bad_unit": 0,
-          "low_coverage": 119,
-          "method_mass": 26545
+          "low_coverage": 185,
+          "method_mass": 45495
         },
         "pm10": {
-          "rows": 26397,
+          "rows": 45679,
           "out_of_bounds": 54,
           "bad_unit": 0,
-          "low_coverage": 125,
-          "method_mass": 26343
+          "low_coverage": 170,
+          "method_mass": 45625
         },
         "pm25": {
-          "rows": 26640,
-          "out_of_bounds": 0,
+          "rows": 45880,
+          "out_of_bounds": 4,
           "bad_unit": 0,
-          "low_coverage": 115,
-          "method_mass": 26640
+          "low_coverage": 165,
+          "method_mass": 45876
         },
         "so2": {
-          "rows": 26023,
-          "out_of_bounds": 0,
+          "rows": 45041,
+          "out_of_bounds": 17,
           "bad_unit": 0,
-          "low_coverage": 152,
-          "method_ppb_converted": 26023
+          "low_coverage": 216,
+          "method_ppb_converted": 45024
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238606,
+          "source_unit": "c",
+          "coverage": 0.8283,
+          "outliers_removed": 2154
+        },
+        "humidity": {
+          "sensor_id": 12238604,
+          "source_unit": "%",
+          "coverage": 0.841,
+          "outliers_removed": 1760
+        },
+        "wind_speed": {
+          "sensor_id": 14341647,
+          "source_unit": "m/s",
+          "coverage": 0.5357
+        },
+        "wind_dir": {
+          "sensor_id": 14341646,
+          "source_unit": "deg",
+          "coverage": 0.5356
         }
       }
     }
   ],
-  "rows": 198720,
+  "rows": 333960,
   "non_null": {
-    "pm25": 143197,
-    "pm10": 141925,
-    "no2": 142218,
-    "so2": 122239,
-    "co": 133484,
-    "o3": 126909,
-    "temperature": 198720,
-    "humidity": 198720,
-    "wind_speed": 198720,
-    "wind_dir": 198720,
-    "precipitation": 198720
+    "pm25": 248855,
+    "pm10": 246452,
+    "no2": 247241,
+    "so2": 210070,
+    "co": 232552,
+    "o3": 223602,
+    "temperature": 333960,
+    "humidity": 333935,
+    "wind_speed": 333960,
+    "wind_dir": 333960,
+    "precipitation": 333960
   },
   "missing_fraction": {
-    "pm25": 0.2794,
-    "pm10": 0.2858,
-    "no2": 0.2843,
-    "so2": 0.3849,
-    "co": 0.3283,
-    "o3": 0.3614,
+    "pm25": 0.2548,
+    "pm10": 0.262,
+    "no2": 0.2597,
+    "so2": 0.371,
+    "co": 0.3037,
+    "o3": 0.3305,
     "temperature": 0.0,
-    "humidity": 0.0,
+    "humidity": 0.0001,
     "wind_speed": 0.0,
     "wind_dir": 0.0,
     "precipitation": 0.0
@@ -2334,6 +2878,6 @@
     "gaps": "left as NaN; no interpolation",
     "provider_filter": "station owner/provider contains MPCB, BMC, IITM or CPCB; location active within 21 days"
   },
-  "sha256": "34f9567adec60889934e836727d946eb1c93ab005e6dcf780a73066741bc7e92",
+  "sha256": "ed07b475c1e4620acca6c8b59fc782fc064d60e8a954a78e57dc1e121255fb21",
   "attribution": "Data from OpenAQ (CPCB/MPCB/BMC/IITM) and Open-Meteo (ERA5). Check upstream licences before redistribution."
 }

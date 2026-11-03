@@ -293,7 +293,7 @@ export function AiAnalystPage() {
             <div className="p-4 text-[10px] leading-relaxed text-[#5a6a5f]">
               <p>{status?.note ?? 'Loading status…'}</p>
               <div className="mt-3 space-y-2 border-t border-[#e7ece3] pt-3">
-                <div className="flex items-center justify-between"><span>Vision</span><span className="text-amber-600">{status?.vision ?? 'NOT_CONFIGURED'}</span></div>
+                <div className="flex items-center justify-between"><span>Vision</span><span className={status?.vision === 'CONFIGURED' ? 'text-emerald-600' : 'text-amber-600'}>{status?.vision ?? 'NOT_CONFIGURED'}</span></div>
                 <div className="flex items-center justify-between"><span>Mode</span><span className="text-[#26362a]">{status?.mode ?? '—'}</span></div>
                 <div className="flex items-center justify-between"><span>Answers from records</span><span className="text-emerald-600">Always</span></div>
               </div>

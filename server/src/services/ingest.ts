@@ -228,8 +228,60 @@ const POLLUTANT_MAP: Record<string, string> = {
   SO2: 'so2',
   CO: 'co',
   O3: 'o3',
+  OZONE: 'o3',
   NH3: 'nh3',
 };
+
+/**
+ * data.gov.in publishes `DD-MM-YYYY HH:mm:ss` in IST. Passing that string to
+ * Date.parse reads it as MM-DD-YYYY, so parse it explicitly.
+ */
+function parseDataGovInTimestamp(raw: unknown): Date | null {
+  const value = String(raw ?? '').trim();
+  const match = value.match(/^(\d{2})-(\d{2})-(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  const parsed = match
+    ? new Date(`${match[3]}-${match[2]}-${match[1]}T${match[4]}:${match[5]}:${match[6] ?? '00'}+05:30`)
+    : new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+/** Map one data.gov.in CPCB record to the fields the database expects. */
+export function parseDataGovInRecord(record: Record<string, unknown>): {
+  stationName: string;
+  lat: number;
+  lng: number;
+  pollutant: string;
+  value: number;
+  unit: string;
+  observedAt: Date;
+} | null {
+  const lat = Number(record.latitude);
+  const lng = Number(record.longitude);
+  if (!isWithinMumbai(lat, lng)) return null;
+  const pollutant = POLLUTANT_MAP[String(record.pollutant_id ?? '').toUpperCase()];
+  if (!pollutant) return null;
+  const rawReading = String(record.avg_value ?? record.pollutant_avg ?? '').trim();
+  if (!rawReading || rawReading.toUpperCase() === 'NA') return null;
+  const rawValue = Number(rawReading);
+  if (!Number.isFinite(rawValue)) return null;
+  // The current resource omits the unit; CPCB reports CO in mg/m³ and the
+  // remaining pollutants in µg/m³. An explicit unit still wins if present.
+  const rawUnit = String(record.pollutant_unit ?? '').trim();
+  const unit = rawUnit && rawUnit.toUpperCase() !== 'NA' ? rawUnit : pollutant === 'co' ? 'mg/m³' : 'µg/m³';
+  const normalised = normalisePollutantUnit(pollutant, rawValue, unit);
+  if (!normalised) return null;
+  const observedAt = parseDataGovInTimestamp(record.last_update);
+  if (!observedAt) return null;
+  return {
+    stationName: String(record.station ?? 'Unknown CPCB station'),
+    lat,
+    lng,
+    pollutant,
+    value: normalised.value,
+    unit: normalised.unit,
+    observedAt,
+  };
+}
 
 /**
  * data.gov.in CPCB adapter. Runs only when both an API key and a verified
@@ -254,19 +306,9 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
     if (!response.ok) throw new Error(`data.gov.in ${response.status}`);
     const data = (await response.json()) as { records?: Array<Record<string, unknown>> };
     for (const record of data.records ?? []) {
-      const lat = Number(record.latitude);
-      const lng = Number(record.longitude);
-      if (!isWithinMumbai(lat, lng)) continue;
-      const pollutantRaw = String(record.pollutant_id ?? '').toUpperCase();
-      const pollutant = POLLUTANT_MAP[pollutantRaw];
-      if (!pollutant) continue;
-      const rawValue = Number(record.pollutant_avg);
-      if (!Number.isFinite(rawValue)) continue;
-      const normalised = normalisePollutantUnit(pollutant, rawValue, String(record.pollutant_unit ?? ''));
-      if (!normalised) continue;
-      const observedAt = new Date(String(record.last_update));
-      if (!Number.isFinite(observedAt.getTime())) continue;
-      const stationName = String(record.station ?? 'Unknown CPCB station');
+      const parsed = parseDataGovInRecord(record);
+      if (!parsed) continue;
+      const { stationName, lat, lng, pollutant, value, unit, observedAt } = parsed;
       const code = `DATA_GOV_IN:${stationName}`;
       const station = await one<{ id: string }>(
         `INSERT INTO monitoring_stations (code, name, provider, station_type, location, is_simulated, metadata)
@@ -294,8 +336,8 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
         [
           station.id,
           pollutant,
-          normalised.value,
-          normalised.unit,
+          value,
+          unit,
           observedAt.toISOString(),
           sourceId,
           String(record.id ?? `${stationName}:${pollutant}:${observedAt.toISOString()}`),
@@ -307,11 +349,14 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
       records += 1;
     }
     await markSourceSuccess(sourceId, records);
+    // The public CPCB card describes this same feed; keep its status honest.
+    await markSourceSuccess('cpcb-caaqms', records);
     await finishJob(jobId, 'SUCCESS', records);
     return { records };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'data.gov.in ingestion failed';
     await markSourceFailure(sourceId, message);
+    await markSourceFailure('cpcb-caaqms', message);
     await finishJob(jobId, 'FAILED', records, message);
     return { records, message };
   }

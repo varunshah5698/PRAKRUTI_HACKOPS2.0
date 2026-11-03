@@ -25,7 +25,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Demo monitoring stations | **SIMULATION DATA** — 15 synthetic stations, every record `is_simulated=true` |
 | Weather | **LIVE** — Open-Meteo at station coordinates |
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |
-| LightGBM / quantile / deterioration models | **TRAINED LOCALLY** — 23-station OpenAQ Mumbai extract, 2025-11-01 to 2026-10-27; metrics in `ml/artifacts/model_card.json`. Artifacts are gitignored, so a clean or Render deployment stays `NOT_TRAINED` until they are force-added. |
+| LightGBM / quantile / exceedance models | **TRAINED LOCALLY** — 23-station OpenAQ Mumbai extract, 2025-03-01 to 2026-10-27; temporal and spatial-holdout metrics in `ml/artifacts/model_card.json`. Artifacts are gitignored, so a clean or Render deployment stays `NOT_TRAINED` until they are force-added. |
 | Anomaly detector | **NOT TRAINED** — `ZSCORE_V1` analytical check only |
 | Forecasts shown | **LIGHTGBM_TRAINED when `ML_SERVICE_URL` points at the local service**; otherwise the labelled `PERSISTENCE_BASELINE_V1` with an empirical, non-calibrated band |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
@@ -149,10 +149,12 @@ Notes:
 ## Trained ML service
 
 `ml/fetch_real_data.py` builds a traceable Mumbai extract from OpenAQ station
-measurements and Open-Meteo ERA5 weather. The reference extract covers
-2025-11-01 to 2026-10-27, 23 stations and 198,720 station-hours; raw sub-hourly
-readings are aggregated to hourly means and gaps are not imputed. Sources, QC
-rules, unit conversions and the CSV SHA-256 are in
+measurements and, where available, co-located station weather. The reference
+extract covers 2025-03-01 to 2026-10-27, 23 stations and 333,960 station-hours.
+Raw sub-hourly readings are aggregated to hourly means and gaps are not imputed.
+Station weather covers 51% of temperature, 52% of humidity and 31% of wind
+observations; Open-Meteo ERA5 reanalysis fills the remaining hours. Sources, QC
+rules, unit conversions, per-station weather coverage and the CSV SHA-256 are in
 `ml/data/mumbai_air_quality_archive.meta.json`.
 
 ```bash
@@ -167,17 +169,19 @@ python train.py --input data/mumbai_air_quality_archive.csv --output artifacts
 uvicorn serve:app --host 0.0.0.0 --port 8000
 ```
 
-Chronological hold-out (Sep-Oct 2026) versus persistence:
+Chronological hold-out (Jul-Oct 2026) versus persistence:
 
-| Horizon | Model MAE | Persistence MAE | Skill |
-|---|---|---|---|
-| 1h | 3.74 µg/m³ | 3.88 µg/m³ | +3.6% |
-| 3h | 6.05 µg/m³ | 6.92 µg/m³ | +12.5% |
-| 6h | 7.06 µg/m³ | 8.73 µg/m³ | +19.2% |
+| Horizon | Model MAE | Persistence MAE | Skill | 80% interval coverage |
+|---|---|---|---|---|
+| 1h | 3.48 µg/m³ | 3.61 µg/m³ | +3.6% | 0.784 |
+| 3h | 5.33 µg/m³ | 6.14 µg/m³ | +13.2% | 0.808 |
+| 6h | 6.06 µg/m³ | 7.51 µg/m³ | +19.4% | 0.823 |
 
-The 80% quantile interval coverage is 0.82 at every horizon. The 3h >60 µg/m³
-classifier has ROC-AUC 0.959, PR-AUC 0.745 and Brier 0.042. Full metrics,
-per-station errors, SHAP values and limitations are in
+A separate spatial holdout retrains without five geographically spread stations
+(Colaba, Sion, Borivali East MPCB, Deonar and Andheri East) and scores those
+unseen stations: skill is +3.4% / +14.4% / +21.4% at 1h / 3h / 6h. The 3h
+>60 µg/m³ classifier has ROC-AUC 0.973, PR-AUC 0.741 and Brier 0.026. Full
+metrics, per-station errors, SHAP values and limitations are in
 `ml/artifacts/model_card.json` and `ml/artifacts/metrics.json`.
 
 Register the model once per database, set `ML_SERVICE_URL=http://localhost:8000`
@@ -260,6 +264,7 @@ npm test
 - [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)
 - [docs/ML_METHODOLOGY.md](docs/ML_METHODOLOGY.md)
 - [docs/MODEL_CARD.md](docs/MODEL_CARD.md)
+- [docs/MODEL_REVIEW.md](docs/MODEL_REVIEW.md)
 - [docs/RISK_METHODOLOGY.md](docs/RISK_METHODOLOGY.md)
 - [docs/REGULATORY_SOURCES.md](docs/REGULATORY_SOURCES.md)
 - [docs/SECURITY.md](docs/SECURITY.md)

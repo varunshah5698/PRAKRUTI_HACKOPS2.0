@@ -88,6 +88,11 @@ const fallbackModels =
   env.VISION_FALLBACK_MODELS ||
   (fallbackBaseURL.includes('river.ai') ? env.RIVER_MODEL : '');
 
+// A configured fallback alone is enough to assess images. This keeps vision
+// working on Render when VISION_API_KEY is left blank but RIVER_API_KEY is set.
+const primaryVisionConfigured = Boolean(env.VISION_BASE_URL && env.VISION_MODEL && env.VISION_API_KEY);
+const fallbackVisionConfigured = Boolean(fallbackBaseURL && fallbackApiKey && fallbackModels);
+
 export const visionConfig = {
   baseURL: env.VISION_BASE_URL,
   model: env.VISION_MODEL,
@@ -95,7 +100,7 @@ export const visionConfig = {
   fallbackBaseURL,
   fallbackApiKey,
   fallbackModels,
-  configured: Boolean(env.VISION_BASE_URL && env.VISION_MODEL && env.VISION_API_KEY),
+  configured: primaryVisionConfigured || fallbackVisionConfigured,
 };
 
 // SMTP credentials are the switch: adding them enables real delivery even if

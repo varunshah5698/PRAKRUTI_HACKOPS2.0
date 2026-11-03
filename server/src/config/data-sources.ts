@@ -27,11 +27,13 @@ export const DATA_SOURCE_CATALOGUE = [
     name: 'CPCB CAAQMS (Mumbai)',
     category: 'air',
     provider: 'Central Pollution Control Board',
-    documentationUrl: 'https://cpcb.nic.in/',
-    attribution: 'CPCB / MPCB official monitoring networks',
-    configured: false,
+    documentationUrl: 'https://www.data.gov.in/datasets_webservices/datasets/3630781',
+    attribution: 'CPCB / MPCB official monitoring networks via data.gov.in',
+    configured: Boolean(env.DATA_GOV_IN_API_KEY && env.DATA_GOV_IN_AIR_RESOURCE_ID),
     notes:
-      'No documented, credentialled CPCB machine API is configured in this deployment. Official CPCB station records are therefore NOT CONNECTED. Demo station records are labelled SIMULATION DATA and never presented as CPCB readings.',
+      env.DATA_GOV_IN_API_KEY && env.DATA_GOV_IN_AIR_RESOURCE_ID
+        ? 'Official CPCB real-time AQI is ingested through the data.gov.in resource. Only stations inside Greater Mumbai are stored. Values are station readings, not an official CPCB AQI.'
+        : 'Set DATA_GOV_IN_API_KEY (free from data.gov.in) to enable the official CPCB real-time AQI feed. Demo station records remain labelled SIMULATION DATA and are never presented as CPCB readings.',
   },
   {
     id: 'mpcb',

@@ -15,6 +15,7 @@ import { REPORT_TRANSITIONS, type ReportStatus } from '../types.js';
 import { evaluateWasteLocalities } from '../services/risk.js';
 import { syncAlertsFromWasteAssessments } from '../services/alerts.js';
 import { notifyReportStatusChange } from '../services/notifications.js';
+import { markSourceSuccess, markSourceFailure } from '../services/sources.js';
 
 export const reportsRouter = Router();
 
@@ -144,6 +145,7 @@ reportsRouter.post('/', optionalAuth, submitLimiter, upload.single('photo'), asy
     if (!row) throw badRequest('Report submission failed.');
 
     let visionStatus: 'COMPLETED' | 'NOT_CONFIGURED' | 'FAILED' = 'NOT_CONFIGURED';
+    let visionMessage: string | null = null;
     if (req.file) {
       const saved = await saveEvidence(req.file.buffer, req.file.mimetype, req.file.originalname);
       let exif: Record<string, unknown> | null = null;
@@ -177,6 +179,13 @@ reportsRouter.post('/', optionalAuth, submitLimiter, upload.single('photo'), asy
       );
       const vision = await analyzeEvidenceImage(req.file.buffer, saved.mime);
       visionStatus = vision.status;
+      if (vision.status === 'COMPLETED') {
+        await markSourceSuccess('vision-ai', 1).catch(() => undefined);
+      } else if (vision.status === 'FAILED') {
+        visionMessage = typeof vision.output.reason === 'string' ? vision.output.reason : null;
+        const error = typeof vision.output.error === 'string' ? vision.output.error : 'Vision provider unavailable';
+        await markSourceFailure('vision-ai', error).catch(() => undefined);
+      }
       const visionModel = vision.provider.startsWith('google:')
         ? vision.provider.slice('google:'.length)
         : vision.provider === 'none' ? null : vision.provider;
@@ -230,7 +239,12 @@ reportsRouter.post('/', optionalAuth, submitLimiter, upload.single('photo'), asy
               message:
                 'No vision-capable model is configured. The River text model is not assumed to inspect images. Initial visual assessment is unavailable.',
             }
-          : { status: visionStatus },
+          : visionStatus === 'FAILED'
+            ? {
+                status: 'FAILED',
+                message: visionMessage ?? 'The vision provider is temporarily unavailable, so this photograph was not assessed. The report itself was saved.',
+              }
+            : { status: visionStatus },
       enrichment,
       note: 'A report is not an official violation. Verification requires an authorised reviewer.',
     });

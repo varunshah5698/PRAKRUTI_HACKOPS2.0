@@ -92,6 +92,7 @@ export async function getSourceStatuses(): Promise<DataSource[]> {
       status = age <= Math.max(5 * 60_000, env.LIVE_SIMULATION_INTERVAL_SECONDS * 4 * 1000) ? 'CONNECTED' : 'STALE';
     }
     if (row.id === 'river-ai' && riverConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';
+    if (row.id === 'vision-ai' && visionConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';
     if (row.id === 'email' && emailConfigured) status = 'CONNECTED';
     return {
       id: row.id,

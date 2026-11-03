@@ -7,6 +7,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../store/auth';
 
 interface PendingRequest { id: string; name: string; email: string; department: string | null; designation: string | null; jurisdiction: string | null; requested_role: string | null; created_at: string }
+interface AiStatus { river: string; model: string | null; vision: string; visionModel: string | null }
 
 export function SettingsPage() {
   const { user, loadMe, can } = useAuth();
@@ -14,9 +15,11 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [pending, setPending] = useState<PendingRequest[]>([]);
   const [roles, setRoles] = useState<Record<string, string>>({});
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
 
   useEffect(() => { setName(user?.name ?? ''); }, [user]);
   useEffect(() => {
+    api.get<AiStatus>('/ai/status').then(setAiStatus).catch(() => undefined);
     if (can(['SYSTEM_ADMIN', 'AUTHORITY_ADMIN'])) {
       api.get<{ requests: PendingRequest[] }>('/auth/admin/pending-authorities').then((res) => setPending(res.requests)).catch(() => undefined);
     }
@@ -116,9 +119,9 @@ export function SettingsPage() {
           {[
             ['Demo mode', 'ON — station data is simulation-labelled'],
             ['CPCB / MPCB', 'NOT_CONFIGURED'],
-            ['River AI', 'Configured server-side only when key is present'],
+            ['River AI', aiStatus ? `${aiStatus.river}${aiStatus.model ? ` · ${aiStatus.model}` : ''}` : 'Checking…'],
             ['ML models', 'NOT_TRAINED — persistence baseline only'],
-            ['Vision AI', 'NOT_CONFIGURED'],
+            ['Vision AI', aiStatus ? `${aiStatus.vision}${aiStatus.visionModel ? ` · ${aiStatus.visionModel}` : ''}` : 'Checking…'],
             ['Email', 'SIMULATED unless provider + demo recipient configured'],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">

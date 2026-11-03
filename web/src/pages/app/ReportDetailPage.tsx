@@ -149,7 +149,7 @@ export function ReportDetailPage() {
               <p className="text-[12px] leading-relaxed text-[#405246]">{data.report.description}</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>Occurred</DataLabel><p className="mt-1 text-[11px] font-medium">{formatDate(data.report.occurred_at)}</p></div>
-                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>AI vision</DataLabel><p className="mt-1 text-[11px] font-medium text-amber-600">{data.report.ai_vision_status.replace(/_/g, ' ')}</p></div>
+                <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>AI vision</DataLabel><p className={`mt-1 text-[11px] font-medium ${data.report.ai_vision_status === 'COMPLETED' ? 'text-emerald-600' : 'text-amber-600'}`}>{data.report.ai_vision_status.replace(/_/g, ' ')}</p></div>
                 <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3"><DataLabel>Consent</DataLabel><p className="mt-1 text-[11px] font-medium">{data.report.consent ? 'Recorded' : 'Not recorded'}</p></div>
               </div>
               {data.evidence.length ? (

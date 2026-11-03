@@ -561,9 +561,12 @@ export async function analyzeEvidenceImage(
       maxTokens: baseURL.includes('river.ai') ? 2000 : 600,
     });
     const attempts = [
-      attemptFor(visionConfig.baseURL, visionConfig.apiKey, visionConfig.model),
+      ...(visionConfig.baseURL && visionConfig.model && visionConfig.apiKey
+        ? [attemptFor(visionConfig.baseURL, visionConfig.apiKey, visionConfig.model)]
+        : []),
       ...fallbackModels
         .filter((model) => model !== visionConfig.model)
+        .filter(() => Boolean(visionConfig.fallbackBaseURL && visionConfig.fallbackApiKey))
         .map((model) => attemptFor(visionConfig.fallbackBaseURL, visionConfig.fallbackApiKey, model)),
     ];
     let lastError = '';
@@ -571,6 +574,11 @@ export async function analyzeEvidenceImage(
       let content = '';
       let parsed: Record<string, unknown> | null = null;
       let finish = 'unknown';
+      const fail = (message: string) => {
+        lastError = message;
+        console.warn(`[vision] ${attempt.model} failed: ${message}`);
+      };
+      console.info(`[vision] requesting ${attempt.model} at ${attempt.base}`);
       try {
         const response = attempt.gemini
           ? await fetch(`${attempt.base}/models/${encodeURIComponent(attempt.model)}:generateContent`, {
@@ -610,7 +618,7 @@ export async function analyzeEvidenceImage(
               signal: AbortSignal.timeout(45_000),
             });
         if (!response.ok) {
-          lastError = `Vision provider HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`;
+          fail(`Vision provider HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`);
           continue;
         }
         if (attempt.gemini) {
@@ -627,7 +635,7 @@ export async function analyzeEvidenceImage(
               .map((part) => part.text ?? '')
               .join('') ?? '';
           if (!content) {
-            lastError = `Gemini vision returned no text (finish: ${finish})`;
+            fail(`Gemini vision returned no text (finish: ${finish})`);
             continue;
           }
         } else {
@@ -635,15 +643,16 @@ export async function analyzeEvidenceImage(
           finish = data.choices?.[0]?.finish_reason ?? 'unknown';
           content = data.choices?.[0]?.message?.content ?? '';
           if (!content) {
-            lastError = 'Vision provider returned no text';
+            fail('Vision provider returned no text');
             continue;
           }
         }
         parsed = parseJson(content);
         if (!parsed) {
-          lastError = `Vision provider returned no parseable JSON (finish: ${finish})`;
+          fail(`Vision provider returned no parseable JSON (finish: ${finish})`);
           continue;
         }
+        console.info(`[vision] ${attempt.model} completed`);
         return {
           status: 'COMPLETED',
           provider: attempt.gemini ? `google:${attempt.model}` : attempt.model,
@@ -656,28 +665,31 @@ export async function analyzeEvidenceImage(
           },
         };
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Vision request failed';
+        fail(error instanceof Error ? error.message : 'Vision request failed');
       }
     }
     throw new Error(lastError || 'Vision provider unavailable');
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Vision analysis failed';
+    console.warn(`[vision] analysis failed: ${message}`);
     return {
       status: 'FAILED',
       provider: visionConfig.model,
       output: {
         reason: 'The vision provider is temporarily unavailable, so this photograph was not assessed. The report itself was saved.',
-        error: error instanceof Error ? error.message : 'Vision analysis failed',
+        error: message,
       },
     };
   }
 }
 
 export function aiStatus() {
+  const visionModel = visionConfig.apiKey ? visionConfig.model : visionConfig.fallbackModels;
   return {
     river: riverConfig.configured ? 'CONFIGURED' : 'NOT_CONFIGURED',
     model: riverConfig.configured ? riverConfig.model : null,
     vision: visionConfig.configured ? 'CONFIGURED' : 'NOT_CONFIGURED',
-    visionModel: visionConfig.configured ? visionConfig.model : null,
+    visionModel: visionConfig.configured ? visionModel : null,
     mode: riverConfig.configured ? 'RIVER_AI' : 'RULE_BASED_EVIDENCE_DIGEST',
     note: riverConfig.configured
       ? "I'm connected to the language model and will keep answers grounded in the app's records."

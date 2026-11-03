@@ -16,7 +16,7 @@ OpenAQ v3 hourly API (rate-limited, paginated):
 
 ```bash
 cd ml
-python fetch_real_data.py --start 2025-11-01 --end 2026-10-27
+python fetch_real_data.py --start 2025-03-01 --end 2026-10-27
 python train.py --input data/mumbai_air_quality.csv --output artifacts
 ```
 
@@ -25,7 +25,7 @@ means by this script):
 
 ```bash
 cd ml
-python fetch_real_data.py --source archive --start 2025-11-01 --end 2026-10-27 \
+python fetch_real_data.py --source archive --start 2025-03-01 --end 2026-10-27 \
   --output data/mumbai_air_quality_archive.csv \
   --metadata data/mumbai_air_quality_archive.meta.json
 python train.py --input data/mumbai_air_quality_archive.csv --output artifacts
@@ -39,19 +39,21 @@ What the fetcher does:
   the usual cadence;
 - converts NO2/SO2/O3 from ppb to µg/m³ and CO from the CPCB mg/m³ feed (OpenAQ
   labels the CO values ppb, but the values are ppm; see the sidecar metadata);
-- fills weather from the Open-Meteo ERA5 archive, which is **reanalysis, not a
-  co-located station measurement**;
+- uses co-located OpenAQ station weather where available (51% temperature, 52%
+  humidity, 31% wind coverage) and fills missing hours from the Open-Meteo ERA5
+  archive; precipitation remains ERA5-only;
 - writes `*.meta.json` with sources, station/sensor IDs, coverage, QC rules,
-  conversions and a SHA-256 of the CSV.
+  conversions, per-station weather coverage and a SHA-256 of the CSV.
 
-The 2025-11-01 to 2026-10-27 extract contains 23 stations and 198,720 station-hours
-(72% PM2.5 coverage, 100% weather coverage). Re-running is cheap because raw
-OpenAQ pages and S3 daily files are cached under `data/raw/`.
+The 2025-03-01 to 2026-10-27 extract contains 23 stations and 333,960 station-hours
+(74.5% PM2.5 coverage). Re-running is cheap because raw OpenAQ pages, S3 daily
+files and Open-Meteo responses are cached under `data/raw/`.
 
-The local reference artifacts (`lightgbm-202611030753-34f9567a`) score 3.74 / 6.05 /
-7.06 µg/m³ MAE at 1 / 3 / 6h versus 3.88 / 6.92 / 8.73 for persistence; 80%
-quantile coverage is 0.82 at every horizon. See `docs/MODEL_CARD.md` for the
-full evaluation and limitations.
+The local reference artifacts (`lightgbm-202611030821-ed07b475`) score 3.48 / 5.33 /
+6.06 µg/m³ MAE at 1 / 3 / 6h versus 3.61 / 6.14 / 7.51 for persistence; 80%
+quantile coverage is 0.78 / 0.81 / 0.82. A separate spatial holdout on five unseen
+stations beats persistence by 3.4% / 14.4% / 21.4%. See `docs/MODEL_CARD.md` for
+the full evaluation and limitations.
 
 ## Expected input
 

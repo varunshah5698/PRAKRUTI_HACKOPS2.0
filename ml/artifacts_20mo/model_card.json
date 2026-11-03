@@ -1,0 +1,767 @@
+{
+  "model_version": "lightgbm-202611030821-ed07b475",
+  "trained_at": "2026-11-03T08:21:40.208552+00:00",
+  "dataset": "data/mumbai_air_quality_20mo.csv",
+  "dataset_sha256": "ed07b475c1e4620acca6c8b59fc782fc064d60e8a954a78e57dc1e121255fb21",
+  "dataset_metadata": "data/mumbai_air_quality_20mo.meta.json",
+  "rows_raw": 248855,
+  "rows": 248717,
+  "stations": 23,
+  "date_range": {
+    "start": "2025-03-01T00:00:00+00:00",
+    "end": "2026-10-23T09:00:00+00:00"
+  },
+  "rows_per_station": {
+    "OPENAQ-11606": 12772,
+    "OPENAQ-11611": 12889,
+    "OPENAQ-12024": 12242,
+    "OPENAQ-12039": 6491,
+    "OPENAQ-12040": 11089,
+    "OPENAQ-3409323": 9850,
+    "OPENAQ-3409328": 8540,
+    "OPENAQ-3409329": 11160,
+    "OPENAQ-3409479": 11945,
+    "OPENAQ-3409482": 11905,
+    "OPENAQ-3409483": 11741,
+    "OPENAQ-3409486": 12320,
+    "OPENAQ-3409510": 12141,
+    "OPENAQ-3409511": 12507,
+    "OPENAQ-3409512": 10411,
+    "OPENAQ-3409513": 7926,
+    "OPENAQ-3409514": 12235,
+    "OPENAQ-6927": 9167,
+    "OPENAQ-6945": 10932,
+    "OPENAQ-6956": 9727,
+    "OPENAQ-6959": 11575,
+    "OPENAQ-6965": 9138,
+    "OPENAQ-6967": 10152
+  },
+  "missing_fraction_raw": {
+    "pm25": 0.0,
+    "pm10": 0.0392,
+    "no2": 0.0456,
+    "so2": 0.1938,
+    "co": 0.102,
+    "o3": 0.1355,
+    "temperature": 0.0,
+    "humidity": 0.0001,
+    "wind_speed": 0.0,
+    "wind_dir": 0.0,
+    "precipitation": 0.0
+  },
+  "train_rows": 176997,
+  "validation_rows": 34601,
+  "test_rows": 37119,
+  "split": {
+    "method": "chronological 70/15/15 by global timestamp; no random shuffle",
+    "train": {
+      "rows": 176997,
+      "stations": 23,
+      "start": "2025-03-01T00:00:00+00:00",
+      "end": "2026-04-27T07:00:00+00:00"
+    },
+    "validation": {
+      "rows": 34601,
+      "stations": 23,
+      "start": "2026-04-27T08:00:00+00:00",
+      "end": "2026-07-26T10:00:00+00:00"
+    },
+    "test": {
+      "rows": 37119,
+      "stations": 23,
+      "start": "2026-07-26T11:00:00+00:00",
+      "end": "2026-10-23T09:00:00+00:00"
+    }
+  },
+  "features": [
+    "pm25",
+    "pm10",
+    "no2",
+    "so2",
+    "co",
+    "o3",
+    "temperature",
+    "humidity",
+    "wind_speed",
+    "wind_dir",
+    "precipitation",
+    "pm25_lag_1",
+    "pm25_lag_2",
+    "pm25_lag_3",
+    "pm25_lag_6",
+    "pm25_lag_12",
+    "pm25_lag_24",
+    "pm25_roll_mean_3",
+    "pm25_roll_mean_6",
+    "pm25_roll_mean_24",
+    "hour",
+    "day_of_week",
+    "month",
+    "wind_dir_sin",
+    "wind_dir_cos"
+  ],
+  "targets": {
+    "regression": [
+      "pm25 at +1h",
+      "pm25 at +3h",
+      "pm25 at +6h"
+    ],
+    "classifier": "target_3h > 60 ug/m3 (CPCB 24-hour PM2.5 standard used as an hourly exceedance indicator)"
+  },
+  "metrics": {
+    "pm25_1h": {
+      "model": {
+        "mae": 3.476998630029352,
+        "rmse": 9.355665079196717,
+        "n": 37119
+      },
+      "persistence_baseline": {
+        "mae": 3.606485649757088,
+        "rmse": 10.227519839905971,
+        "n": 37119
+      },
+      "skill_vs_persistence": 0.03590393316453577,
+      "per_station": {
+        "OPENAQ-11606": {
+          "mae": 3.6163082481772952,
+          "rmse": 4.790220856847853,
+          "n": 1863
+        },
+        "OPENAQ-11611": {
+          "mae": 3.4629548478213152,
+          "rmse": 4.670930435948755,
+          "n": 1889
+        },
+        "OPENAQ-12024": {
+          "mae": 2.242936044213847,
+          "rmse": 3.7832729691906115,
+          "n": 1871
+        },
+        "OPENAQ-12039": {
+          "mae": 4.633630191382455,
+          "rmse": 6.729587048757509,
+          "n": 1798
+        },
+        "OPENAQ-12040": {
+          "mae": 2.814351102870587,
+          "rmse": 4.024759793531212,
+          "n": 1716
+        },
+        "OPENAQ-3409323": {
+          "mae": 5.4804726083750355,
+          "rmse": 9.271101447224575,
+          "n": 1696
+        },
+        "OPENAQ-3409328": {
+          "mae": 5.107498629424369,
+          "rmse": 7.2226129500339304,
+          "n": 1084
+        },
+        "OPENAQ-3409329": {
+          "mae": 4.645152198250259,
+          "rmse": 6.510636749838889,
+          "n": 1841
+        },
+        "OPENAQ-3409479": {
+          "mae": 3.0352537998766786,
+          "rmse": 10.71551371351312,
+          "n": 1665
+        },
+        "OPENAQ-3409482": {
+          "mae": 3.5957980607252273,
+          "rmse": 5.087265947516337,
+          "n": 1764
+        },
+        "OPENAQ-3409483": {
+          "mae": 3.1317348038289126,
+          "rmse": 18.751668656325883,
+          "n": 1701
+        },
+        "OPENAQ-3409486": {
+          "mae": 3.193835234391977,
+          "rmse": 4.841711546726502,
+          "n": 1910
+        },
+        "OPENAQ-3409510": {
+          "mae": 1.9487077475375207,
+          "rmse": 2.9246618358723313,
+          "n": 1888
+        },
+        "OPENAQ-3409511": {
+          "mae": 2.9229112854804415,
+          "rmse": 4.020449627920436,
+          "n": 1932
+        },
+        "OPENAQ-3409512": {
+          "mae": 2.940502761698723,
+          "rmse": 10.23270561034266,
+          "n": 1937
+        },
+        "OPENAQ-3409513": {
+          "mae": 2.7620431690561396,
+          "rmse": 11.154837665976093,
+          "n": 1769
+        },
+        "OPENAQ-3409514": {
+          "mae": 3.017875542418934,
+          "rmse": 4.29170825188415,
+          "n": 1753
+        },
+        "OPENAQ-6927": {
+          "mae": 2.314280664448202,
+          "rmse": 3.5145504344111895,
+          "n": 391
+        },
+        "OPENAQ-6945": {
+          "mae": 5.297468382492933,
+          "rmse": 8.28548495717548,
+          "n": 1622
+        },
+        "OPENAQ-6956": {
+          "mae": 7.135122471119333,
+          "rmse": 40.529600372523944,
+          "n": 654
+        },
+        "OPENAQ-6959": {
+          "mae": 3.011489836923396,
+          "rmse": 5.4331417596339975,
+          "n": 1567
+        },
+        "OPENAQ-6965": {
+          "mae": 3.403394483084852,
+          "rmse": 5.937942909748194,
+          "n": 1277
+        },
+        "OPENAQ-6967": {
+          "mae": 2.477072955530564,
+          "rmse": 7.432000863298943,
+          "n": 1531
+        }
+      },
+      "horizon_hours": 1,
+      "best_iteration": 123
+    },
+    "pm25_1h_quantile_80": {
+      "coverage": 0.7844769525041084,
+      "target_coverage": 0.8,
+      "mean_width": 10.021157561513938,
+      "crossing_rate": 0.0,
+      "note": "Coverage measured on the chronological test partition; bounds clamped at zero."
+    },
+    "pm25_3h": {
+      "model": {
+        "mae": 5.329232238113303,
+        "rmse": 11.05279833970688,
+        "n": 37119
+      },
+      "persistence_baseline": {
+        "mae": 6.136764437799151,
+        "rmse": 14.202048064423249,
+        "n": 37119
+      },
+      "skill_vs_persistence": 0.1315892450933731,
+      "per_station": {
+        "OPENAQ-11606": {
+          "mae": 4.940440037719996,
+          "rmse": 6.501972822653221,
+          "n": 1863
+        },
+        "OPENAQ-11611": {
+          "mae": 5.472750152959385,
+          "rmse": 7.360812402280366,
+          "n": 1889
+        },
+        "OPENAQ-12024": {
+          "mae": 3.769325499451394,
+          "rmse": 5.862254633441567,
+          "n": 1871
+        },
+        "OPENAQ-12039": {
+          "mae": 6.818012699654865,
+          "rmse": 9.566852471422983,
+          "n": 1798
+        },
+        "OPENAQ-12040": {
+          "mae": 4.762349101093753,
+          "rmse": 6.89032490461903,
+          "n": 1716
+        },
+        "OPENAQ-3409323": {
+          "mae": 8.512790228961181,
+          "rmse": 12.852850872231661,
+          "n": 1696
+        },
+        "OPENAQ-3409328": {
+          "mae": 6.999835531868537,
+          "rmse": 9.606637834630238,
+          "n": 1084
+        },
+        "OPENAQ-3409329": {
+          "mae": 6.992744479557228,
+          "rmse": 9.409165230553604,
+          "n": 1841
+        },
+        "OPENAQ-3409479": {
+          "mae": 4.802800608051222,
+          "rmse": 12.311843062706325,
+          "n": 1665
+        },
+        "OPENAQ-3409482": {
+          "mae": 6.068889625000787,
+          "rmse": 8.080251451790128,
+          "n": 1764
+        },
+        "OPENAQ-3409483": {
+          "mae": 4.074026665807794,
+          "rmse": 18.905708292237822,
+          "n": 1701
+        },
+        "OPENAQ-3409486": {
+          "mae": 4.927823413964061,
+          "rmse": 7.157938761162075,
+          "n": 1910
+        },
+        "OPENAQ-3409510": {
+          "mae": 3.4361592312547007,
+          "rmse": 4.986101322041502,
+          "n": 1888
+        },
+        "OPENAQ-3409511": {
+          "mae": 4.6133427975170385,
+          "rmse": 6.2341235932377685,
+          "n": 1932
+        },
+        "OPENAQ-3409512": {
+          "mae": 4.377436324430397,
+          "rmse": 11.806365507131627,
+          "n": 1937
+        },
+        "OPENAQ-3409513": {
+          "mae": 4.315120834279389,
+          "rmse": 12.646771359339525,
+          "n": 1769
+        },
+        "OPENAQ-3409514": {
+          "mae": 5.130460713688469,
+          "rmse": 7.307407900697584,
+          "n": 1753
+        },
+        "OPENAQ-6927": {
+          "mae": 4.473153787665435,
+          "rmse": 5.986649870411831,
+          "n": 391
+        },
+        "OPENAQ-6945": {
+          "mae": 8.76665372649942,
+          "rmse": 12.460331817799082,
+          "n": 1622
+        },
+        "OPENAQ-6956": {
+          "mae": 8.883516532592248,
+          "rmse": 41.125113064384344,
+          "n": 654
+        },
+        "OPENAQ-6959": {
+          "mae": 4.5379603543299805,
+          "rmse": 7.785787782585069,
+          "n": 1567
+        },
+        "OPENAQ-6965": {
+          "mae": 4.27953531927135,
+          "rmse": 6.985116061133024,
+          "n": 1277
+        },
+        "OPENAQ-6967": {
+          "mae": 3.909826628445995,
+          "rmse": 9.171501470867685,
+          "n": 1531
+        }
+      },
+      "horizon_hours": 3,
+      "best_iteration": 110
+    },
+    "pm25_3h_quantile_80": {
+      "coverage": 0.8079150839192866,
+      "target_coverage": 0.8,
+      "mean_width": 16.742439802617728,
+      "crossing_rate": 0.0,
+      "note": "Coverage measured on the chronological test partition; bounds clamped at zero."
+    },
+    "pm25_6h": {
+      "model": {
+        "mae": 6.057689014913105,
+        "rmse": 11.822831546918984,
+        "n": 37119
+      },
+      "persistence_baseline": {
+        "mae": 7.5114197805256975,
+        "rmse": 15.526836059995034,
+        "n": 37119
+      },
+      "skill_vs_persistence": 0.1935360834687435,
+      "per_station": {
+        "OPENAQ-11606": {
+          "mae": 5.707704087503517,
+          "rmse": 7.663275837050069,
+          "n": 1863
+        },
+        "OPENAQ-11611": {
+          "mae": 6.027804649183745,
+          "rmse": 8.361194752350443,
+          "n": 1889
+        },
+        "OPENAQ-12024": {
+          "mae": 4.459324167935131,
+          "rmse": 7.045326022073718,
+          "n": 1871
+        },
+        "OPENAQ-12039": {
+          "mae": 7.230849903069195,
+          "rmse": 10.363215419594209,
+          "n": 1798
+        },
+        "OPENAQ-12040": {
+          "mae": 5.5798107085894415,
+          "rmse": 7.932972390451095,
+          "n": 1716
+        },
+        "OPENAQ-3409323": {
+          "mae": 8.387307093659347,
+          "rmse": 13.318034004745812,
+          "n": 1696
+        },
+        "OPENAQ-3409328": {
+          "mae": 7.771604087735728,
+          "rmse": 10.89353198291598,
+          "n": 1084
+        },
+        "OPENAQ-3409329": {
+          "mae": 7.804843061625925,
+          "rmse": 10.417487466760269,
+          "n": 1841
+        },
+        "OPENAQ-3409479": {
+          "mae": 5.7503053396089445,
+          "rmse": 13.33750496426286,
+          "n": 1665
+        },
+        "OPENAQ-3409482": {
+          "mae": 7.494037309407903,
+          "rmse": 9.684931055503354,
+          "n": 1764
+        },
+        "OPENAQ-3409483": {
+          "mae": 4.6522570290757965,
+          "rmse": 19.300599237263167,
+          "n": 1701
+        },
+        "OPENAQ-3409486": {
+          "mae": 5.902198839105466,
+          "rmse": 8.636139080900682,
+          "n": 1910
+        },
+        "OPENAQ-3409510": {
+          "mae": 4.319033176186395,
+          "rmse": 6.541021070268648,
+          "n": 1888
+        },
+        "OPENAQ-3409511": {
+          "mae": 5.3888716387464495,
+          "rmse": 7.3124542906523935,
+          "n": 1932
+        },
+        "OPENAQ-3409512": {
+          "mae": 4.8794214956047695,
+          "rmse": 12.12146926795509,
+          "n": 1937
+        },
+        "OPENAQ-3409513": {
+          "mae": 5.303561007709273,
+          "rmse": 13.285720704993997,
+          "n": 1769
+        },
+        "OPENAQ-3409514": {
+          "mae": 6.418696323594673,
+          "rmse": 9.302653892445765,
+          "n": 1753
+        },
+        "OPENAQ-6927": {
+          "mae": 5.420587007484029,
+          "rmse": 6.92749164863908,
+          "n": 391
+        },
+        "OPENAQ-6945": {
+          "mae": 9.721688227376319,
+          "rmse": 13.391942231844151,
+          "n": 1622
+        },
+        "OPENAQ-6956": {
+          "mae": 9.707789011818175,
+          "rmse": 41.72505669954466,
+          "n": 654
+        },
+        "OPENAQ-6959": {
+          "mae": 4.3200846600458895,
+          "rmse": 7.415079902671758,
+          "n": 1567
+        },
+        "OPENAQ-6965": {
+          "mae": 4.804026602359266,
+          "rmse": 7.77056318896416,
+          "n": 1277
+        },
+        "OPENAQ-6967": {
+          "mae": 4.653979403018219,
+          "rmse": 9.626745743828671,
+          "n": 1531
+        }
+      },
+      "horizon_hours": 6,
+      "best_iteration": 112
+    },
+    "pm25_6h_quantile_80": {
+      "coverage": 0.8225437107680703,
+      "target_coverage": 0.8,
+      "mean_width": 20.289870556287127,
+      "crossing_rate": 0.0,
+      "note": "Coverage measured on the chronological test partition; bounds clamped at zero."
+    },
+    "deterioration_classifier_3h": {
+      "label": "target_3h > 60 ug/m3 (CPCB 24-hour PM2.5 standard used as an hourly exceedance indicator)",
+      "precision": 0.7475333720255368,
+      "recall": 0.5940959409594095,
+      "pr_auc": 0.741458241229767,
+      "roc_auc": 0.9725356867563983,
+      "brier": 0.025889392707527447,
+      "positive_rate_train": 0.15152234218659072,
+      "positive_rate_validation": 0.018756683332851652,
+      "positive_rate_test": 0.05840674587138662,
+      "calibration": "isotonic, 5-fold out-of-fold predictions on the training partition",
+      "cv_folds": 5,
+      "n": 37119
+    }
+  },
+  "spatial_holdout": {
+    "status": "COMPLETED",
+    "holdout_stations": [
+      "OPENAQ-12024",
+      "OPENAQ-3409329",
+      "OPENAQ-6927",
+      "OPENAQ-6965",
+      "OPENAQ-6967"
+    ],
+    "train_stations": 18,
+    "test_rows": 6911,
+    "metrics": {
+      "pm25_1h": {
+        "model": {
+          "mae": 3.1226290454544854,
+          "rmse": 5.990265375900966,
+          "n": 6911
+        },
+        "persistence_baseline": {
+          "mae": 3.2335894467756723,
+          "rmse": 6.393638138653845,
+          "n": 6911
+        },
+        "skill_vs_persistence": 0.034314931795633274,
+        "horizon_hours": 1,
+        "best_iteration": 169
+      },
+      "pm25_3h": {
+        "model": {
+          "mae": 4.727662911165191,
+          "rmse": 7.870722106491868,
+          "n": 6911
+        },
+        "persistence_baseline": {
+          "mae": 5.5208881975594455,
+          "rmse": 9.66143890080922,
+          "n": 6911
+        },
+        "skill_vs_persistence": 0.1436771146253073,
+        "horizon_hours": 3,
+        "best_iteration": 161
+      },
+      "pm25_6h": {
+        "model": {
+          "mae": 5.458867732082391,
+          "rmse": 8.73821337661137,
+          "n": 6911
+        },
+        "persistence_baseline": {
+          "mae": 6.948497684850239,
+          "rmse": 11.317343129233608,
+          "n": 6911
+        },
+        "skill_vs_persistence": 0.21438158582331812,
+        "horizon_hours": 6,
+        "best_iteration": 167
+      }
+    },
+    "note": "Models were retrained without the holdout stations and scored on the holdout stations' chronological test rows. This checks spatial transfer, not the deployed model's temporal holdout."
+  },
+  "skill_vs_persistence": {
+    "1h": 0.03590393316453577,
+    "3h": 0.1315892450933731,
+    "6h": 0.1935360834687435
+  },
+  "horizons_beating_persistence": [
+    1,
+    3,
+    6
+  ],
+  "deployment_recommendation": "APPROVED",
+  "deployment_reason": "The 3h and 6h regressors beat persistence on the chronological test partition.",
+  "data_sources": {
+    "air_quality": "OpenAQ S3 daily archive, raw station measurements aggregated to hourly means (provider CPCB; owners MPCB/BMC/IITM)",
+    "weather": "Co-located OpenAQ station weather measurements where available; Open-Meteo ERA5 reanalysis fills missing hours. Per-station measured fractions are recorded in stations[].weather."
+  },
+  "data_qc": {
+    "coverage_gate_per_hour": "archived hours need >= 2 raw readings when the sensor cadence is sub-hourly",
+    "pm25_station_gate": ">= 30% hourly coverage and >= 2000 rows",
+    "bounds": {
+      "pm25": [
+        0.0,
+        1000.0
+      ],
+      "pm10": [
+        0.0,
+        2000.0
+      ],
+      "no2": [
+        0.0,
+        2000.0
+      ],
+      "so2": [
+        0.0,
+        2000.0
+      ],
+      "co": [
+        0.0,
+        50.0
+      ],
+      "o3": [
+        0.0,
+        1000.0
+      ],
+      "temperature": [
+        -5.0,
+        50.0
+      ],
+      "humidity": [
+        0.0,
+        100.0
+      ],
+      "wind_speed": [
+        0.0,
+        150.0
+      ],
+      "wind_dir": [
+        0.0,
+        360.0
+      ],
+      "precipitation": [
+        0.0,
+        500.0
+      ]
+    },
+    "mostly_zero_pollutant_dropped": "> 50% zero values",
+    "gaps": "left as NaN; no interpolation",
+    "provider_filter": "station owner/provider contains MPCB, BMC, IITM or CPCB; location active within 21 days"
+  },
+  "unit_conversions": {
+    "no2_ppb_to_ugm3": 1.8816,
+    "so2_ppb_to_ugm3": 2.6203,
+    "o3_ppb_to_ugm3": 1.9631,
+    "co_ppb_label_to_mgm3": 1.145,
+    "co_note": "CPCB CO feed is mg/m3; OpenAQ labels it ppb but values are ppm (legacy co-located sensor cross-check)."
+  },
+  "shap": {
+    "method": "TreeExplainer",
+    "sample_rows": 200,
+    "features": [
+      {
+        "feature": "pm25",
+        "mean_abs_shap": 7.72433091663851
+      },
+      {
+        "feature": "pm25_roll_mean_24",
+        "mean_abs_shap": 2.8934447552039155
+      },
+      {
+        "feature": "pm25_roll_mean_6",
+        "mean_abs_shap": 2.335561299193245
+      },
+      {
+        "feature": "pm25_lag_2",
+        "mean_abs_shap": 1.066414752304505
+      },
+      {
+        "feature": "pm25_lag_6",
+        "mean_abs_shap": 0.8470637026809626
+      },
+      {
+        "feature": "hour",
+        "mean_abs_shap": 0.47905761653660817
+      },
+      {
+        "feature": "pm25_lag_12",
+        "mean_abs_shap": 0.41243190311237266
+      },
+      {
+        "feature": "pm25_roll_mean_3",
+        "mean_abs_shap": 0.3974847944183187
+      },
+      {
+        "feature": "co",
+        "mean_abs_shap": 0.3908067256807528
+      },
+      {
+        "feature": "pm25_lag_3",
+        "mean_abs_shap": 0.3862886448360441
+      },
+      {
+        "feature": "no2",
+        "mean_abs_shap": 0.36181235287050745
+      },
+      {
+        "feature": "precipitation",
+        "mean_abs_shap": 0.27038321415275046
+      },
+      {
+        "feature": "pm25_lag_1",
+        "mean_abs_shap": 0.23745847058342381
+      },
+      {
+        "feature": "pm10",
+        "mean_abs_shap": 0.15111947861198938
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.12653054993739946
+      },
+      {
+        "feature": "o3",
+        "mean_abs_shap": 0.10062655930477664
+      },
+      {
+        "feature": "wind_dir_sin",
+        "mean_abs_shap": 0.08191290107512084
+      },
+      {
+        "feature": "so2",
+        "mean_abs_shap": 0.04785651749614986
+      },
+      {
+        "feature": "humidity",
+        "mean_abs_shap": 0.04126167064797487
+      },
+      {
+        "feature": "temperature",
+        "mean_abs_shap": 0.03322988174280087
+      }
+    ]
+  },
+  "caveat": "Metrics are chronological hold-out estimates for this exact extract (SHA-256 above), not a guarantee of future skill. Air-quality data are OpenAQ S3 archive station records (CPCB/MPCB/BMC/IITM). Weather uses co-located station measurements where available and Open-Meteo ERA5 reanalysis for missing hours; per-station measured fractions are in the sidecar metadata. A separate spatial holdout retrains without five stations and scores those unseen stations. Missing observations were not imputed. The classifier label is target_3h > 60 ug/m3, an exceedance indicator, not a relative deterioration label."
+}

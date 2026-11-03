@@ -22,18 +22,21 @@ accuracy, calibrated intervals, deterioration probability or SHAP values.
 
 A real-data run is reproducible with `ml/fetch_real_data.py`. The reference run
 uses the public OpenAQ S3 daily archive for 23 CPCB/MPCB/BMC/IITM stations inside
-the Greater Mumbai boundary from 2025-11-01 to 2026-10-27, plus Open-Meteo ERA5
-reanalysis weather. The extract has 198,720 station-hours (72% PM2.5 coverage,
-100% weather coverage). Raw sub-hourly readings are aggregated to hourly means;
-gaps are left as NaN and are not imputed. See
-`ml/data/mumbai_air_quality_archive.meta.json` for station/sensor IDs, coverage,
-QC rules, unit conversions and the CSV SHA-256.
+the Greater Mumbai boundary from 2025-03-01 to 2026-10-27. The extract has
+333,960 station-hours (74.5% PM2.5 coverage). Raw sub-hourly readings are
+aggregated to hourly means; gaps are left as NaN and are not imputed. Weather
+uses co-located station measurements where available (51% temperature, 52%
+humidity, 31% wind) and Open-Meteo ERA5 reanalysis for the remaining hours; the
+measured fraction is recorded per station in
+`ml/data/mumbai_air_quality_archive.meta.json`, along with station/sensor IDs, QC
+rules, conversions and the CSV SHA-256.
 
 The reference chronological split is 70/15/15 by global timestamp. The model card
 and `ml/artifacts/metrics.json` record the exact metrics, per-station errors,
-quantile coverage and classifier calibration for that extract. A model is marked
-`REJECTED` when its +3h or +6h MAE does not beat persistence; the inference
-service then returns `503` and the app keeps the baseline.
+quantile coverage and classifier calibration for that extract. A separate spatial
+holdout retrains without five stations and scores those unseen stations. A model
+is marked `REJECTED` when its +3h or +6h MAE does not beat persistence; the
+inference service then returns `503` and the app keeps the baseline.
 
 ## Fallback shown when the trained service is unavailable
 
@@ -103,6 +106,8 @@ Chronological 70% train / 15% validation / 15% test by global timestamp. No rand
 - MAE, RMSE, persistence-baseline MAE/RMSE
 - quantile coverage vs 0.8 target
 - precision, recall, PR-AUC, ROC-AUC, Brier score
+- spatial holdout: retrain without five geographically spread stations and score
+  the unseen stations' chronological test rows
 - SHAP TreeExplainer on a test sample
 
 If SHAP fails, the pipeline records a failure rather than inventing values.
@@ -113,20 +118,32 @@ The test partition is also scored with persistence (`prediction = current PM2.5`
 
 ### Reference run results
 
-Reference extract: 2025-11-01 to 2026-10-27, 23 stations, SHA-256
-`34f9567adec60889934e836727d946eb1c93ab005e6dcf780a73066741bc7e92`.
-Test window: 2026-09-02 to 2026-10-23 (22,415 rows).
+Reference extract: 2025-03-01 to 2026-10-27, 23 stations, SHA-256
+`ed07b475c1e4620acca6c8b59fc782fc064d60e8a954a78e57dc1e121255fb21`.
+Split: train 2025-03-01 → 2026-04-27 (176,997 rows), validation 2026-04-27 →
+2026-07-26 (34,601 rows), test 2026-07-26 → 2026-10-23 (37,119 rows).
 
 | Horizon | Model MAE | Persistence MAE | Skill | RMSE model/persistence | 80% coverage |
 |---|---|---|---|---|---|
-| 1h | 3.74 | 3.88 | +3.6% | 8.57 / 8.92 | 0.821 |
-| 3h | 6.05 | 6.92 | +12.5% | 11.44 / 14.35 | 0.822 |
-| 6h | 7.06 | 8.73 | +19.2% | 12.47 / 16.22 | 0.820 |
+| 1h | 3.48 | 3.61 | +3.6% | 9.36 / 10.23 | 0.784 |
+| 3h | 5.33 | 6.14 | +13.2% | 11.05 / 14.20 | 0.808 |
+| 6h | 6.06 | 7.51 | +19.4% | 11.82 / 15.53 | 0.823 |
 
-The 3h >60 µg/m³ classifier has ROC-AUC 0.959, PR-AUC 0.745, Brier 0.042 and
-precision/recall 0.758/0.588 at threshold 0.5. Full per-station metrics and SHAP
-values are in `ml/artifacts/metrics.json`, `model_card.json` and
-`shap_summary.json`.
+The 3h >60 µg/m³ classifier has ROC-AUC 0.973, PR-AUC 0.741, Brier 0.026 and
+precision/recall 0.748/0.594 at threshold 0.5.
+
+Spatial holdout: the model is retrained without Colaba, Sion, Borivali East
+(MPCB), Deonar and Andheri East, then scored on those unseen stations during the
+same test window (6,911 rows). It still beats persistence:
+
+| Horizon | Model MAE | Persistence MAE | Skill |
+|---|---|---|---|
+| 1h | 3.12 | 3.23 | +3.4% |
+| 3h | 4.73 | 5.52 | +14.4% |
+| 6h | 5.46 | 6.95 | +21.4% |
+
+Full per-station metrics and SHAP values are in `ml/artifacts/metrics.json`,
+`model_card.json` and `shap_summary.json`.
 
 ## Inference service
 
@@ -167,17 +184,23 @@ The adapter must:
 
 ## Known limitations
 
-- The reference extract covers one seasonal cycle. The chronological test window
-  is later than training, so some calendar months are unseen during fitting; the
-  model must rely on weather and lag features for those months.
-- Evaluation is temporal, not spatial: the test set contains future rows from the
-  same stations used in training. It does not measure skill at an unseen station.
-- Weather is Open-Meteo ERA5 reanalysis, not a co-located station measurement.
-- Station PM2.5 coverage varies (30-87%); missing pollutant inputs remain missing
+- The reference extract spans 20 months: two monsoon seasons, one full winter and
+  the start of a second winter. A full second 12-month cycle is not available from
+  the public Mumbai station archive, which begins around March 2025. The test
+  window is later than training, so some calendar months are unseen during fitting.
+- The temporal test is complemented by a five-station spatial holdout, but five
+  stations do not cover every micro-environment. Station-level errors still vary.
+- Weather is station-measured where available (51% temperature, 52% humidity, 31%
+  wind) and ERA5 reanalysis elsewhere; precipitation is ERA5-only. The serving
+  path uses Open-Meteo weather, so a train/serve source mismatch remains for the
+  reanalysis-filled hours.
+- Station PM2.5 coverage varies (30-89%); missing pollutant inputs remain missing
   and are handled by LightGBM's native NaN handling, not by imputation.
 - The classifier label is a fixed >60 µg/m³ threshold, not a relative change from
-  the current value. Its calibration is only valid for the validation window.
+  the current value. Its calibration uses training-season out-of-fold predictions;
+  the chronological validation window was an unusually clean monsoon slice.
 - SHAP values are computed from the actual artifact but do not establish causality.
 - The persistence baseline remains the fallback and is not a regulatory forecast.
+- Authority review and sign-off are still pending; see `docs/MODEL_REVIEW.md`.
 - Training on demo/synthetic data is not acceptable for a real model unless the
   resulting model is itself labelled as a simulation model.
