@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity,
@@ -84,6 +84,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [now, setNow] = useState(new Date());
+  const mainRef = useRef<HTMLElement | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const title = titles.find(([path]) => location.pathname.startsWith(path))?.[1] ?? 'प्रकृति';
@@ -91,6 +92,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   useEffect(() => {
     setMobileOpen(false);
     setUserMenu(false);
+    mainRef.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [location.pathname]);
 
@@ -114,18 +116,18 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
       <div className="flex h-[88px] shrink-0 items-center justify-center">
         <Logo compact />
       </div>
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+      <div className="rail-nav scrollbar-thin min-h-0 flex-1 overflow-y-auto px-2 pb-4">
         <Link
           to="/report"
           title="Submit a field report"
-          className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#b3df7c] bg-[#d3f8a1] text-[#25461c] shadow-pill transition hover:bg-[#c7f28b]"
+          className="rail-cta mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#b3df7c] bg-[#d3f8a1] text-[#25461c] shadow-pill transition hover:bg-[#c7f28b]"
         >
           <Plus className="h-4 w-4" />
           <span className="sr-only">Submit a field report</span>
         </Link>
         {visibleGroups.map((group) => (
-          <div key={group.label} className="mb-3 border-t border-white/70 pt-3 first:border-0 first:pt-0">
-            <p className="mb-1 text-center text-[8px] font-semibold uppercase tracking-[0.2em] text-[#66766b]">{group.label}</p>
+          <div key={group.label} className="rail-group mb-3 border-t border-white/70 pt-3 first:border-0 first:pt-0">
+            <p className="rail-group-label mb-1 text-center text-[8px] font-semibold uppercase tracking-[0.2em] text-[#66766b]">{group.label}</p>
             <div className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -137,7 +139,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                     title={item.label}
                     className={({ isActive }) =>
                       classNames(
-                        'group flex w-full flex-col items-center gap-1 rounded-2xl px-1 py-2 transition',
+                        'rail-item group flex w-full flex-col items-center gap-1 rounded-2xl px-1 py-2 transition',
                         isActive
                           ? 'bg-[#e4f5d8] text-[#2f6a24]'
                           : 'text-[#5f7065] hover:bg-white/70 hover:text-[#142016]',
@@ -154,7 +156,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                         >
                           <Icon className="h-[17px] w-[17px]" />
                         </span>
-                        <span className="max-w-full truncate text-[8.5px] font-semibold leading-none tracking-[0.01em]">{item.short}</span>
+                        <span className="rail-item-label max-w-full truncate text-[8.5px] font-semibold leading-none tracking-[0.01em]">{item.short}</span>
                       </>
                     )}
                   </NavLink>
@@ -164,7 +166,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
           </div>
         ))}
       </div>
-      <div className="shrink-0 border-t border-white/70 p-2">
+      <div className="rail-footer shrink-0 border-t border-white/70 p-2">
         <Link to="/settings" title="Settings" className="flex h-11 items-center justify-center rounded-2xl text-[#5f7065] transition hover:bg-white/70 hover:text-[#142016]">
           <Settings className="h-[17px] w-[17px]" />
           <span className="sr-only">Settings</span>
@@ -337,7 +339,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
             </div>
           </header>
 
-          <main className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-3 pb-5 pt-3 lg:px-5 lg:pb-6 lg:pt-4">
+          <main ref={mainRef} className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-3 pb-5 pt-3 lg:px-5 lg:pb-6 lg:pt-4">
             {children ?? <Outlet />}
           </main>
         </div>

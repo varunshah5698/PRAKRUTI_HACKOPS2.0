@@ -240,6 +240,53 @@ textarea {
   transform: translateY(18px);
 }
 
+
+/* Short desktop viewports: keep the complete rail visible without a scroll hunt. */
+@media (max-height: 1000px) and (min-width: 1024px) {
+  .rail-nav {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .rail-cta {
+    height: 2.25rem;
+    width: 2.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .rail-group {
+    margin-bottom: 0.25rem;
+    padding-top: 0.375rem;
+  }
+  .rail-group-label {
+    display: none;
+  }
+  .rail-item {
+    height: 2.5rem;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+  }
+  .rail-item > span:first-child {
+    height: 2rem;
+    width: 2rem;
+  }
+  .rail-item-label {
+    display: none;
+  }
+  .rail-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+  }
+  .rail-footer > a,
+  .rail-footer > button {
+    flex: 1;
+    height: 2.25rem;
+  }
+}
+
 @media (max-width: 1023px) {
   .app-frame {
     background: rgba(255, 255, 255, 0.72);
