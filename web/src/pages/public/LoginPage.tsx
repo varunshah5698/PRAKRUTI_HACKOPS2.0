@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { LogoGlyph } from '../../components/Logo';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../store/auth';
 import { isValidEmail } from './login-validation';
@@ -9,23 +10,6 @@ import './login-experience.css';
 
 const DEMO_AQI = 84;
 const DEMO_STATIONS = 24;
-
-function PulseMark() {
-  return (
-    <svg className="ep-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false">
-      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-        <path d="M16 4.7v5.7" />
-        <path d="M16 21.6v5.7" />
-        <path d="m6.25 10.4 5 2.9" />
-        <path d="m20.75 18.7 5 2.9" />
-        <path d="m6.25 21.6 5-2.9" />
-        <path d="m20.75 10.4 5 2.9" />
-      </g>
-      <circle cx="16" cy="16" r="3" fill="currentColor" />
-      <circle cx="16" cy="4.7" r="1.35" fill="#F6B733" />
-    </svg>
-  );
-}
 
 function StationMark() {
   return (
@@ -90,7 +74,7 @@ export function LoginPage() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Sign in · EnviroPulse';
+    document.title = 'Sign in · प्रकृति';
     return () => {
       document.title = previousTitle;
     };
@@ -204,8 +188,8 @@ export function LoginPage() {
           <video
             ref={videoRef}
             className={`ep-video${videoReady ? ' is-ready' : ''}`}
-            src="/videos/enviropulse-city-background.mp4"
-            poster="/images/enviropulse-login-hero.jpg"
+            src="/videos/prakruti-city-background.mp4"
+            poster="/images/prakruti-login-hero.jpg"
             autoPlay
             muted
             loop
@@ -224,15 +208,15 @@ export function LoginPage() {
         <div className="ep-scrim" aria-hidden="true" />
 
         <div className="ep-visual-inner">
-          <header className="ep-brand" data-enter="drop" data-delay="0">
+          <Link to="/" className="ep-brand" data-enter="drop" data-delay="0" aria-label="प्रकृति home">
             <span className="ep-brand-tile">
-              <PulseMark />
+              <LogoGlyph className="ep-mark" />
             </span>
             <span className="ep-brand-copy">
-              <span className="ep-brand-name">EnviroPulse</span>
-              <span className="ep-brand-desc">Environmental intelligence</span>
+              <span className="ep-brand-name">प्रकृति</span>
+              <span className="ep-brand-desc">Mumbai · Environmental intelligence</span>
             </span>
-          </header>
+          </Link>
 
           <div className="ep-hero-copy">
             <h1 id="ep-headline" className="ep-headline" data-enter="blur" data-delay="150">
@@ -306,7 +290,7 @@ export function LoginPage() {
         <div className="ep-auth-inner">
           <header>
             <span className="ep-auth-mark" data-enter="fade" data-delay="250" aria-hidden="true">
-              <PulseMark />
+              <LogoGlyph className="ep-mark" />
             </span>
             <h2 id="ep-login-heading" className="ep-auth-heading" data-enter="rise" data-delay="400">
               Welcome back.
@@ -424,7 +408,7 @@ export function LoginPage() {
         </div>
 
         <footer className="ep-auth-footer" data-enter="fade" data-delay="2000">
-          <span>© 2026 EnviroPulse</span>
+          <span>© 2026 प्रकृति</span>
           <span className="ep-footer-sep" aria-hidden="true">
             ·
           </span>

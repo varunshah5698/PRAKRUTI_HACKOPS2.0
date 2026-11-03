@@ -1,7 +1,7 @@
 # Login background assets
 
-- `images/enviropulse-login-hero.jpg` — aerial photograph of an urban park and city skyline in Berlin, sourced from Pexels (photo 18755896), Pexels License. Source: https://www.pexels.com/photo/aerial-panorama-of-berlin-cityscape-with-a-green-park-18755896/
-- `videos/enviropulse-city-background.mp4` — aerial footage of a city beside a green park in Bangkok, sourced from Pexels (video 8302327), Pexels License. Source: https://www.pexels.com/video/drone-footage-of-a-city-with-lush-vegetation-8302327/
+- `images/prakruti-login-hero.jpg` — aerial photograph of an urban park and city skyline in Berlin, sourced from Pexels (photo 18755896), Pexels License. Source: https://www.pexels.com/photo/aerial-panorama-of-berlin-cityscape-with-a-green-park-18755896/
+- `videos/prakruti-city-background.mp4` — aerial footage of a city beside a green park in Bangkok, sourced from Pexels (video 8302327), Pexels License. Source: https://www.pexels.com/video/drone-footage-of-a-city-with-lush-vegetation-8302327/
 
 Pexels License: https://www.pexels.com/license/
 
