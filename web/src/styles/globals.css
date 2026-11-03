@@ -300,6 +300,293 @@ textarea {
   }
 }
 
+/* Atmosphere lab: an airier, blue-sky surface layered over the command centre. */
+.atmo-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 120% at 84% -6%, rgba(255, 247, 208, 0.95) 0%, rgba(255, 247, 208, 0) 46%),
+    radial-gradient(70% 100% at 12% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(158deg, #bfe4f2 0%, #def2f8 44%, #f4faf4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 30px 70px -50px rgba(25, 75, 92, 0.5);
+}
+.atmo-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+.atmo-sun {
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 32%, #fffef4 0%, #fff3b8 45%, #f8d06b 100%);
+  box-shadow:
+    0 0 0 18px rgba(255, 245, 201, 0.24),
+    0 0 80px 28px rgba(255, 220, 130, 0.5);
+  animation: atmo-breathe 9s ease-in-out infinite;
+}
+.atmo-cloud {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  filter: blur(1.5px);
+  box-shadow:
+    42px 12px 0 10px rgba(255, 255, 255, 0.66),
+    86px 2px 0 2px rgba(255, 255, 255, 0.52),
+    -28px 8px 0 2px rgba(255, 255, 255, 0.5);
+  animation: atmo-cloud-drift 26s ease-in-out infinite alternate;
+}
+.atmo-skyline {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 74px;
+  opacity: 0.3;
+  background: linear-gradient(180deg, transparent, rgba(80, 133, 146, 0.22));
+  mask-image: linear-gradient(180deg, transparent, black 60%);
+}
+.atmo-scene {
+  position: relative;
+  overflow: hidden;
+  perspective: 1100px;
+  perspective-origin: 50% 44%;
+  background:
+    radial-gradient(65% 60% at 50% 38%, rgba(255, 255, 255, 0.9) 0%, rgba(233, 246, 250, 0.4) 55%, rgba(217, 238, 245, 0) 100%),
+    linear-gradient(180deg, #f8fcfd 0%, #eaf5f8 52%, #dfeff4 100%);
+  touch-action: pan-y;
+  user-select: none;
+}
+.atmo-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(52% 42% at 50% 100%, rgba(42, 125, 145, 0.12), transparent 74%);
+}
+.atmo-stage {
+  --atmo-fit: 1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 560px;
+  height: 320px;
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  transition: transform 90ms linear;
+}
+.atmo-floor {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  border: 1px solid rgba(45, 124, 148, 0.22);
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5), transparent 66%),
+    linear-gradient(rgba(58, 137, 158, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 137, 158, 0.14) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  box-shadow:
+    inset 0 0 60px rgba(95, 173, 190, 0.12),
+    0 40px 60px -50px rgba(20, 70, 85, 0.55);
+  overflow: hidden;
+}
+.atmo-floor::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 42%, rgba(255, 255, 255, 0.42) 50%, transparent 58%);
+  opacity: 0.5;
+}
+.atmo-wind-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.atmo-bar {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  outline: none;
+}
+.atmo-bar-wall {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(var(--h) + 7px);
+  transform-origin: 50% 100%;
+  transform: rotateX(-90deg);
+  border-radius: 3px 3px 1px 1px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, var(--bar) 0%, color-mix(in srgb, var(--bar) 74%, #173643) 100%);
+  opacity: 0.92;
+}
+.atmo-bar-wall::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 12px);
+  opacity: 0.55;
+}
+.atmo-bar-top {
+  position: absolute;
+  inset: -1px;
+  transform: translateZ(var(--h));
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: var(--bar);
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--bar) 60%, transparent),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.atmo-bar-base {
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bar) 20%, transparent);
+  filter: blur(6px);
+}
+.atmo-bar:hover .atmo-bar-top,
+.atmo-bar:focus-visible .atmo-bar-top {
+  transform: translateZ(calc(var(--h) + 6px));
+  box-shadow: 0 0 32px color-mix(in srgb, var(--bar) 80%, transparent);
+}
+.atmo-bar.is-selected .atmo-bar-top {
+  inset: -2px;
+  border: 2px solid #ffffff;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.72),
+    0 0 36px color-mix(in srgb, var(--bar) 78%, transparent);
+}
+.atmo-bar.is-selected .atmo-bar-wall {
+  opacity: 1;
+}
+.atmo-bar-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: 130px;
+  transform: translateX(-50%) translateZ(calc(var(--h) + 22px));
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #20424f;
+  box-shadow: 0 10px 20px -14px rgba(20, 70, 85, 0.5);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.atmo-axis {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  color: #5f7f8b;
+}
+.atmo-scene-controls {
+  position: absolute;
+  z-index: 6;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.75);
+  padding: 4px;
+  box-shadow: 0 14px 30px -24px rgba(20, 70, 85, 0.6);
+  backdrop-filter: blur(12px);
+}
+.atmo-scene-controls button {
+  display: inline-flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #41616d;
+  transition: background 160ms ease, color 160ms ease;
+}
+.atmo-scene-controls button:hover {
+  background: #eef7f9;
+  color: #143b48;
+}
+.atmo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #335c69;
+  transition: all 160ms ease;
+  backdrop-filter: blur(10px);
+}
+.atmo-chip[data-active='true'] {
+  border-color: #2d7c94;
+  background: #2d7c94;
+  color: #ffffff;
+  box-shadow: 0 10px 22px -16px rgba(35, 110, 132, 0.8);
+}
+.atmo-hero-strip {
+  scrollbar-width: none;
+}
+.atmo-hero-strip::-webkit-scrollbar {
+  display: none;
+}
+.atmo-model-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 120% at 100% 0%, rgba(70, 173, 184, 0.3), transparent 60%),
+    radial-gradient(50% 100% at 0% 100%, rgba(125, 204, 163, 0.18), transparent 60%),
+    linear-gradient(135deg, #0e303d 0%, #123e4c 55%, #0d3641 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.atmo-model-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(120deg, black, transparent 65%);
+}
+@keyframes atmo-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+@keyframes atmo-cloud-drift {
+  from { transform: translate3d(-6px, 0, 0); }
+  to { transform: translate3d(14px, 3px, 0); }
+}
+@media (max-width: 640px) {
+  .atmo-stage { --atmo-fit: 0.62; }
+}
+@media (min-width: 641px) and (max-width: 900px) {
+  .atmo-stage { --atmo-fit: 0.82; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

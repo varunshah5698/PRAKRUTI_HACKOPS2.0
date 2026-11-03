@@ -14,6 +14,7 @@ import { ForgotPasswordPage, ResetPasswordPage } from './pages/public/PasswordPa
 import { Logo } from './components/Logo';
 
 const DashboardPage = lazy(() => import('./pages/app/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const AtmospherePage = lazy(() => import('./pages/app/AtmospherePage').then((m) => ({ default: m.AtmospherePage })));
 const MapPage = lazy(() => import('./pages/app/MapPage').then((m) => ({ default: m.MapPage })));
 const PredictionsPage = lazy(() => import('./pages/app/PredictionsPage').then((m) => ({ default: m.PredictionsPage })));
 const AiAnalystPage = lazy(() => import('./pages/app/AiAnalystPage').then((m) => ({ default: m.AiAnalystPage })));
@@ -118,6 +119,7 @@ export default function App() {
         <Route index element={<DashboardPage />} />
       </Route>
       <Route element={<Protected><AppShell /></Protected>}>
+        <Route path="/atmosphere" element={<AtmospherePage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/map/stations/:stationId" element={<StationRoute />} />
         <Route path="/intelligence/predictions" element={<PredictionsPage />} />

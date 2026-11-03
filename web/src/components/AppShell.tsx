@@ -37,6 +37,7 @@ const groups: Array<{
     label: 'Command',
     items: [
       { to: '/dashboard', label: 'Command centre', short: 'Home', icon: LayoutDashboard, end: true },
+      { to: '/atmosphere', label: 'Atmosphere lab', short: 'Air lab', icon: CloudSun },
       { to: '/map', label: 'Mumbai map', short: 'Map', icon: Map },
       { to: '/intelligence/predictions', label: 'Predictive intelligence', short: 'Predict', icon: BrainCircuit },
       { to: '/ai-analyst', label: 'AI analyst', short: 'Analyst', icon: Sparkles },
@@ -64,6 +65,7 @@ const groups: Array<{
 
 const titles: Array<[string, string]> = [
   ['/dashboard', 'Environmental command centre'],
+  ['/atmosphere', 'Atmosphere lab · 3D air intelligence'],
   ['/map', 'Live environmental intelligence map'],
   ['/intelligence/predictions', 'Predictive environmental intelligence'],
   ['/ai-analyst', 'AI environmental analyst'],
