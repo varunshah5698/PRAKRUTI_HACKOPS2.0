@@ -602,18 +602,7 @@ async function seedReports(users: Record<string, string>, localities: Map<string
       ],
     );
     if (!row) continue;
-    await query(
-      `INSERT INTO ai_assessments (report_id, assessment_type, provider, model, status, output, is_simulated)
-       VALUES ($1,'REPORT_VISUAL_ASSESSMENT','none',NULL,'NOT_CONFIGURED',$2::jsonb,true)`,
-      [
-        row.id,
-        JSON.stringify({
-          status: 'NOT_CONFIGURED',
-          reason:
-            'No vision-capable model is configured. The River text model is not assumed to inspect images. A photograph cannot establish chemical composition, toxicity, concentration or legal responsibility.',
-        }),
-      ],
-    );
+    // Seeded reports have no photograph, so there is no visual assessment to record.
     ids.push({ id: row.id, category: report.category, locality: report.locality, status: report.status });
   }
   console.log(`Reports: ${ids.length} (simulation-labelled, no fabricated photographs)`);

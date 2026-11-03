@@ -184,7 +184,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   );
 
   const mobileNav = (
-    <div className="flex h-full flex-col bg-[#f8fbf5]/97 backdrop-blur-2xl">
+    <div className="flex h-full flex-col bg-[#f8fbf5] backdrop-blur-2xl">
       <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-dashed border-[#dbe5d6] px-5">
         <Logo />
         <button onClick={() => setMobileOpen(false)} aria-label="Close navigation" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/70 text-[#5f7065]">
@@ -306,7 +306,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                     <ChevronDown className="h-3.5 w-3.5 text-[#74847a]" />
                   </button>
                   {userMenu ? (
-                    <div className="absolute right-0 top-12 z-30 w-60 rounded-[20px] border border-white/85 bg-[#fbfdf9]/97 p-1.5 shadow-2xl backdrop-blur-2xl">
+                    <div className="absolute right-0 top-12 z-30 w-60 rounded-[20px] border border-white/85 bg-[#fbfdf9] p-1.5 shadow-2xl backdrop-blur-2xl">
                       <div className="px-3 py-2">
                         <p className="text-xs font-semibold text-[#142016]">{user?.name}</p>
                         <p className="truncate text-[10px] text-[#74847a]">{user?.email}</p>

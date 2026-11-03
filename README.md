@@ -25,7 +25,6 @@ This is a working demonstration application, not a static dashboard. It connects
 | Demo monitoring stations | **SIMULATION DATA** — 15 synthetic stations, every record `is_simulated=true` |
 | Weather | **LIVE** — Open-Meteo at station coordinates |
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |
-| OpenAQ (MPCB/BMC/IITM stations) | **LIVE** — real station records via OpenAQ v3, filtered to the Mumbai boundary; requires `OPENAQ_API_KEY` |
 | LightGBM / quantile / deterioration / anomaly models | **NOT TRAINED** — no verified Mumbai historical extract supplied |
 | Forecasts shown | **PERSISTENCE_BASELINE_V1** — labelled, empirical band, not calibrated |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |

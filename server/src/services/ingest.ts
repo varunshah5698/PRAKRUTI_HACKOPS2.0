@@ -321,6 +321,8 @@ export async function ingestDataGovIn(): Promise<IngestResult> {
  * OpenAQ v3 adapter. Requires OPENAQ_API_KEY. Only records whose coordinates
  * fall inside the validated Mumbai boundary are stored.
  */
+const OPENAQ_FRESHNESS_HOURS = 24;
+
 export async function ingestOpenAq(): Promise<IngestResult> {
   const sourceId = 'openaq';
   if (!env.OPENAQ_API_KEY) return { records: 0, message: 'NOT_CONFIGURED: OPENAQ_API_KEY missing.' };
@@ -360,7 +362,14 @@ export async function ingestOpenAq(): Promise<IngestResult> {
           },
         ]),
       );
-      const latestResponse = await fetch(`https://api.openaq.org/v3/locations/${location.id}/latest`, {
+      // OpenAQ keeps a last-ever reading for decommissioned sensors, so an
+      // unbounded /latest returns rows years old. Ask for the window we can
+      // actually treat as live and re-check it after the round trip.
+      const freshnessFloor = new Date(Date.now() - OPENAQ_FRESHNESS_HOURS * 3_600_000);
+      const latestUrl = new URL(`https://api.openaq.org/v3/locations/${location.id}/latest`);
+      latestUrl.searchParams.set('datetime_min', freshnessFloor.toISOString().replace(/\.\d{3}Z$/, 'Z'));
+      latestUrl.searchParams.set('limit', '100');
+      const latestResponse = await fetch(latestUrl, {
         headers: { 'X-API-Key': env.OPENAQ_API_KEY },
         signal: AbortSignal.timeout(30_000),
       });
@@ -395,6 +404,8 @@ export async function ingestOpenAq(): Promise<IngestResult> {
         const sensor = result.sensorsId != null ? sensors.get(result.sensorsId) : undefined;
         const code = sensor ? POLLUTANT_MAP[sensor.name] : undefined;
         if (!sensor || !code || result.value === undefined || !result.datetime?.utc) continue;
+        const observedAt = new Date(result.datetime.utc);
+        if (!Number.isFinite(observedAt.getTime()) || observedAt < freshnessFloor) continue;
         const normalised = normalisePollutantUnit(code, result.value, sensor.unit);
         if (!normalised) continue;
         await query(

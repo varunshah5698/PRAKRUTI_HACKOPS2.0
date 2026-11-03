@@ -174,9 +174,12 @@ export function ReportDetailPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>AI assessment</CardTitle><Badge tone={data.aiAssessments.some((a) => a.status === 'COMPLETED') ? 'green' : 'amber'}>{data.aiAssessments[0]?.status ?? 'NOT_CONFIGURED'}</Badge></CardHeader>
+            <CardHeader><CardTitle>AI assessment</CardTitle><Badge tone={data.aiAssessments.some((a) => a.status === 'COMPLETED') ? 'green' : 'amber'}>{data.evidence.length === 0 ? 'NO PHOTO' : data.aiAssessments[0]?.status ?? 'NOT_CONFIGURED'}</Badge></CardHeader>
             <div className="space-y-3 p-4">
-              {data.aiAssessments.map((assessment) => {
+              {data.evidence.length === 0 ? (
+                <p className="text-[11px] text-[#74847a]">No photograph attached, so no visual assessment was performed.</p>
+              ) : null}
+              {data.evidence.length > 0 ? data.aiAssessments.map((assessment) => {
                 const output = assessment.output as {
                   description?: unknown;
                   visibleFeatures?: unknown;
@@ -216,8 +219,8 @@ export function ReportDetailPage() {
                     <p className="mt-2 text-[9px] text-[#7b8a80]">A photograph cannot establish chemical composition, toxicity, concentration or legal responsibility.</p>
                   </div>
                 );
-              })}
-              {data.aiAssessments.length === 0 ? <p className="text-[11px] text-[#74847a]">No AI assessment record.</p> : null}
+              }) : null}
+              {data.evidence.length > 0 && data.aiAssessments.length === 0 ? <p className="text-[11px] text-[#74847a]">No AI assessment record.</p> : null}
             </div>
           </Card>
 

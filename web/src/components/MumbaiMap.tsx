@@ -219,7 +219,7 @@ export function MumbaiMap({
   styleUrl,
   initialZoom,
   initialPitch,
-  overlayLabel,
+  overlayLabel = 'Demo stations',
   interactive,
   autoFit = true,
 }: Props) {

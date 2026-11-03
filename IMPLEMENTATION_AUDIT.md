@@ -86,7 +86,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 - Weather ingestion: 285 records; CAMS ingestion: 20 records.
 - OpenAQ live ingestion verified: 12 Mumbai stations (MPCB/IITM operators), 91 sensor records, including stale stations marked DEGRADED. This is OpenAQ data, not a direct CPCB feed.
 - API smoke tests: login, dashboard, current/past/future map timeline, station detail, predictions, compliance comparison, reports (including private evidence upload), alerts, incidents, notifications, simulations, AI fallback.
-- `npm test`: 22 tests passing.
+- `npm test`: 29 tests passing.
 - `npm audit --omit=dev`: 0 vulnerabilities after upgrading MapLibre, ECharts, Nodemailer and Zod.
 - Web production build succeeds.
 - Playwright screenshots used for visual review of landing, dashboard, map, predictions, reports, alerts, incidents, compliance, simulation, sources, settings, station drawer and detail pages.

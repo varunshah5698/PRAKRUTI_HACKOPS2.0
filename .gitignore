@@ -17,3 +17,4 @@ tmp/
 
 # Local scratch scripts
 tmp-*.ts
+ml/data/raw/

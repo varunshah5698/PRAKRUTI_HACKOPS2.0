@@ -7,9 +7,9 @@ Source status is shown in the application at `/data-sources` and via `GET /api/v
 | ID | Source | Status | Records | Notes |
 |---|---|---|---|---|
 | `cpcb-caaqms` | CPCB CAAQMS (Mumbai) | NOT_CONFIGURED | 0 | No documented credentialled machine API is configured. Demo stations are not CPCB stations. |
-| `mpcb` | MPCB monitoring publications | NOT_CONFIGURED | 0 | No configured endpoint. |
-| `data-gov-in-air` | data.gov.in air-quality resource | NOT_CONFIGURED | 0 | Requires `DATA_GOV_IN_API_KEY` and a verified `DATA_GOV_IN_AIR_RESOURCE_ID`. |
-| `openaq` | OpenAQ | CONNECTED | 0 (seed) | `OPENAQ_API_KEY` configured server-side; v3 locations + latest with Mumbai-coordinate filter. |
+| `mpcb` | MPCB monitoring publications | LIVE SUBSET via OpenAQ | 12 stations | No direct MPCB API is configured. OpenAQ supplies MPCB/IITM-operated Mumbai stations with upstream timestamps. |
+| `data-gov-in-air` | data.gov.in air-quality resource | NOT_CONFIGURED | 0 | Requires `DATA_GOV_IN_API_KEY`. Verified resource ID `3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69` is pre-filled. |
+| `openaq` | OpenAQ | CONNECTED locally | 91 (12 Mumbai stations) | `OPENAQ_API_KEY` configured in `.env.local`; v3 locations + latest, Mumbai-coordinate filter. Includes MPCB/IITM stations; source is OpenAQ. |
 | `open-meteo-weather` | Open-Meteo weather | CONNECTED | 285 (seed) | Live observations + 18h forecasts at demo station coordinates. |
 | `open-meteo-cams` | CAMS regional air quality | CONNECTED | 20 (seed) | Modelled PM2.5/PM10, not a station measurement. |
 | `demo-network` | प्रकृति demo network | CONNECTED | 4,566 (seed) | All records `is_simulated=true`. |
