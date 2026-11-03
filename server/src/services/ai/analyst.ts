@@ -11,6 +11,7 @@ export interface AiAnswer {
   generatedAt: string;
   question: string;
   narrative: string;
+  mode?: 'conversational';
   sections: {
     observed: string[];
     predicted: string[];

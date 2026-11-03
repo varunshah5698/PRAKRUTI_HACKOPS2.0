@@ -102,6 +102,12 @@ export async function getMlPrediction(params: {
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');
+      const error =
+        response.status === 422
+          ? 'Trained forecasts require at least 25 consecutive hourly PM2.5 observations; showing the persistence baseline.'
+          : response.status === 503
+            ? 'The trained model is incomplete or unavailable; showing the persistence baseline.'
+            : body.slice(0, 300) || `HTTP ${response.status}`;
       return {
         status: response.status === 503 ? 'NOT_TRAINED' : 'UNAVAILABLE',
         modelVersion: null,
@@ -109,8 +115,8 @@ export async function getMlPrediction(params: {
         deteriorationProbability: null,
         shapStatus: 'UNAVAILABLE',
         shap: [],
-        limitations: [],
-        error: body.slice(0, 300) || `HTTP ${response.status}`,
+        limitations: [error],
+        error,
       };
     }
     const data = (await response.json()) as {

@@ -45,6 +45,7 @@ export function AiAnalystPage() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text?: string; answer?: AiAnswer }>>([]);
   const [loading, setLoading] = useState(false);
+  const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
   const [status, setStatus] = useState<{ river: string; model: string | null; vision: string; mode: string; note: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -74,25 +75,32 @@ export function AiAnalystPage() {
     setMessages((prev) => [...prev, { role: 'user', text: prompt }]);
     setQuestion('');
     setLoading(true);
+    setFailedPrompt(null);
     try {
       const post = () => api.post<AiAnswer>('/ai/chat', {
         question: prompt,
         stationId: stationId || undefined,
         category,
       });
-      let answer: AiAnswer;
-      try {
-        answer = await post();
-      } catch (error) {
-        // Deploys and free-tier cold starts can return 502/503 before the request reaches the API.
-        if (!(error instanceof ApiError) || ![502, 503, 504].includes(error.status)) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        answer = await post();
+      let answer: AiAnswer | null = null;
+      // Deploys and free-tier cold starts can return 502/503 before the request reaches the API.
+      for (let attempt = 0; attempt < 3 && !answer; attempt += 1) {
+        try {
+          answer = await post();
+        } catch (error) {
+          const retryable = error instanceof ApiError && [502, 503, 504].includes(error.status);
+          if (!retryable || attempt === 2) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
+        }
       }
+      if (!answer) throw new Error('The AI service did not return a response.');
       setMessages((prev) => [...prev, { role: 'assistant', answer }]);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : 'Unknown network or server error';
+      let detail = error instanceof Error ? error.message : 'Unknown network or server error';
+      if (error instanceof ApiError && error.status === 401) detail = 'Your session expired. Sign in again, then retry.';
+      if (error instanceof ApiError && error.status === 429) detail = 'Too many requests. Wait a minute, then retry.';
       toast.error(detail);
+      setFailedPrompt(prompt);
       setMessages((prev) => [...prev, { role: 'assistant', text: `The analysis request failed: ${detail}` }]);
     } finally {
       setLoading(false);
@@ -216,6 +224,12 @@ export function AiAnalystPage() {
             <div ref={bottomRef} />
           </div>
           <div className="border-t border-[#e7ece3] p-3">
+            {failedPrompt ? (
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-900">
+                <span>That question did not complete. You can try it again.</span>
+                <Button variant="dark" size="sm" onClick={() => ask(failedPrompt)} disabled={loading}>Retry question</Button>
+              </div>
+            ) : null}
             <div className="flex gap-2">
               <Textarea
                 value={question}
