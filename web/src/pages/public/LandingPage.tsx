@@ -346,9 +346,6 @@ export function LandingPage() {
           </Reveal>
           <Reveal delay={0.1}>
             <div className="relative overflow-hidden rounded-[30px] border border-ink/15 bg-[#dbe4d4] shadow-lift">
-              <div className="absolute left-4 top-4 z-20">
-                <PublicBadge tone="lime">Demo stations + OSM boundary</PublicBadge>
-              </div>
               <MumbaiMap
                 stations={stations}
                 className="landing-map h-[430px] w-full sm:h-[500px]"

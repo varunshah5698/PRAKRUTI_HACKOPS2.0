@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 
 export interface AuthUser {
   id: string;
@@ -14,6 +14,8 @@ export interface AuthUser {
   jurisdiction: string | null;
   requestedRole: string | null;
 }
+
+let sessionRetries = 0;
 
 interface AuthState {
   user: AuthUser | null;
@@ -51,12 +53,22 @@ export const useAuth = create<AuthState>((set, get) => ({
   loadMe: async () => {
     try {
       const result = await api.get<{ user: AuthUser | null; preferences: Record<string, unknown> | null }>('/auth/session');
+      sessionRetries = 0;
       if (!result.user) {
         set({ user: null, preferences: null, initialized: true });
         return;
       }
       set({ user: result.user, preferences: result.preferences, initialized: true });
-    } catch {
+    } catch (error) {
+      // A backend restart or network blip answers 5xx; that is not a logout.
+      // Retry briefly before treating the session as gone.
+      const authFailure = error instanceof ApiError && (error.status === 401 || error.status === 403);
+      if (!authFailure && sessionRetries < 2) {
+        sessionRetries += 1;
+        setTimeout(() => void get().loadMe(), 1200 * sessionRetries);
+        return;
+      }
+      sessionRetries = 0;
       set({ user: null, preferences: null, initialized: true });
     }
   },

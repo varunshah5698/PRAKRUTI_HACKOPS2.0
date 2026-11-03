@@ -306,7 +306,7 @@ reportsRouter.get('/:id', requireAuth, async (req, res, next) => {
       ),
       enrichReport(String(report.id)),
       query<Record<string, unknown>>(
-        `SELECT actor_id, action, after, created_at FROM audit_logs
+        `SELECT id, actor_id, action, after, created_at FROM audit_logs
          WHERE entity_type='environmental_report' AND entity_id=$1 ORDER BY created_at`,
         [report.id],
       ),
