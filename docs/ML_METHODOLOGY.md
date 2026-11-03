@@ -88,9 +88,12 @@ Chronological 70% train / 15% validation / 15% test by global timestamp. No rand
 
 ### Models and evaluation
 
-- LightGBM regressors (`objective=regression_l1`)
-- LightGBM quantile regressors
-- LightGBM classifier with isotonic calibration on the validation partition
+- LightGBM regressors (`objective=regression_l1`) with early stopping on the validation partition
+- LightGBM quantile regressors with early stopping on the validation partition
+- LightGBM classifier with isotonic calibration on 5-fold out-of-fold predictions
+  from the training partition. The chronological validation window is not used
+  for calibration because a single season can be unrepresentative (the reference
+  validation window had 0.16% positives while the test window had 9.6%).
 - MAE, RMSE, persistence-baseline MAE/RMSE
 - quantile coverage vs 0.8 target
 - precision, recall, PR-AUC, ROC-AUC, Brier score

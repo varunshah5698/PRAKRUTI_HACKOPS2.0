@@ -207,8 +207,14 @@ def train_regressors(train: pd.DataFrame, validation: pd.DataFrame, test: pd.Dat
 
 
 def train_classifier(train: pd.DataFrame, validation: pd.DataFrame, test: pd.DataFrame, features: list[str], output: Path) -> dict:
-    if validation["deterioration_3h"].nunique() < 2:
-        raise SystemExit("The validation partition contains only one deterioration class; isotonic calibration is impossible.")
+    if train["deterioration_3h"].nunique() < 2:
+        raise SystemExit("The training partition contains only one exceedance class; the classifier cannot be trained.")
+    # Calibrate on out-of-fold predictions from the whole training season. The
+    # chronological validation window can be an unusually clean monsoon slice
+    # (here: 0.16% positives vs 9.6% in the test window), and isotonic
+    # calibration on it would systematically understate risk. Five-fold
+    # out-of-fold calibration sees both the winter high-pollution regime and
+    # the monsoon low-pollution regime.
     base = LGBMClassifier(
         n_estimators=600,
         learning_rate=0.03,
@@ -216,20 +222,8 @@ def train_classifier(train: pd.DataFrame, validation: pd.DataFrame, test: pd.Dat
         random_state=42,
         class_weight="balanced",
     )
-    base.fit(
-        train[features],
-        train["deterioration_3h"],
-        eval_set=[(validation[features], validation["deterioration_3h"])],
-        eval_metric="binary_logloss",
-        callbacks=[lgb.early_stopping(50, verbose=False)],
-    )
-    try:
-        from sklearn.frozen import FrozenEstimator
-
-        calibrated = CalibratedClassifierCV(FrozenEstimator(base), method="isotonic")
-    except ImportError:  # scikit-learn < 1.6
-        calibrated = CalibratedClassifierCV(base, method="isotonic", cv="prefit")
-    calibrated.fit(validation[features], validation["deterioration_3h"])
+    calibrated = CalibratedClassifierCV(base, method="isotonic", cv=5)
+    calibrated.fit(train[features], train["deterioration_3h"])
     probabilities = calibrated.predict_proba(test[features])[:, 1]
     labels = test["deterioration_3h"].to_numpy()
     predictions = (probabilities >= 0.5).astype(int)
@@ -243,7 +237,8 @@ def train_classifier(train: pd.DataFrame, validation: pd.DataFrame, test: pd.Dat
         "positive_rate_train": float(train["deterioration_3h"].mean()),
         "positive_rate_validation": float(validation["deterioration_3h"].mean()),
         "positive_rate_test": float(labels.mean()),
-        "calibration": "isotonic on the chronological validation partition",
+        "calibration": "isotonic, 5-fold out-of-fold predictions on the training partition",
+        "cv_folds": 5,
         "n": int(len(labels)),
     }
     joblib.dump({"model": calibrated, "features": features, "threshold": 0.5}, output / "deterioration_classifier.joblib")
