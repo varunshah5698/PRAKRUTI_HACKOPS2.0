@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Bot, BrainCircuit, Info, Send, ShieldAlert, Sparkles, UserRound } from 'lucide-react';
+import { ArrowUpRight, Bot, BrainCircuit, ChevronDown, Info, Send, ShieldAlert, Sparkles, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, LoadingBlock, Select, Textarea } from '../../components/ui';
-import { api, ApiError } from '../../lib/api';
+import { api, ApiError, API_ORIGIN } from '../../lib/api';
 import { CATEGORY_LABELS, formatDate } from '../../lib/format';
 
 interface AiAnswer {
@@ -39,6 +39,10 @@ const SUGGESTIONS = [
   'What should be checked next?',
 ];
 
+function hasEvidence(answer: AiAnswer) {
+  return answer.citations.length > 0 || Object.values(answer.sections).some((items) => items.length > 0);
+}
+
 export function AiAnalystPage() {
   const [stations, setStations] = useState<StationOption[]>([]);
   const [stationId, setStationId] = useState('');
@@ -46,6 +50,7 @@ export function AiAnalystPage() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text?: string; answer?: AiAnswer }>>([]);
   const [loading, setLoading] = useState(false);
+  const [waitingForServer, setWaitingForServer] = useState(false);
   const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
   const [status, setStatus] = useState<{ river: string; model: string | null; vision: string; mode: string; note: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -84,14 +89,32 @@ export function AiAnalystPage() {
         category,
       });
       let answer: AiAnswer | null = null;
-      // Deploys and free-tier cold starts can return 502/503 before the request reaches the API.
-      for (let attempt = 0; attempt < 3 && !answer; attempt += 1) {
+      // Deploys and free-tier restarts take the API down briefly. Wait for its
+      // health check instead of discarding a question the user already typed.
+      for (let attempt = 0; attempt < 5 && !answer; attempt += 1) {
         try {
           answer = await post();
         } catch (error) {
-          const retryable = error instanceof ApiError && [502, 503, 504].includes(error.status);
-          if (!retryable || attempt === 2) throw error;
-          await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
+          const retryable = error instanceof ApiError
+            ? [502, 503, 504].includes(error.status)
+            : error instanceof TypeError;
+          if (!retryable || attempt === 4) throw error;
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
+            continue;
+          }
+          setWaitingForServer(true);
+          let healthy = false;
+          for (let probe = 0; probe < 30 && !healthy; probe += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            try {
+              healthy = (await fetch(`${API_ORIGIN}/api/health`)).ok;
+            } catch {
+              // The API is still restarting.
+            }
+          }
+          setWaitingForServer(false);
+          if (!healthy) throw error;
         }
       }
       if (!answer) throw new Error('The AI service did not return a response.');
@@ -104,6 +127,7 @@ export function AiAnalystPage() {
       setFailedPrompt(prompt);
       setMessages((prev) => [...prev, { role: 'assistant', text: `The analysis request failed: ${detail}` }]);
     } finally {
+      setWaitingForServer(false);
       setLoading(false);
     }
   };
@@ -185,33 +209,41 @@ export function AiAnalystPage() {
                     </div>
                     <div className="rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] p-4">
                       <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#405246]">{message.answer.narrative}</p>
-                      <div className="mt-3 space-y-2">
-                        {[
-                          ['OBSERVED', message.answer.sections.observed, 'green'],
-                          ['PREDICTED', message.answer.sections.predicted, 'teal'],
-                          ['REPORTED / UNVERIFIED', message.answer.sections.reported, 'amber'],
-                          ['ESTIMATED', message.answer.sections.estimated, 'neutral'],
-                          ['REFERENCE STANDARDS', message.answer.sections.standards, 'neutral'],
-                          ['LIMITATIONS', message.answer.sections.limitations, 'red'],
-                          ['SUGGESTED NEXT ACTIONS', message.answer.sections.nextActions, 'lime'],
-                        ].map(([label, items, tone]) => Array.isArray(items) && items.length ? (
-                          <div key={String(label)} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
-                            <Badge tone={tone as never}>{String(label)}</Badge>
-                            <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                              {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
-                            </ul>
+                      {hasEvidence(message.answer) ? (
+                        <details className="group mt-3">
+                          <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-[10px] font-semibold text-[#3f7d2a] hover:text-[#142016] [&::-webkit-details-marker]:hidden">
+                            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                            Show the evidence
+                          </summary>
+                          <div className="mt-2 space-y-2">
+                            {[
+                              ['OBSERVED', message.answer.sections.observed, 'green'],
+                              ['PREDICTED', message.answer.sections.predicted, 'teal'],
+                              ['REPORTED / UNVERIFIED', message.answer.sections.reported, 'amber'],
+                              ['ESTIMATED', message.answer.sections.estimated, 'neutral'],
+                              ['REFERENCE STANDARDS', message.answer.sections.standards, 'neutral'],
+                              ['LIMITATIONS', message.answer.sections.limitations, 'red'],
+                              ['SUGGESTED NEXT ACTIONS', message.answer.sections.nextActions, 'lime'],
+                            ].map(([label, items, tone]) => Array.isArray(items) && items.length ? (
+                              <div key={String(label)} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
+                                <Badge tone={tone as never}>{String(label)}</Badge>
+                                <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
+                                  {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
+                                </ul>
+                              </div>
+                            ) : null)}
                           </div>
-                        ) : null)}
-                      </div>
-                      {message.answer.citations.length ? (
-                        <div className="mt-3 rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
-                          <DataLabel>Citations</DataLabel>
-                          <ul className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
-                            {message.answer.citations.map((citation, citationIndex) => (
-                              <li key={citationIndex}>{citation.title} · {citation.section} · {citation.authority}{citation.url ? <> · <a href={citation.url} target="_blank" rel="noreferrer" className="text-[#3f7d2a] underline">source</a></> : null}</li>
-                            ))}
-                          </ul>
-                        </div>
+                          {message.answer.citations.length ? (
+                            <div className="mt-3 rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
+                              <DataLabel>Citations</DataLabel>
+                              <ul className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
+                                {message.answer.citations.map((citation, citationIndex) => (
+                                  <li key={citationIndex}>{citation.title} · {citation.section} · {citation.authority}{citation.url ? <> · <a href={citation.url} target="_blank" rel="noreferrer" className="text-[#3f7d2a] underline">source</a></> : null}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </details>
                       ) : null}
                       {message.answer.disclaimer ? <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{message.answer.disclaimer}</p> : null}
                     </div>
