@@ -112,8 +112,8 @@ For trained forecasts, the adapter also backfills the OpenAQ hourly PM2.5 series
 
 ## Email
 
-- `EMAIL_PROVIDER=console` by default → notifications stored as `SIMULATED`.
-- SMTP supported through Nodemailer when `EMAIL_PROVIDER=smtp` and credentials are set.
+- With no SMTP credentials, notifications are stored as `SIMULATED` and nothing is sent.
+- Setting `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` enables Nodemailer delivery; `EMAIL_PROVIDER` is informational once credentials exist.
 - `DEMO_MODE=true` restricts delivery to `DEMO_EMAIL_RECIPIENT`; if empty, no email is sent.
 - `SENT` means the provider accepted the message. `DELIVERED` is only recorded through `POST /api/v1/notifications/webhook` with `EMAIL_WEBHOOK_SECRET`.
 

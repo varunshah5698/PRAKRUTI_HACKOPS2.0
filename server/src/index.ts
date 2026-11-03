@@ -229,6 +229,7 @@ const server = app.listen(env.PORT, () => {
 async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
   stopLiveScheduler();
+  closeEventClients();
   // Give in-flight requests (AI analyses can take ~30 s) time to finish after
   // Render switches traffic, then force the process down before SIGKILL.
   const graceMs = env.NODE_ENV === 'production' ? 25_000 : 1_000;
