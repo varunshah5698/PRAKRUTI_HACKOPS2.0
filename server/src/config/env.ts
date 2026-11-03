@@ -41,6 +41,7 @@ const EnvSchema = z.object({
   LIVE_AIR_QUALITY_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(900),
   ML_SERVICE_URL: z.string().default(''),
   ML_SERVICE_API_KEY: z.string().default(''),
+  AI_EVIDENCE_CHAR_LIMIT: z.coerce.number().int().min(10_000).max(400_000).default(120_000),
   MAP_STYLE_URL: z.string().default('https://tiles.openfreemap.org/styles/liberty'),
   MAP_TILE_PROVIDER: z.string().default('OpenFreeMap'),
   EMAIL_PROVIDER: z.string().default('console'),

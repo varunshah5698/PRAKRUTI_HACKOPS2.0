@@ -1064,7 +1064,7 @@ export function MapPage() {
             <div className="min-w-0">
               <DataLabel>Worst source</DataLabel>
               <p className="mt-0.5 truncate text-[12px] font-semibold text-[#3f2b1d]">{worstSource?.name ?? 'None in range'}</p>
-              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Rank #{worstSource?.rank ?? '—'} · {worstSource?.affectedMonitors ?? 0} monitor(s)</p>
+              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Rank #{worstSource?.rank ?? '—'} · emission {worstSource?.emissionIndex ?? '—'}/100 · {worstSource?.affectedMonitors ?? 0} monitor(s)</p>
             </div>
           </button>
           <div className="flex items-center gap-3 rounded-2xl border border-[#e6d5c5] bg-white/65 p-3">

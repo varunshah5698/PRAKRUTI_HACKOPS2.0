@@ -1019,55 +1019,99 @@ export interface NearbyPlace {
 export async function getNearbyNature(lat: number, lng: number): Promise<{ items: NearbyPlace[]; source: string; note: string }> {
   assertMumbaiPoint(lat, lng);
   return cached(`city:nearby:${lat.toFixed(3)}:${lng.toFixed(3)}`, 30 * 60_000, async () => {
-    const query = `[out:json][timeout:25];(
-      node["leisure"~"^(park|garden|nature_reserve)$"](around:4000,${lat},${lng});
-      way["leisure"~"^(park|garden|nature_reserve)$"](around:4000,${lat},${lng});
-      way["natural"="water"]["name"](around:4000,${lat},${lng});
-    );out center tags 60;`;
-    // The public Overpass instance is often at capacity. Try a second mirror
-    // before giving up; both are community-run and rate-limited.
-    const body = new URLSearchParams({ data: query }).toString();
-    const hosts = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
-    let payload: { elements: OverpassElement[] } | null = null;
-    let lastError: unknown = null;
-    for (const host of hosts) {
-      try {
-        payload = await fetchJson<{ elements: OverpassElement[] }>(
-          host,
-          { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body },
-          22_000,
-        );
-        break;
-      } catch (error) {
-        lastError = error;
+    // Nominatim is the dependable path: one bounded free-text search around the
+    // point, sorted locally by distance. Overpass is richer but frequently at
+    // capacity, so it is only a fallback when Nominatim returns nothing.
+    const delta = 0.04;
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('q', 'park');
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('addressdetails', '1');
+    url.searchParams.set('countrycodes', 'in');
+    url.searchParams.set('viewbox', `${(lng - delta).toFixed(4)},${(lat + delta).toFixed(4)},${(lng + delta).toFixed(4)},${(lat - delta).toFixed(4)}`);
+    url.searchParams.set('bounded', '1');
+    url.searchParams.set('limit', '25');
+    let items: NearbyPlace[] = [];
+    let source = 'OpenStreetMap Nominatim';
+    try {
+      const rows = await fetchJson<Array<NominatimResult & { type?: string }>>(url.toString(), {}, 12_000);
+      const seen = new Set<string>();
+      items = rows
+        .flatMap((row) => {
+          const name = (row.name || '').trim();
+          const placeLat = Number(row.lat);
+          const placeLng = Number(row.lon);
+          if (!name || name.length < 3 || name.toLowerCase() === 'park' || !isWithinMumbaiBounds(placeLat, placeLng)) return [];
+          const key = `${name.toLowerCase()}:${placeLat.toFixed(3)}:${placeLng.toFixed(3)}`;
+          if (seen.has(key)) return [];
+          seen.add(key);
+          const rawType = (row.type ?? row.addresstype ?? 'park').replace(/_/g, ' ');
+          const kind = /water|lake|river|pond/i.test(`${rawType} ${name}`) ? 'water' : /garden/i.test(`${rawType} ${name}`) ? 'garden' : 'park';
+          return [{
+            id: `osm-${row.place_id}`,
+            name,
+            kind,
+            lat: round(placeLat, 5),
+            lng: round(placeLng, 5),
+            distanceKm: haversineKm({ lat, lng }, { lat: placeLat, lng: placeLng }),
+          }];
+        })
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .slice(0, 6);
+    } catch {
+      // Fall through to the Overpass fallback below.
+    }
+
+    if (items.length === 0) {
+      const query = `[out:json][timeout:20];(
+        node["leisure"~"^(park|garden|nature_reserve)$"](around:4000,${lat},${lng});
+        way["leisure"~"^(park|garden|nature_reserve)$"](around:4000,${lat},${lng});
+        way["natural"="water"]["name"](around:4000,${lat},${lng});
+      );out center tags 60;`;
+      const body = new URLSearchParams({ data: query }).toString();
+      const hosts = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+      for (const host of hosts) {
+        try {
+          const payload = await fetchJson<{ elements: OverpassElement[] }>(
+            host,
+            { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body },
+            10_000,
+          );
+          const seen = new Set<string>();
+          items = (payload.elements ?? [])
+            .flatMap((element) => {
+              const name = element.tags?.name?.trim();
+              const point = element.center ?? (element.lat !== undefined && element.lon !== undefined ? { lat: element.lat, lon: element.lon } : null);
+              if (!name || !point) return [];
+              const key = `${name}:${point.lat.toFixed(3)}:${point.lon.toFixed(3)}`;
+              if (seen.has(key)) return [];
+              seen.add(key);
+              const kind = element.tags?.natural === 'water' ? 'water' : element.tags?.leisure ?? 'park';
+              return [{
+                id: `osm-${element.type}-${element.id}`,
+                name,
+                kind,
+                lat: round(point.lat, 5),
+                lng: round(point.lon, 5),
+                distanceKm: haversineKm({ lat, lng }, { lat: point.lat, lng: point.lon }),
+              }];
+            })
+            .sort((a, b) => a.distanceKm - b.distanceKm)
+            .slice(0, 6);
+          if (items.length > 0) {
+            source = 'OpenStreetMap Overpass API';
+            break;
+          }
+        } catch {
+          // Try the next mirror.
+        }
       }
     }
-    if (!payload) throw lastError instanceof Error ? lastError : unavailable('The OpenStreetMap query service is busy. Try again shortly.');
-    const seen = new Set<string>();
-    const items = (payload.elements ?? [])
-      .flatMap((element) => {
-        const name = element.tags?.name?.trim();
-        const point = element.center ?? (element.lat !== undefined && element.lon !== undefined ? { lat: element.lat, lon: element.lon } : null);
-        if (!name || !point) return [];
-        const key = `${name}:${point.lat.toFixed(3)}:${point.lon.toFixed(3)}`;
-        if (seen.has(key)) return [];
-        seen.add(key);
-        const kind = element.tags?.natural === 'water' ? 'water' : element.tags?.leisure ?? 'park';
-        return [{
-          id: `osm-${element.type}-${element.id}`,
-          name,
-          kind,
-          lat: round(point.lat, 5),
-          lng: round(point.lon, 5),
-          distanceKm: haversineKm({ lat, lng }, { lat: point.lat, lng: point.lon }),
-        }];
-      })
-      .sort((a, b) => a.distanceKm - b.distanceKm)
-      .slice(0, 6);
+
     return {
       items,
-      source: 'OpenStreetMap via Overpass API',
-      note: 'Green spaces and named water bodies mapped by OpenStreetMap contributors within 4 km. This is not an official park inventory.',
+      source,
+      note: 'Parks, gardens and named green/water places mapped by OpenStreetMap contributors within roughly 4 km. This is not an official park inventory.',
     };
   });
 }

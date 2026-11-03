@@ -318,10 +318,11 @@ export async function getMapTimeline(filters: MapFilters) {
         pm25: values.pm25?.value ?? forecast?.predictedValue ?? null,
       };
     });
-  const sourceImpact =
+  const impactResult =
     category === 'air' || category === 'industrial'
       ? await computeSourceImpactAt(impactStations, at)
       : null;
+  const sourceImpact = impactResult && impactResult.sources.length ? impactResult : null;
   if (sourceImpact && sourceImpact.landImpact.affectedStations > 0) {
     warnings.push(
       `${sourceImpact.landImpact.affectedStations} monitor(s) fall inside a simulated industrial plume screen. Source shares are screening estimates, not measured apportionment or regulatory attribution.`,

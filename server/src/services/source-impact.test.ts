@@ -49,6 +49,7 @@ describe('industrial source screening', () => {
       source: 'TEST',
     }, [source]);
     expect(result.stationAttributions.DOWNWIND.sources[0].alignment).toBeGreaterThan(0.9);
+    expect(result.stationAttributions.DOWNWIND.estimatedSharePct).toBeLessThanOrEqual(90);
     expect(result.stationAttributions.CROSSWIND.sources.length).toBe(0);
     expect(result.stationAttributions.CROSSWIND.impactLevel).toBe('NONE');
     expect(result.stationAttributions.DOWNWIND.impactLevel).not.toBe('NONE');

@@ -11,6 +11,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:reset": "tsx src/db/setup.ts --reset",
     "test": "vitest run",
+    "test:live-ai": "RUN_LIVE_AI=1 vitest run src/services/ai/analyst.live.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ml:register": "tsx src/db/register-models.ts",
     "integrations:check": "tsx src/scripts/check-integrations.ts",

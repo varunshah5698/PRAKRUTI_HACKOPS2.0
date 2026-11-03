@@ -823,6 +823,22 @@ textarea {
   box-shadow: 0 10px 20px -14px rgba(20, 70, 85, 0.5);
   pointer-events: none;
   white-space: nowrap;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.ra-community:hover .ra-community-label,
+.ra-community:focus-visible .ra-community-label,
+.ra-community.is-selected .ra-community-label {
+  opacity: 1;
+}
+.ra-hover-label {
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.ra-monitor:hover .ra-hover-label,
+.ra-monitor:focus-visible .ra-hover-label,
+.ra-monitor.is-selected .ra-hover-label {
+  opacity: 1;
 }
 .ra-report .atmo-bar-wall {
   opacity: 0.62;

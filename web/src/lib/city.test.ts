@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { beachBand, bestWindow, burnMinutes, exposureEstimate, sunProgress, weatherLabel, weatherMood, type CityHour } from './city';
+import { beachBand, bestWindow, burnMinutes, exposureEstimate, pm25Category, sunProgress, weatherLabel, weatherMood, type CityHour } from './city';
 
 function hour(overrides: Partial<CityHour>): CityHour {
   return {
@@ -31,6 +31,15 @@ function hour(overrides: Partial<CityHour>): CityHour {
 }
 
 describe('live city helpers', () => {
+  it('maps PM2.5 concentrations to CPCB bands', () => {
+    expect(pm25Category(20)).toBe('Good');
+    expect(pm25Category(45)).toBe('Satisfactory');
+    expect(pm25Category(75)).toBe('Moderate');
+    expect(pm25Category(110)).toBe('Poor');
+    expect(pm25Category(200)).toBe('Very Poor');
+    expect(pm25Category(null)).toBe('INSUFFICIENT DATA');
+  });
+
   it('maps WMO codes to readable labels and moods', () => {
     expect(weatherLabel(0)).toBe('Clear sky');
     expect(weatherLabel(63)).toBe('Rain');

@@ -886,6 +886,7 @@ Prakriti is a Mumbai environmental intelligence platform for air, water, waste a
 Public pages:
 - / — landing page, live overview and entry points.
 - /about — scope, data use and AI limitations.
+- /privacy and /terms — privacy and terms.
 - /data-sources — source catalogue and connection status.
 - /report — submit a citizen report with category, incident type, a location inside Greater Mumbai, incident time, description and optional photograph.
 - /login, /register, /forgot-password, /reset-password — account access.
@@ -893,6 +894,7 @@ Signed-in workspace:
 - /dashboard — command centre: current weather, city PM2.5 trend, highest station AQI, KPIs, active alerts, category watch and the monitoring network.
 - /atmosphere — authority-only 3D air lab: clean/baseline/stagnant 48-hour scenarios, forecast cockpit, 3D station columns and source fingerprint. It is a scenario simulation, not the forecast of record.
 - /map — Mumbai map with past/current/future timeline, filters for category, locality, pollutant, source, severity and verification, plus a station drawer with live readings, analytics, forecasts and authority AI analyses.
+- /city — Live city pulse for any Mumbai point: CAMS modelled air, weather, health and activity advice, sun/UV, coast and river watch, last-year comparison, personal exposure and locality comparison. All signed-in users; modelled context, not station readings.
 - /intelligence/predictions — authority-only station forecast with +1/+3/+6 hour horizons, empirical band, warning criteria, risk/confidence and SHAP when a trained model is registered. It forecasts one selected station at a time; there is no citywide forecast page.
 - /ai-analyst — authority-only chat. It works citywide or for one selected station and answers from app records. A citywide forecast here is a city-mean baseline, not a station forecast.
 - /reports — authority review of citizen reports, private evidence, AI vision status, verification and investigation links.
@@ -904,7 +906,7 @@ Signed-in workspace:
 - /simulation and /simulation/:id — authority scenario replay; simulation records are isolated from operational data.
 - /data-sources — source health, ingestion jobs and manual ingestion triggers.
 - /settings and /profile — account, role and preferences.
-Roles: PUBLIC users see public pages and /my-reports. All signed-in users can open /dashboard, /map, /alerts, /notifications, /data-sources, /settings and /profile. Public visitors cannot open /dashboard, /map, /alerts, /notifications, /settings or any authority page without signing in. Authority-only pages are /atmosphere, /intelligence/predictions, /ai-analyst, /reports, /incidents, /compliance and /simulation. Some pages redirect when the role lacks access.
+Roles: PUBLIC users see public pages and /my-reports. All signed-in users can open /dashboard, /map, /city, /alerts, /notifications, /data-sources, /settings and /profile. Public visitors cannot open /dashboard, /map, /city, /alerts, /notifications, /settings or any authority page without signing in. Authority-only pages are /atmosphere, /intelligence/predictions, /ai-analyst, /reports, /incidents, /compliance and /simulation. Some pages redirect when the role lacks access.
 Data rules: demo station readings are labelled SIMULATION DATA; OpenAQ and data.gov.in feeds only run when configured; weather is live Open-Meteo; CAMS is modelled context, not a station reading; direct CPCB/MPCB feeds are not configured by default; no interpolated pollution surface is shown; forecasts are a persistence baseline unless a trained model is registered; regulatory comparisons are reference-only.
 You can explain evidence, compare stations, interpret forecasts and standards, summarise reports and news, and tell the user exactly where in the website to inspect or act. You cannot click, navigate, submit, verify, create incidents, run simulations, send notifications, change settings or alter records. Never claim you performed an action. If the user asks for an action, give the page, the section and the steps.`;
 
@@ -990,12 +992,12 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
     model: riverConfig.model,
     temperature: 0.15,
     max_tokens: 6000,
-    reasoning_effort: 'low',
+    reasoning_effort: 'high',
     messages: [
       { role: 'system', content: systemPrompt() },
       {
         role: 'user',
-        content: `Question: ${evidence.question}\n\nEvidence JSON:\n${JSON.stringify(evidence).slice(0, 60_000)}\n\nReturn ONLY the JSON object described in the system prompt. No markdown, no headings, and no text before or after the JSON.`,
+        content: `Question: ${evidence.question}\n\nEvidence JSON:\n${JSON.stringify(evidence).slice(0, env.AI_EVIDENCE_CHAR_LIMIT)}\n\nReturn ONLY the JSON object described in the system prompt. No markdown, no headings, and no text before or after the JSON.`,
       },
     ],
   });

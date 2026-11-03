@@ -298,8 +298,16 @@ function ratioTone(ratio: number | null): string {
   return '#c94a50';
 }
 
-function aqiTone(category: string | null | undefined): string {
-  return AQI_COLORS[category ?? 'INSUFFICIENT DATA'] ?? '#728176';
+function aqiTone(value: number | string | null | undefined): string {
+  if (typeof value === 'number') {
+    if (value <= 50) return '#2f8f66';
+    if (value <= 100) return '#6d9f45';
+    if (value <= 200) return '#b3860f';
+    if (value <= 300) return '#cf7227';
+    if (value <= 400) return '#c94a50';
+    return '#8f2f3a';
+  }
+  return AQI_COLORS[value ?? 'INSUFFICIENT DATA'] ?? '#728176';
 }
 
 function stationComparisonLabel(name: string): string {
@@ -351,47 +359,66 @@ function ComparisonTrack({
 
 function PollutantComparisonCard({ rows }: { rows: DashboardData['charts']['pollutantComparison'] }) {
   const [picked, setPicked] = useState<string | null>(null);
+  const [mode, setMode] = useState<PollutantMode>('mean');
   const enriched = rows
-    .map((row) => {
-      const comparable = row.threshold !== null && row.threshold > 0 && row.thresholdUnit === row.unit;
-      const ratio = comparable ? row.value / (row.threshold as number) : null;
-      return { ...row, label: pollutantLabel(row.pollutant), ratio, tone: ratioTone(ratio) };
-    })
+    .map((row) => ({ ...row, label: pollutantLabel(row.pollutant) }))
     .sort((a, b) => POLLUTANT_ORDER.indexOf(a.pollutant) - POLLUTANT_ORDER.indexOf(b.pollutant));
-  const ranked = [...enriched].sort((a, b) => (b.ratio ?? -1) - (a.ratio ?? -1));
+  const ranked = [...enriched].sort(
+    (a, b) => (pollutantRatio(b, pollutantReading(b, mode).value) ?? -1) - (pollutantRatio(a, pollutantReading(a, mode).value) ?? -1),
+  );
   const selected = enriched.find((row) => row.pollutant === picked) ?? ranked[0];
+  const reading = selected ? pollutantReading(selected, mode) : null;
+  const ratio = selected && reading ? pollutantRatio(selected, reading.value) : null;
+  const tone = ratioTone(ratio);
+  const modeLabel = mode === 'mean' ? 'city mean' : mode === 'peak' ? 'peak station' : 'lowest station';
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
-      <CardHeader>
+      <CardHeader className="flex-wrap">
         <div>
           <CardTitle>Pollutant comparison</CardTitle>
-          <p className="mt-1 text-[10px] text-[#66766b]">Latest city mean against the NAAQS screening reference</p>
+          <p className="mt-1 text-[10px] text-[#66766b]">Compare city mean, peak or lowest station against screening references</p>
         </div>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/60 text-[#5f8f79]">
-          <Waves className="h-4 w-4" />
-        </span>
+        <div className="flex rounded-full border border-white/80 bg-white/55 p-1">
+          {POLLUTANT_MODES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => { setMode(item.id); setPicked(null); }}
+              aria-pressed={mode === item.id}
+              className={`rounded-full px-2.5 py-1 text-[9px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] focus-visible:ring-offset-1 ${
+                mode === item.id ? 'bg-[#4e9b3f] text-white shadow-sm' : 'text-[#66766b] hover:bg-white/80 hover:text-[#142016]'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </CardHeader>
 
-      {selected ? (
+      {selected && reading ? (
         <div className="flex flex-1 flex-col p-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#66766b]">{selected.label} · city mean</p>
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#66766b]">{selected.label} · {modeLabel}</p>
+              {reading.station ? <p className="mt-0.5 truncate text-[10px] font-medium text-[#4d5e52]" title={reading.station}>{reading.station}</p> : null}
               <p className="display mt-1 text-[36px] font-bold leading-none tracking-[-0.06em] text-[#142016]">
-                {number(selected.value, selected.value < 10 ? 1 : 0)}
+                {number(reading.value, reading.value < 10 ? 1 : 0)}
                 <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#66766b]">{selected.unit}</span>
+              </p>
+              <p className="mt-1 text-[8px] text-[#84948a]">
+                {mode === 'mean' ? `${selected.stations} stations reporting` : `City mean ${number(selected.value)} ${selected.unit} · ${selected.stations} stations`}
               </p>
             </div>
             <span
-              className="rounded-full border px-2.5 py-1 text-[9px] font-semibold"
-              style={{ color: selected.tone, borderColor: `${selected.tone}33`, background: `${selected.tone}12` }}
+              className="shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-semibold"
+              style={{ color: tone, borderColor: `${tone}33`, background: `${tone}12` }}
             >
-              {selected.ratio === null ? 'No matching reference' : `${number(selected.ratio * 100, 0)}% of reference`}
+              {ratio === null ? 'No matching reference' : `${number(ratio * 100, 0)}% of reference`}
             </span>
           </div>
 
-          <ComparisonTrack value={selected.value} reference={selected.threshold} referenceUnit={selected.unit} tone={selected.tone} />
+          <ComparisonTrack value={reading.value} reference={selected.threshold} referenceUnit={selected.unit} tone={tone} />
 
           <div className="mt-3 grid grid-cols-3 divide-x divide-dashed divide-[#dbe5d6] rounded-2xl border border-white/80 bg-white/45 py-2">
             {[
@@ -407,19 +434,22 @@ function PollutantComparisonCard({ rows }: { rows: DashboardData['charts']['poll
           </div>
 
           <div className="mt-3 flex items-center justify-between">
-            <DataLabel>All pollutants</DataLabel>
+            <DataLabel>All pollutants · {modeLabel}</DataLabel>
             <span className="text-[8px] text-[#84948a]">Select to compare</span>
           </div>
           <div className="mt-2 grid grid-cols-2 content-start gap-1.5 sm:grid-cols-3">
             {enriched.map((row) => {
               const active = row.pollutant === selected.pollutant;
+              const tileReading = pollutantReading(row, mode);
+              const tileRatio = pollutantRatio(row, tileReading.value);
+              const tileTone = ratioTone(tileRatio);
               return (
                 <button
                   key={row.pollutant}
                   type="button"
                   onClick={() => setPicked(row.pollutant)}
                   aria-pressed={active}
-                  title={`${row.label} ${number(row.value)} ${row.unit}${row.threshold !== null ? ` · reference ${number(row.threshold)} ${row.unit}` : ''}`}
+                  title={`${row.label} ${number(tileReading.value)} ${row.unit}${tileReading.station ? ` at ${tileReading.station}` : ''}${row.threshold !== null ? ` · reference ${number(row.threshold)} ${row.unit}` : ''}`}
                   className={`group rounded-2xl border p-2.5 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] focus-visible:ring-offset-2 ${
                     active
                       ? 'border-[#b3df7c] bg-[#effbe2] shadow-[0_12px_24px_-22px_rgba(52,110,41,.7)]'
@@ -428,16 +458,18 @@ function PollutantComparisonCard({ rows }: { rows: DashboardData['charts']['poll
                 >
                   <span className="flex items-center justify-between gap-1">
                     <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#5d6e63]">{row.label}</span>
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: row.tone }} />
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: tileTone }} />
                   </span>
                   <span className="display mt-1 block text-[16px] font-bold leading-none text-[#142016]">
-                    {number(row.value, row.value < 10 ? 1 : 0)}
+                    {number(tileReading.value, tileReading.value < 10 ? 1 : 0)}
                   </span>
-                  <span className="mt-0.5 block text-[8px] text-[#84948a]">{row.unit}</span>
+                  <span className="mt-0.5 block truncate text-[8px] text-[#84948a]">
+                    {mode === 'mean' ? row.unit : tileReading.station}
+                  </span>
                   <span className="mt-2 block h-1 overflow-hidden rounded-full bg-[#e8efe4]">
                     <span
                       className="block h-full rounded-full transition-[width] duration-500"
-                      style={{ width: `${row.ratio !== null ? Math.min(100, row.ratio * 66.7) : 0}%`, background: row.tone }}
+                      style={{ width: `${tileRatio !== null ? Math.min(100, tileRatio * 66.7) : 0}%`, background: tileTone }}
                     />
                   </span>
                 </button>
@@ -446,11 +478,11 @@ function PollutantComparisonCard({ rows }: { rows: DashboardData['charts']['poll
           </div>
 
           <p className="mt-auto pt-3 text-[8px] leading-relaxed text-[#84948a]">
-            Latest station means, not 24h/8h averages. A screening comparison is not a compliance determination.
+            {mode === 'mean' ? 'Latest station means' : 'Latest station readings'}, not 24h/8h averages. A screening comparison is not a compliance determination.
           </p>
         </div>
       ) : (
-        <EmptyState title="No comparable values" description="No pollutant mean with a matching reference unit is available." />
+        <EmptyState title="No comparable values" description="No pollutant value with a matching reference unit is available." />
       )}
     </Card>
   );
@@ -477,7 +509,7 @@ function StationComparisonCard({ rows }: { rows: DashboardData['charts']['statio
   const max = Math.max(...ranked.map((row) => row[metric] ?? 0), 1);
   const mean = ranked.length ? ranked.reduce((sum, row) => sum + (row[metric] ?? 0), 0) / ranked.length : null;
   const deltaPct = selectedValue !== null && mean ? ((selectedValue - mean) / mean) * 100 : null;
-  const tone = aqiTone(selected?.aqi ?? null);
+  const tone = aqiTone(selected?.aqiCategory ?? null);
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -510,10 +542,10 @@ function StationComparisonCard({ rows }: { rows: DashboardData['charts']['statio
               <div className="min-w-0">
                 <DataLabel>Selected station</DataLabel>
                 <p className="mt-1 truncate text-[12px] font-semibold text-[#142016]" title={selected.station}>{stationComparisonLabel(selected.station)}</p>
-                <p className="mt-0.5 text-[8px] text-[#84948a]">{spec.label} · {spec.unit}</p>
+                <p className="mt-0.5 text-[8px] text-[#84948a]">{spec.label} · {spec.unit} · {selected.isSimulated ? 'simulated' : 'connected source'}</p>
               </div>
               <span className="shrink-0 rounded-full px-2 py-1 text-[8px] font-semibold" style={{ color: tone, background: `${tone}14` }}>
-                {selected.aqi !== null ? aqiCategory(selected.aqi) : 'No AQI'}
+                {selected.aqi !== null ? selected.aqiCategory : 'No AQI'}
               </span>
             </div>
 
@@ -551,36 +583,32 @@ function StationComparisonCard({ rows }: { rows: DashboardData['charts']['statio
             </button>
           </div>
 
-          <div className="scrollbar-thin mt-1.5 max-h-[168px] flex-1 overflow-auto pr-1">
+          <div className="mt-2 sm:columns-2 sm:gap-x-3">
             {ranked.map((row, index) => {
               const value = row[metric] ?? 0;
               const active = row.station === selected.station;
-              const rowTone = aqiTone(row.aqi);
+              const rowTone = aqiTone(row.aqiCategory);
               return (
                 <button
                   key={row.station}
                   type="button"
                   onClick={() => setPicked(row.station)}
                   aria-pressed={active}
-                  title={`${row.station} · ${spec.label} ${number(row[metric], metric === 'aqi' ? 0 : 1)} ${spec.unit}`}
-                  className={`group flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] ${
-                    active ? 'bg-[#effbe2]' : 'hover:bg-white/70'
+                  title={`${row.station} · ${spec.label} ${number(row[metric], metric === 'aqi' ? 0 : 1)} ${spec.unit} · ${row.isSimulated ? 'simulated' : 'connected source'} · updated ${timeAgo(row.latestObservedAt)}`}
+                  className={`relative mb-0.5 flex w-full break-inside-avoid items-center gap-1.5 overflow-hidden rounded-lg border px-1.5 py-1 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] ${
+                    active ? 'border-[#cbe8a5] bg-[#effbe2]' : 'border-transparent hover:bg-white/70'
                   }`}
                 >
-                  <span className="w-4 shrink-0 text-[8px] font-semibold tabular-nums text-[#84948a]">{index + 1}</span>
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: rowTone }} />
-                  <span className="min-w-0 flex-1">
-                    <span className={`block truncate text-[10px] ${active ? 'font-semibold text-[#223328]' : 'text-[#4d5e52]'}`}>
-                      {stationComparisonLabel(row.station)}
-                    </span>
-                    <span className="mt-1 block h-[5px] overflow-hidden rounded-full bg-[#e9f0e5]">
-                      <span
-                        className="block h-full rounded-full transition-[width] duration-500"
-                        style={{ width: `${Math.max(3, (value / max) * 100)}%`, background: rowTone }}
-                      />
-                    </span>
+                  <span
+                    className="absolute inset-y-0 left-0 rounded-r-md"
+                    style={{ width: `${Math.max(4, (value / max) * 100)}%`, background: `linear-gradient(90deg, ${rowTone}2e 0%, ${rowTone}08 100%)` }}
+                  />
+                  <span className="relative w-3.5 shrink-0 text-[8px] font-semibold tabular-nums text-[#84948a]">{index + 1}</span>
+                  <span className="relative h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: rowTone }} />
+                  <span className={`relative min-w-0 flex-1 truncate text-[9.5px] ${active ? 'font-semibold text-[#223328]' : 'text-[#4d5e52]'}`}>
+                    {stationComparisonLabel(row.station)}
                   </span>
-                  <span className="w-9 shrink-0 text-right text-[10px] font-semibold tabular-nums text-[#223328]">
+                  <span className="relative shrink-0 text-[9.5px] font-semibold tabular-nums text-[#223328]">
                     {number(row[metric], metric === 'aqi' ? 0 : 1)}
                   </span>
                 </button>
@@ -590,7 +618,7 @@ function StationComparisonCard({ rows }: { rows: DashboardData['charts']['statio
 
           <div className="mt-auto flex items-center justify-between gap-2 pt-3 text-[8px] leading-relaxed text-[#84948a]">
             <p>Indicative station values. Demo readings may be simulated and are not official CPCB/MPCB measurements.</p>
-            <Link to="/map" className="shrink-0 font-semibold text-[#3f7d2a] transition hover:text-[#2f5f20]">Open map <ArrowUpRight className="inline h-2.5 w-2.5" /></Link>
+            <Link to={`/map?station=${selected.id}`} className="shrink-0 font-semibold text-[#3f7d2a] transition hover:text-[#2f5f20]">Open map <ArrowUpRight className="inline h-2.5 w-2.5" /></Link>
           </div>
         </div>
       ) : (

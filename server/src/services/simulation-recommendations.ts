@@ -380,40 +380,80 @@ export function buildSimulationRecommendations(ctx: RecommendationContext): Simu
       (item): item is string => Boolean(item),
     );
     const severe = ctx.risk.alertState === 'CRITICAL' || (ph && (ph.value < 6 || ph.value > 9)) || (dissolvedOxygen && dissolvedOxygen.value < 4);
+    const outsideReference =
+      (ph && (ph.value < 6.5 || ph.value > 8.5)) ||
+      (dissolvedOxygen && dissolvedOxygen.value < 5) ||
+      ctx.risk.alertState !== 'NORMAL';
 
-    add({
-      audience: 'PUBLIC',
-      priority: severe ? 'IMMEDIATE' : 'WATCH',
-      title: 'Avoid contact with the creek or river water',
-      action:
-        'Do not bathe, swim, fish or walk through discoloured or foaming water. Wash exposed skin with clean water and report the exact location.',
-      reason:
-        `The sample shows pH ${numberText(ph?.value)} and dissolved oxygen ${numberText(dissolvedOxygen?.value)} mg/L. The reference range is pH 6.5–8.5 and at least 5 mg/L DO; this is a screening comparison, not a regulatory determination.`,
-      evidence,
-      confidence,
-    });
-    add({
-      audience: 'FIELD',
-      priority: severe ? 'PRIORITY' : 'ROUTINE',
-      title: 'Collect a confirmatory sample',
-      action:
-        'Repeat the sample at the same point, record the chain of custody and send it for laboratory pH, dissolved oxygen and turbidity confirmation.',
-      reason:
-        'Field probes drift. A second sample is the quickest way to separate a real discharge from an instrument or sampling artefact.',
-      evidence: [...evidence, `Step ${ctx.step + 1} of ${totalSteps}`],
-      confidence,
-    });
-    add({
-      audience: 'AUTHORITY',
-      priority: severe ? 'PRIORITY' : 'ROUTINE',
-      title: 'Inspect upstream drains and outfalls',
-      action:
-        'Walk the upstream reach during the same window, look for active discharge, foam or odour, and check whether any industrial or municipal outfall is operating unusually.',
-      reason:
-        'Water quality can change quickly with a single discharge. The sample tells you the condition, not the source, so the source inspection has to happen while the condition is present.',
-      evidence: ['Reference criteria only', `Alert ${ctx.risk.alertState.replace(/_/g, ' ')}`],
-      confidence,
-    });
+    if (outsideReference) {
+      add({
+        audience: 'PUBLIC',
+        priority: severe ? 'IMMEDIATE' : 'WATCH',
+        title: 'Avoid contact with the creek or river water',
+        action:
+          'Do not bathe, swim, fish or walk through discoloured or foaming water. Wash exposed skin with clean water and report the exact location.',
+        reason:
+          `The sample shows pH ${numberText(ph?.value)} and dissolved oxygen ${numberText(dissolvedOxygen?.value)} mg/L. The reference range is pH 6.5–8.5 and at least 5 mg/L DO; this is a screening comparison, not a regulatory determination.`,
+        evidence,
+        confidence,
+      });
+      add({
+        audience: 'FIELD',
+        priority: severe ? 'PRIORITY' : 'ROUTINE',
+        title: 'Collect a confirmatory sample',
+        action:
+          'Repeat the sample at the same point, record the chain of custody and send it for laboratory pH, dissolved oxygen and turbidity confirmation.',
+        reason:
+          'Field probes drift. A second sample is the quickest way to separate a real discharge from an instrument or sampling artefact.',
+        evidence: [...evidence, `Step ${ctx.step + 1} of ${totalSteps}`],
+        confidence,
+      });
+      add({
+        audience: 'AUTHORITY',
+        priority: severe ? 'PRIORITY' : 'ROUTINE',
+        title: 'Inspect upstream drains and outfalls',
+        action:
+          'Walk the upstream reach during the same window, look for active discharge, foam or odour, and check whether any industrial or municipal outfall is operating unusually.',
+        reason:
+          'Water quality can change quickly with a single discharge. The sample tells you the condition, not the source, so the source inspection has to happen while the condition is present.',
+        evidence: ['Reference criteria only', `Alert ${ctx.risk.alertState.replace(/_/g, ' ')}`],
+        confidence,
+      });
+    } else {
+      add({
+        audience: 'PUBLIC',
+        priority: 'ROUTINE',
+        title: 'No current water-quality trigger at this sample',
+        action:
+          'Normal precautions still apply around any open water, but this simulated sample does not currently call for extra contact restrictions.',
+        reason:
+          `pH ${numberText(ph?.value)} and dissolved oxygen ${numberText(dissolvedOxygen?.value)} mg/L are within the screening reference, and no alert condition is active. This is a baseline step, not an all-clear for the whole creek.`,
+        evidence: [readingText('ph') ?? 'pH available', readingText('do') ?? 'DO available', ctx.stationName],
+        confidence,
+      });
+      add({
+        audience: 'FIELD',
+        priority: 'ROUTINE',
+        title: 'Continue the routine sampling cadence',
+        action:
+          'Keep the normal sampling interval and note any visible change in colour, foam or odour between samples.',
+        reason:
+          'The current readings are within the reference range. Routine samples establish the local baseline that makes a later deterioration easier to confirm.',
+        evidence: [...evidence, `Step ${ctx.step + 1} of ${totalSteps}`],
+        confidence,
+      });
+      add({
+        audience: 'AUTHORITY',
+        priority: 'ROUTINE',
+        title: 'No source inspection needed from this sample alone',
+        action:
+          'Keep the outfall on the routine watch list and escalate only if the next sample leaves the reference range or a verified report arrives.',
+        reason:
+          'A single within-range sample cannot rule out an intermittent discharge, but it does not justify an immediate field inspection.',
+        evidence: ['Reference criteria only', `Alert ${ctx.risk.alertState.replace(/_/g, ' ')}`],
+        confidence,
+      });
+    }
     if (severe) {
       add({
         audience: 'AUTHORITY',

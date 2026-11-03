@@ -33,6 +33,7 @@ import {
   type ReadingComparison,
   type ReportAnalysis as AnalysisResult,
   type ReportCategory,
+  type ReportFacts,
   type StationInsight,
 } from '../lib/report-analysis';
 
@@ -241,10 +242,12 @@ function WindDial({ degrees, speed }: { degrees: number; speed: number }) {
 function StepBody({
   step,
   analysis,
+  report,
   onSelectCommunity,
 }: {
   step: number;
   analysis: AnalysisResult;
+  report: ReportFacts;
   onSelectCommunity: (id: string) => void;
 }) {
   if (step === 0) {
@@ -256,7 +259,9 @@ function StepBody({
             {analysis.grade.label}
           </Badge>
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-[#405246]">
+        <p className="mt-2 text-[11px] font-semibold leading-tight text-[#1b2a1f]">{report.incident_type.replace(/_/g, ' ')}</p>
+        <p className="mt-1 line-clamp-4 text-[10px] leading-relaxed text-[#5a6a5f]">{report.description}</p>
+        <p className="mt-3 text-[10px] leading-relaxed text-[#405246]">
           The site is anchored at the claimed coordinates. The rings are true relative distance, so every column in the scene can be read as a real neighbour.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 text-[9px]">
@@ -703,7 +708,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                         >
                           <span className="ra-community-ring" />
                           <span className="ra-community-dot" />
-                          {isSelected ? <span className="ra-community-label">{community.public_ref} · {Math.round(community.distance_m)} m</span> : null}
+                          <span className="ra-community-label">{community.public_ref} · {Math.round(community.distance_m)} m</span>
                         </button>
                       );
                     })
@@ -732,7 +737,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                           <span className="atmo-bar-base" />
                           <span className="atmo-bar-wall" />
                           <span className="atmo-bar-top" />
-                          {isSelected ? <span className="atmo-bar-label">{shortName(station.name)} · {station.headline}</span> : null}
+                          <span className="atmo-bar-label ra-hover-label">{shortName(station.name)} · {station.headline}</span>
                         </button>
                       );
                     })
@@ -850,12 +855,12 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                   <CommunityPanel report={selectedCommunity} />
                 </div>
               ) : (
-                <StepBody step={step} analysis={analysis} onSelectCommunity={(id) => setSelected({ kind: 'community', id })} />
+                <StepBody step={step} analysis={analysis} report={report} onSelectCommunity={(id) => setSelected({ kind: 'community', id })} />
               )}
             </div>
 
             <p className="mt-3 text-[8px] leading-relaxed text-[#8ba1a9]">
-              Drag to orbit · arrow keys rotate · +/− zoom. Column height is a visual signal, not a measurement of harm.
+              Drag to orbit · arrow keys rotate · +/− zoom. Monitor column height is a visual signal, not a measurement of harm; the site beacon is a fixed anchor.
             </p>
           </aside>
         </div>
@@ -1084,16 +1089,28 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                 </p>
               </>
             ) : analysis.timeline.length ? (
-              <ol className="relative space-y-3 border-l border-[#dbe5d6] pl-3">
-                {analysis.timeline.map((entry) => (
-                  <li key={entry.id} className="relative">
-                    <span className="absolute -left-[19px] top-1 h-2 w-2 rounded-full border-2 border-white" style={{ background: accent }} />
-                    <p className="text-[10px] font-semibold text-[#26362a]">{entry.label}</p>
-                    <p className="mt-0.5 text-[8px] text-[#718277]">{formatDate(entry.at)}</p>
-                    {entry.detail ? <p className="mt-1 text-[9px] leading-relaxed text-[#5a6a5f]">{entry.detail}</p> : null}
-                  </li>
-                ))}
-              </ol>
+              <>
+                <ol className="relative space-y-3 border-l border-[#dbe5d6] pl-3">
+                  {analysis.timeline.map((entry) => (
+                    <li key={entry.id} className="relative">
+                      <span className="absolute -left-[19px] top-1 h-2 w-2 rounded-full border-2 border-white" style={{ background: accent }} />
+                      <p className="text-[10px] font-semibold text-[#26362a]">{entry.label}</p>
+                      <p className="mt-0.5 text-[8px] text-[#718277]">{formatDate(entry.at)}</p>
+                      {entry.detail ? <p className="mt-1 text-[9px] leading-relaxed text-[#5a6a5f]">{entry.detail}</p> : null}
+                    </li>
+                  ))}
+                </ol>
+                <details className="mt-3 rounded-xl border border-dashed border-[#dbe5d6] bg-white/40 p-2.5">
+                  <summary className="cursor-pointer text-[8px] font-semibold uppercase tracking-[0.1em] text-[#557480]">Raw governance ledger</summary>
+                  <div className="mt-2 space-y-1.5">
+                    {audit.map((row, index) => (
+                      <p key={`${row.action}-${row.created_at}-${index}`} className="break-words text-[8px] leading-relaxed text-[#718277]">
+                        <span className="font-semibold text-[#557480]">{row.action.replace(/_/g, ' ')}</span> · {formatDate(row.created_at)} · {JSON.stringify(row.after ?? {}).slice(0, 220)}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              </>
             ) : (
               <div className="rounded-xl border border-dashed border-[#dbe5d6] bg-white/40 p-3 text-center text-[9px] leading-relaxed text-[#718277]">
                 No audit events recorded for this report.
