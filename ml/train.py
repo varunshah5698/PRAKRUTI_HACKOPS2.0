@@ -6,11 +6,13 @@ download data, invent stations or fabricate metrics.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier, LGBMRegressor

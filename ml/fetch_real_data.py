@@ -336,10 +336,20 @@ def main() -> None:
             code = str((sensor.get("parameter") or {}).get("name") or "").lower()
             if code in POLLUTANTS:
                 by_pollutant.setdefault(code, []).append(sensor)
+        latest_by_sensor = {
+            row.get("sensorsId"): (row.get("datetime") or {}).get("utc")
+            for row in latest.get("results", [])
+        }
         chosen: dict[str, dict] = {}
         for code, options in by_pollutant.items():
-            # Prefer mass-unit sensors; otherwise fall back to ppb with conversion.
-            options.sort(key=lambda sensor: (str((sensor.get("parameter") or {}).get("units") or "") not in ("µg/m³", "ug/m3", "mg/m³"), -(sensor.get("id") or 0)))
+            # Prefer the sensor that reported most recently; break ties by mass unit.
+            options.sort(
+                key=lambda sensor: (
+                    latest_age_days(latest_by_sensor.get(sensor.get("id")), now),
+                    str((sensor.get("parameter") or {}).get("units") or "") not in ("µg/m³", "ug/m3", "mg/m³"),
+                    -(sensor.get("id") or 0),
+                )
+            )
             chosen[code] = options[0]
         if "pm25" not in chosen:
             continue
