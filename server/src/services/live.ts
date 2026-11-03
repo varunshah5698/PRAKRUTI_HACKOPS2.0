@@ -340,7 +340,13 @@ export function airQualityConfigured(): boolean {
  */
 export async function pollLiveAirQuality(): Promise<{ records: number; message?: string }> {
   const [dataGov, openAq] = await Promise.all([ingestDataGovIn(), ingestOpenAq()]);
-  const message = [dataGov.message, openAq.message].filter(Boolean).join(' · ') || undefined;
+  const message =
+    [
+      dataGov.message ? `data.gov.in CPCB: ${dataGov.message}` : null,
+      openAq.message ? `OpenAQ: ${openAq.message}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || undefined;
   return { records: dataGov.records + openAq.records, message };
 }
 

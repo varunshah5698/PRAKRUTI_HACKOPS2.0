@@ -4,7 +4,7 @@ This deployment is a working demonstration, not an operational regulatory system
 
 ## Data
 
-- **No direct live CPCB or MPCB API feed.** CPCB remains `NOT_CONFIGURED` until a data.gov.in API key is added. OpenAQ is connected and currently supplies 12 Mumbai stations (MPCB/IITM operators); those records are labelled as OpenAQ and preserve upstream timestamps. Demo station records remain synthetic and labelled `SIMULATION DATA`.
+- **No direct live CPCB or MPCB API feed.** CPCB remains `NOT_CONFIGURED` until a data.gov.in API key is added. OpenAQ is connected and supplies 12 Mumbai stations in total (MPCB/IITM operators); 7 are current and 5 are stale. Stale stations are excluded from current counts and the current map after 6 hours. Those records are labelled as OpenAQ and preserve upstream timestamps. Demo station records remain synthetic and labelled `SIMULATION DATA`.
 - **Training data is an OpenAQ archive, not a direct CPCB feed.** LightGBM 1/3/6h, quantile and deterioration models are trained locally on 23 MPCB/BMC/IITM stations (2025-11-01 to 2026-10-23, 143,059 feature rows). The anomaly detector remains `NOT_TRAINED`.
 - **Model metrics are extract-specific.** They apply only to the registered CSV SHA-256 and are not a guarantee for other periods, stations or live conditions.
 - **Sparse demo network.** 10 air stations across a large city cannot establish area-wide concentration.
