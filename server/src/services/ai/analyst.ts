@@ -34,7 +34,6 @@ interface EvidenceBundle {
   locality?: Record<string, unknown> | null;
   latestObservations: Array<Record<string, unknown>>;
   history: Array<{ observedAt: string; value: number }>;
-  historyParameter: string;
   weather?: Record<string, unknown> | null;
   forecasts: Array<Record<string, unknown>>;
   anomaly?: Record<string, unknown> | null;
@@ -44,15 +43,6 @@ interface EvidenceBundle {
   standards: Array<Record<string, unknown>>;
   modelStatus: Array<Record<string, unknown>>;
   dataNotes: string[];
-}
-
-function tokens(question: string): string[] {
-  return question
-    .toLowerCase()
-    .replace(/[^a-z0-9\s.µ]/g, ' ')
-    .split(/\s+/)
-    .filter((t) => t.length > 2)
-    .slice(0, 12);
 }
 
 export async function buildEvidence(params: {
@@ -146,7 +136,7 @@ export async function buildEvidence(params: {
   if (!params.stationId) {
     latestObservations = await query<Record<string, unknown>>(
       `SELECT DISTINCT ON (s.id) s.id AS station_id, s.name, s.code, s.health_status, s.is_simulated,
-              o.pollutant_code, o.value::float8 AS value, o.unit, o.observed_at
+              o.pollutant_code, o.value::float8 AS value, o.unit, o.observed_at, o.source_id
        FROM monitoring_stations s
        JOIN environmental_observations o ON o.station_id=s.id AND o.pollutant_code='pm25'
        WHERE o.observed_at > now() - interval '24 hours'
@@ -165,7 +155,6 @@ export async function buildEvidence(params: {
   }
 
   const category = params.category ?? 'air';
-  const searchTokens = tokens(params.question);
   const standards = await query<Record<string, unknown>>(
     `SELECT st.parameter, st.operator, st.threshold_value::float8, st.threshold_max::float8, st.unit,
             st.averaging_period, st.applicability, st.section_ref, st.notes,
@@ -193,7 +182,6 @@ export async function buildEvidence(params: {
     locality,
     latestObservations,
     history,
-    historyParameter: 'PM2.5',
     weather,
     forecasts,
     anomaly,
@@ -206,7 +194,7 @@ export async function buildEvidence(params: {
   };
 }
 
-function ruleBasedAnswer(evidence: EvidenceBundle): AiAnswer {
+function ruleBasedAnswer(evidence: EvidenceBundle, reason = 'River AI is not configured.'): AiAnswer {
   const station = evidence.station as { name?: string; health_status?: string; is_simulated?: boolean } | null;
   const observed: string[] = [];
   const predicted: string[] = [];
@@ -282,7 +270,7 @@ function ruleBasedAnswer(evidence: EvidenceBundle): AiAnswer {
     predicted.length ? `Predicted: ${predicted[0]}` : '',
     reported.length ? `Reported: ${reported[0]}` : '',
     standards.length ? `Reference: ${standards[0]}` : '',
-    'This is a rule-based digest, not an LLM response. River AI is not configured.',
+    `This is a rule-based digest, not an LLM response. ${reason}`,
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -318,28 +306,48 @@ Return JSON with keys: narrative (string), observed (string[]), predicted (strin
 }
 
 async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
-  const response = await fetch(`${riverConfig.baseURL.replace(/\/$/, '')}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${riverConfig.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: riverConfig.model,
-      temperature: 0.15,
-      max_tokens: 4096,
-      reasoning_effort: 'low',
-      messages: [
-        { role: 'system', content: systemPrompt() },
-        {
-          role: 'user',
-          content: `Question: ${evidence.question}\n\nEvidence JSON:\n${JSON.stringify(evidence).slice(0, 60_000)}`,
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(45_000),
+  const url = `${riverConfig.baseURL.replace(/\/$/, '')}/chat/completions`;
+  const body = JSON.stringify({
+    model: riverConfig.model,
+    temperature: 0.15,
+    max_tokens: 4096,
+    reasoning_effort: 'low',
+    messages: [
+      { role: 'system', content: systemPrompt() },
+      {
+        role: 'user',
+        content: `Question: ${evidence.question}\n\nEvidence JSON:\n${JSON.stringify(evidence).slice(0, 60_000)}`,
+      },
+    ],
   });
-  if (!response.ok) throw new Error(`River AI HTTP ${response.status}`);
+  let response: Awaited<ReturnType<typeof fetch>> | null = null;
+  let lastError: unknown = null;
+  // The provider occasionally returns 429/5xx; retry briefly so one blip does not
+  // discard an otherwise valid analysis.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const current = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${riverConfig.apiKey}`,
+        },
+        body,
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (current.ok) {
+        response = current;
+        break;
+      }
+      lastError = new Error(`River AI HTTP ${current.status}`);
+      if (current.status !== 429 && current.status < 500) break;
+    } catch (error) {
+      lastError = error;
+      if (error instanceof Error && error.name === 'AbortError') break;
+    }
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+  }
+  if (!response) throw lastError instanceof Error ? lastError : new Error('River AI request failed');
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
     model?: string;
@@ -405,7 +413,7 @@ export async function answerQuestion(params: {
   try {
     return await callRiver(evidence);
   } catch (error) {
-    const fallback = ruleBasedAnswer(evidence);
+    const fallback = ruleBasedAnswer(evidence, 'River AI was unavailable for this request.');
     fallback.status = 'FAILED';
     fallback.narrative = `River AI call failed (${error instanceof Error ? error.message : 'unknown error'}). Showing the rule-based evidence digest instead.\n\n${fallback.narrative}`;
     return fallback;

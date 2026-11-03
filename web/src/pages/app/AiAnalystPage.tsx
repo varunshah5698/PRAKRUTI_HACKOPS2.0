@@ -82,8 +82,9 @@ export function AiAnalystPage() {
       });
       setMessages((prev) => [...prev, { role: 'assistant', answer }]);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'AI request failed');
-      setMessages((prev) => [...prev, { role: 'assistant', text: 'The analysis request failed. No answer was generated.' }]);
+      const detail = error instanceof Error ? error.message : 'Unknown network or server error';
+      toast.error(detail);
+      setMessages((prev) => [...prev, { role: 'assistant', text: `The analysis request failed: ${detail}` }]);
     } finally {
       setLoading(false);
     }
