@@ -41,7 +41,7 @@ PPB_TO_UGM3 = {"no2": 46.0055 / 24.45, "so2": 64.066 / 24.45, "o3": 47.998 / 24.
 # CPCB publishes CO in mg/m3. OpenAQ labels the CO sensor "ppb" but the values
 # are ppm: a co-located legacy CO sensor reported 640 ug/m3 where the new sensor
 # reports 0.5, and 0.5 ppm * 1.145 = 0.57 mg/m3. Treat "ppb" CO as ppm.
-CO_PPM_TO_MGM3 = 1.145 / 1000.0
+CO_PPM_TO_MGM3 = 1.145
 
 # Physical/plausibility bounds. Values outside are treated as sensor faults.
 BOUNDS = {

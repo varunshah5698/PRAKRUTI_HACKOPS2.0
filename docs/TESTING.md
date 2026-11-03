@@ -6,7 +6,7 @@
 npm test
 ```
 
-The server test suite uses Vitest and currently has **29 passing tests** across four files:
+The test suite uses Vitest and currently has **29 passing tests** across six files (four server, two web):
 
 | File | Coverage |
 |---|---|
