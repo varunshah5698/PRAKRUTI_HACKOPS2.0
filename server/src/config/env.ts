@@ -104,9 +104,18 @@ export const visionConfig = {
 };
 
 // SMTP credentials are the switch: adding them enables real delivery even if
-// EMAIL_PROVIDER was left at its default. Without credentials the app stores
-// notifications as SIMULATED and never pretends an email was sent.
-export const emailConfigured = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
+// EMAIL_PROVIDER was left at its default. Gmail is the exception to the host
+// requirement because Nodemailer's `gmail` service selects the host itself.
+// Without credentials the app stores notifications as SIMULATED and never
+// pretends an email was sent.
+const gmailTransport =
+  env.EMAIL_PROVIDER === 'gmail' || env.SMTP_HOST.toLowerCase().endsWith('gmail.com');
+
+export const emailConfigured = Boolean(
+  env.SMTP_USER && env.SMTP_PASSWORD && (env.SMTP_HOST || gmailTransport),
+);
+
+export const emailProviderLabel = !emailConfigured ? 'NOT_CONFIGURED' : gmailTransport ? 'GMAIL' : 'SMTP';
 
 export const appConfig = {
   timezone: env.APP_TIMEZONE,

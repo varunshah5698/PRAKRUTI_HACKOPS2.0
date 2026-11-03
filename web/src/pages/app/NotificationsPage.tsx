@@ -20,7 +20,9 @@ interface Locality { id: string; name: string }
 export function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [preferences, setPreferences] = useState<Record<string, unknown> | null>(null);
-  const [provider, setProvider] = useState<{ configured: boolean; mode: string; demoMode: boolean; demoRecipientConfigured: boolean; note: string } | null>(null);
+  const [provider, setProvider] = useState<{ configured: boolean; mode: string; provider?: string; from?: string; demoMode: boolean; demoRecipientConfigured: boolean; criticalBroadcast?: boolean; note: string } | null>(null);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const [localities, setLocalities] = useState<Locality[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,7 +39,7 @@ export function NotificationsPage() {
     setLoading(true);
     Promise.all([
       api.get<{ notifications: NotificationRow[] }>('/notifications?pageSize=50'),
-      api.get<{ preferences: Record<string, unknown> | null; provider: { configured: boolean; mode: string; demoMode: boolean; demoRecipientConfigured: boolean; note: string } }>('/notifications/preferences'),
+      api.get<{ preferences: Record<string, unknown> | null; provider: { configured: boolean; mode: string; provider?: string; from?: string; demoMode: boolean; demoRecipientConfigured: boolean; criticalBroadcast?: boolean; note: string } }>('/notifications/preferences'),
       api.get<{ localities: Locality[] }>('/public/localities'),
     ])
       .then(([notificationResult, preferenceResult, localityResult]) => {
@@ -60,6 +62,23 @@ export function NotificationsPage() {
   };
 
   useEffect(load, []);
+
+  const sendTest = async () => {
+    setSendingTest(true);
+    setTestResult(null);
+    try {
+      const result = await api.post<{ status: string; recipient: string; demoMode: boolean; event: string }>('/notifications/test-email');
+      const where = result.demoMode ? `demo recipient ${result.recipient}` : result.recipient;
+      if (result.status === 'SENT') toast.success(`Test email accepted for ${where}.`);
+      else toast.info(result.event);
+      setTestResult(`${result.status} · ${where}`);
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send test email');
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -167,10 +186,19 @@ export function NotificationsPage() {
             <div className="p-4 text-[10px] leading-relaxed text-[#5a6a5f]">
               <p>{provider?.note}</p>
               <div className="mt-3 space-y-1.5 border-t border-[#e7ece3] pt-3">
-                <div className="flex justify-between"><span>Mode</span><span className="text-[#26362a]">{provider?.mode}</span></div>
+                <div className="flex justify-between"><span>Mode</span><span className="text-[#26362a]">{provider?.provider ?? provider?.mode}</span></div>
+                <div className="flex justify-between"><span>From</span><span className="truncate pl-3 text-right text-[#26362a]">{provider?.from ?? '—'}</span></div>
+                <div className="flex justify-between"><span>Critical broadcast</span><span className="text-[#26362a]">{provider?.criticalBroadcast ? 'All accounts' : 'Opt-in only'}</span></div>
                 <div className="flex justify-between"><span>Demo mode</span><span className="text-[#26362a]">{provider?.demoMode ? 'ON' : 'OFF'}</span></div>
                 <div className="flex justify-between"><span>Demo recipient</span><span className="text-[#26362a]">{provider?.demoRecipientConfigured ? 'Configured' : 'Not configured'}</span></div>
               </div>
+              <Button variant="dark" size="sm" className="mt-3 w-full" onClick={sendTest} disabled={sendingTest || !provider?.configured}>
+                <Mail className="h-3.5 w-3.5" /> {sendingTest ? 'Sending…' : 'Send test email'}
+              </Button>
+              {testResult ? <p className="mt-1.5 text-center text-[9px] text-[#5a6a5f]">{testResult}</p> : null}
+              {!provider?.configured ? (
+                <p className="mt-1.5 text-center text-[9px] text-[#8a6a1f]">Set EMAIL_PROVIDER=gmail, SMTP_USER and SMTP_PASSWORD to enable sending.</p>
+              ) : null}
               <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-2.5 text-[9px] text-amber-700/70">
                 <ShieldAlert className="mb-1 h-3.5 w-3.5" /> SENT is not DELIVERED. Delivery is only confirmed by a provider webhook.
               </div>
