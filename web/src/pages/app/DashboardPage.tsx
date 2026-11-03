@@ -6,6 +6,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   BrainCircuit,
+  Cloud,
+  CloudMoon,
   CloudRain,
   CloudSun,
   Database,
@@ -14,6 +16,7 @@ import {
   Flame,
   Gauge,
   MapPin,
+  Moon,
   RefreshCw,
   Siren,
   Sun,
@@ -23,10 +26,12 @@ import {
 } from 'lucide-react';
 import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Chart';
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
+import { MumbaiWeatherScene } from '../../components/MumbaiWeatherScene';
 import { RiskBadge, SourceBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock } from '../../components/ui';
 import { api } from '../../lib/api';
-import { AQI_COLORS, CATEGORY_LABELS, RISK_COLORS, categoryLabel, formatDate, number, timeAgo } from '../../lib/format';
+import { AQI_COLORS, CATEGORY_LABELS, RISK_COLORS, categoryLabel, formatDate, number, timeAgo, windDirection } from '../../lib/format';
+import { feelsLikeC, isNightInMumbai, weatherCondition } from '../../lib/weather';
 import { useAuth } from '../../store/auth';
 
 interface DashboardData {
@@ -93,14 +98,6 @@ function waveLabel(bucket: string): string {
   const hour = Number(bucket.slice(11, 13));
   if (!Number.isFinite(hour)) return bucket;
   return `${((hour + 11) % 12) + 1} ${hour < 12 ? 'AM' : 'PM'}`;
-}
-
-function weatherCondition(weather: DashboardData['weather']): string {
-  if (!weather) return 'Weather unavailable';
-  if (weather.precipitation_mm > 0.2) return 'Rain in the area';
-  if (weather.temperature_c >= 32 && weather.relative_humidity < 55) return 'Hot and dry';
-  if (weather.relative_humidity >= 70) return 'Humid and still';
-  return 'Clear skies over the city';
 }
 
 function KpiCell({
@@ -181,33 +178,30 @@ function SegmentedBar({ ratio }: { ratio: number }) {
   );
 }
 
-function Skyline() {
-  const buildings = [
-    [2, 62, 14], [17, 42, 10], [28, 72, 16], [45, 34, 9], [55, 52, 12], [68, 80, 15],
-    [84, 46, 11], [96, 66, 17], [114, 38, 9], [124, 58, 13], [138, 44, 10], [149, 76, 15],
-    [165, 54, 11], [177, 36, 8], [186, 64, 14], [201, 48, 10], [212, 70, 13], [226, 40, 9],
-    [236, 58, 12], [249, 78, 15], [265, 46, 10], [276, 60, 13], [290, 42, 9], [300, 68, 14],
-  ];
+function WeatherStat({
+  icon: Icon,
+  label,
+  value,
+  unit,
+  note,
+}: {
+  icon: typeof Wind;
+  label: string;
+  value: string;
+  unit: string;
+  note: string;
+}) {
   return (
-    <div className="relative h-full min-h-[94px] overflow-hidden">
-      <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="h-full w-full" aria-hidden>
-        <defs>
-          <linearGradient id="skyline-fade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="58%" stopColor="#f4f9ef" stopOpacity="0.94" />
-            <stop offset="100%" stopColor="#bed4b5" stopOpacity="0.9" />
-          </linearGradient>
-        </defs>
-        {buildings.map(([x, h, w], index) => (
-          <g key={index}>
-            <rect x={x} y={96 - h} width={w} height={h} rx="1.5" fill="url(#skyline-fade)" />
-            {[...Array(Math.max(1, Math.floor(h / 15)))].map((_, row) => (
-              <rect key={row} x={x + 3} y={96 - h + 6 + row * 13} width={Math.max(2, w - 6)} height="2.5" rx="1" fill="#ffffff" opacity="0.64" />
-            ))}
-          </g>
-        ))}
-        <rect x="0" y="94" width="320" height="2" fill="#9fb995" opacity="0.4" />
-      </svg>
+    <div className="rounded-2xl border border-white/75 bg-white/55 p-2.5">
+      <div className="flex items-center gap-1.5 text-[8.5px] font-semibold uppercase tracking-[0.1em] text-[#66766b]">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-[#5f8f79]" />
+        <span className="truncate">{label}</span>
+      </div>
+      <p className="display mt-1.5 text-[17px] font-bold leading-none text-[#142016]">
+        {value}
+        <span className="ml-0.5 text-[8.5px] font-medium text-[#66766b]">{unit}</span>
+      </p>
+      <p className="mt-1 truncate text-[8px] text-[#66766b]">{note}</p>
     </div>
   );
 }
@@ -378,7 +372,25 @@ export function DashboardPage() {
     .sort((a, b) => SOURCE_ORDER.indexOf(a.id) - SOURCE_ORDER.indexOf(b.id));
   const weather = data.weather;
   const temperature = weather ? number(weather.temperature_c) : '—';
-  const WeatherIcon = weather && weather.precipitation_mm > 0.2 ? CloudRain : weather && weather.relative_humidity >= 70 ? CloudSun : Sun;
+  const condition = weatherCondition(weather);
+  const feelsLike = feelsLikeC(weather);
+  const night = isNightInMumbai(weather?.observed_at);
+  const wind = weather ? windDirection(weather.wind_direction_deg) : '—';
+  const windFrom = wind === '—' ? '—' : wind.split(' · ')[0];
+  const WeatherIcon =
+    condition.mood === 'rain'
+      ? CloudRain
+      : condition.mood === 'humid'
+        ? night
+          ? CloudMoon
+          : CloudSun
+        : condition.mood === 'windy'
+          ? Wind
+          : night
+            ? Moon
+            : condition.mood === 'cool'
+              ? Cloud
+              : Sun;
 
   return (
     <div className="space-y-4">
@@ -423,7 +435,7 @@ export function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-12">
         <Card className="relative overflow-hidden border-white/80 lg:col-span-1 xl:col-span-3">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#f0f8ff]/80 via-[#f8fcf3]/40 to-[#e8f2df]/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#f6faf0]/90 via-[#f9fcf4]/40 to-[#e8f2df]/70" />
           <div className="relative flex h-full flex-col p-5">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -434,37 +446,32 @@ export function DashboardPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5da341]" /> Live
               </span>
             </div>
-            <div className="mt-5 flex items-start justify-between">
-              <span className="flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[#fff6d7] text-[#d6a51b] shadow-[0_18px_40px_-24px_rgba(178,138,26,.65)]">
-                <WeatherIcon className="h-8 w-8" strokeWidth={1.5} />
-              </span>
-              <div className="text-right">
+            <div className="mt-4 flex items-start justify-between gap-3">
+              <div>
                 <p className="display text-[52px] font-bold leading-none tracking-[-0.06em] text-[#142016]">
                   {temperature}
                   <span className="ml-0.5 align-top text-[20px] font-semibold tracking-normal text-[#3f5045]">°C</span>
                 </p>
+                <p className="mt-1.5 text-[12px] font-medium text-[#3f5045]">{condition.label}</p>
+                <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">
+                  {weather
+                    ? `Feels like ${number(feelsLike, 0)}°C · Observed ${formatDate(weather.observed_at)} IST`
+                    : 'No current weather observation.'}
+                </p>
               </div>
+              <span
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[0_18px_40px_-26px_rgba(38,70,52,.55)] ${
+                  night ? 'bg-[#e9eef6] text-[#5f6f8a]' : condition.mood === 'rain' ? 'bg-[#eaf2f5] text-[#4f7f94]' : 'bg-[#fff6d7] text-[#d6a51b]'
+                }`}
+              >
+                <WeatherIcon className="h-6 w-6" strokeWidth={1.5} />
+              </span>
             </div>
-            <p className="mt-3 text-[12px] font-medium text-[#3f5045]">{weatherCondition(weather)}</p>
-            <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">
-              {weather ? `${number(weather.wind_direction_deg, 0)}° wind · ${formatDate(weather.observed_at)}` : 'No current weather observation.'}
-            </p>
-            <div className="mt-3 min-h-[94px] flex-1">
-              <Skyline />
-            </div>
-            <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-              <div className="rounded-2xl border border-white/75 bg-white/55 p-2.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#66766b]">
-                  <CloudRain className="h-3.5 w-3.5 text-[#5f8fb4]" /> Rain
-                </div>
-                <p className="display mt-1.5 text-lg font-bold text-[#142016]">{weather ? number(weather.precipitation_mm, 1) : '—'}<span className="ml-1 text-[9px] font-medium text-[#66766b]">mm</span></p>
-              </div>
-              <div className="rounded-2xl border border-white/75 bg-white/55 p-2.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#66766b]">
-                  <Wind className="h-3.5 w-3.5 text-[#5f8f79]" /> Wind
-                </div>
-                <p className="display mt-1.5 text-lg font-bold text-[#142016]">{weather ? number(weather.wind_speed_kmh) : '—'}<span className="ml-1 text-[9px] font-medium text-[#66766b]">km/h</span></p>
-              </div>
+            <MumbaiWeatherScene mood={condition.mood} night={night} className="mt-3 min-h-[112px] flex-1" />
+            <div className="mt-auto grid grid-cols-3 gap-1.5 pt-3">
+              <WeatherStat icon={Droplets} label="Humidity" value={weather ? number(weather.relative_humidity, 0) : '—'} unit="%" note="relative" />
+              <WeatherStat icon={CloudRain} label="Rain" value={weather ? number(weather.precipitation_mm, 1) : '—'} unit="mm" note="current" />
+              <WeatherStat icon={Wind} label="Wind" value={weather ? number(weather.wind_speed_kmh) : '—'} unit="km/h" note={weather ? `from ${windFrom}` : '—'} />
             </div>
           </div>
         </Card>
@@ -546,10 +553,10 @@ export function DashboardPage() {
           </CardHeader>
           <div className="p-4">
             <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-dashed border-[#d4e0cf] bg-white/30">
-              <ConditionCell label="Rainfall" value={weather ? number(weather.precipitation_mm, 1) : '—'} unit="mm" icon={CloudRain} className="border-b border-r border-dashed border-[#d4e0cf]" />
-              <ConditionCell label="Temperature" value={temperature} unit="°C" icon={Thermometer} className="border-b border-dashed border-[#d4e0cf]" />
-              <ConditionCell label="Humidity" value={weather ? number(weather.relative_humidity, 0) : '—'} unit="%" icon={Waves} className="border-r border-dashed border-[#d4e0cf]" />
-              <ConditionCell label="Wind" value={weather ? number(weather.wind_speed_kmh) : '—'} unit="km/h" icon={Wind} />
+              <ConditionCell label="Rainfall" value={weather ? number(weather.precipitation_mm, 1) : '—'} unit="mm" icon={CloudRain} note="current" className="border-b border-r border-dashed border-[#d4e0cf]" />
+              <ConditionCell label="Temperature" value={temperature} unit="°C" icon={Thermometer} note={feelsLike !== null ? `Feels like ${number(feelsLike, 0)}°C` : undefined} className="border-b border-dashed border-[#d4e0cf]" />
+              <ConditionCell label="Humidity" value={weather ? number(weather.relative_humidity, 0) : '—'} unit="%" icon={Droplets} note="relative" className="border-r border-dashed border-[#d4e0cf]" />
+              <ConditionCell label="Wind" value={weather ? number(weather.wind_speed_kmh) : '—'} unit="km/h" icon={Wind} note={weather ? `from ${windFrom}` : undefined} />
             </div>
 
             <div className="mt-4 space-y-3">
