@@ -7,7 +7,6 @@ import {
   CalendarClock,
   CheckCircle2,
   CircleSlash,
-  Info,
   Layers3,
   LineChart as LineChartIcon,
   ShieldAlert,
@@ -159,17 +158,6 @@ export function PredictionsPage() {
             {data.stations.map((station) => <option key={station.id} value={station.id}>{station.name.replace(' demo air monitor', '')} · PM2.5 {station.pm25 ?? '—'}</option>)}
           </Select>
           <Link to="/map"><Button variant="dark" size="sm">Map <ArrowUpRight className="h-3.5 w-3.5" /></Button></Link>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4">
-        <div className="flex items-start gap-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <div className="text-[11px] leading-relaxed text-amber-700/80">
-            <p className="font-semibold text-amber-700">Model status: {data.status.trainedModels}{data.status.modelVersion ? ` · ${data.status.modelVersion}` : ''}</p>
-            <p className="mt-1">{data.status.reason}</p>
-            <p className="mt-1">Available method: {data.status.available}. SHAP: {data.status.shap}. Quantile intervals: {data.status.quantileIntervals}. Deterioration classifier: {data.status.deteriorationClassifier}.</p>
-          </div>
         </div>
       </div>
 
