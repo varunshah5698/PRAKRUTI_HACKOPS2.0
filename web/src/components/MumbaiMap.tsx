@@ -384,6 +384,7 @@ export function MumbaiMap({
         layout: {
           'text-field': ['get', 'label'],
           'text-size': 10,
+          'text-font': ['Noto Sans Regular'],
           'text-offset': [0, 1.7],
           'text-anchor': 'top',
           'text-allow-overlap': false,

@@ -24,6 +24,8 @@ import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Char
 import { MumbaiMap, type MapIncident, type MapReport, type MapStation } from '../../components/MumbaiMap';
 import { RiskBadge } from '../../components/Status';
 import { Badge, Button, DataLabel, EmptyState, LoadingBlock, Select, Sheet, Spinner, Tabs } from '../../components/ui';
+import { LivePanel } from '../../components/LivePanel';
+import { useLiveFeed, useLiveStation } from '../../lib/liveFeed';
 import { api } from '../../lib/api';
 import { AQI_COLORS, CATEGORY_LABELS, categoryLabel, formatDate, number, timeAgo } from '../../lib/format';
 import { toast } from 'sonner';
@@ -157,12 +159,15 @@ function StationDrawer({
 }) {
   const [detail, setDetail] = useState<StationDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState('overview');
   const [pollutant, setPollutant] = useState('pm25');
   const [aiType, setAiType] = useState<'observation' | 'predictive' | 'compliance' | null>(null);
   const [ai, setAi] = useState<AiAnswer | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const live = useLiveStation(stationId);
+  const { transport, status } = useLiveFeed();
 
   useEffect(() => {
     if (!stationId) return;
@@ -176,6 +181,21 @@ function StationDrawer({
       .catch((err) => setError(err instanceof Error ? err.message : 'Could not load station'))
       .finally(() => setLoading(false));
   }, [stationId]);
+
+  // A new minute reading lands on the stream; re-pull the drawer evidence so the
+  // inspector sees the same numbers the live panel reports.
+  const lastLiveObservation = live?.latestObservedAt ?? null;
+  const detailObservation = detail?.station.latestObservedAt ?? null;
+  useEffect(() => {
+    if (!stationId || !lastLiveObservation || !detailObservation) return;
+    if (detailObservation === lastLiveObservation) return;
+    setRefreshing(true);
+    api
+      .get<StationDetail>(`/map/stations/${stationId}`)
+      .then((next) => setDetail(next))
+      .catch(() => undefined)
+      .finally(() => setRefreshing(false));
+  }, [lastLiveObservation, detailObservation, stationId]);
 
   const loadAi = async (type: 'observation' | 'predictive' | 'compliance') => {
     if (!stationId) return;
@@ -246,6 +266,15 @@ function StationDrawer({
 
           {tab === 'overview' ? (
             <div className="space-y-5 px-5 py-5">
+              <LivePanel
+                reading={live}
+                pollutant={pollutant}
+                series={(detail.seriesAll ?? [])
+                  .filter((row) => row.pollutant_code === pollutant)
+                  .map((row) => ({ observedAt: row.observed_at, value: Number(row.value) }))}
+                transport={transport}
+                status={status}
+              />
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {Object.entries(detail.station.values).map(([code, value]) => (
                   <div key={code} className="rounded-xl border border-[#303945] bg-[#101317] p-3">

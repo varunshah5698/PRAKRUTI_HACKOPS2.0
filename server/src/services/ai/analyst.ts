@@ -328,6 +328,7 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
       model: riverConfig.model,
       temperature: 0.15,
       max_tokens: 4096,
+      reasoning_effort: 'low',
       messages: [
         { role: 'system', content: systemPrompt() },
         {
@@ -347,18 +348,23 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
   const content = message?.content?.trim() ?? '';
   const reasoning = message?.reasoning_content?.trim() ?? '';
   if (!content && !reasoning) throw new Error('River AI returned no content');
-  const raw = content || reasoning;
   let parsed: Record<string, unknown> = {};
+  const candidateText = content || reasoning;
   try {
-    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const candidate = (fenced ? fenced[1] : raw).trim();
+    const fenced = candidateText.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = (fenced ? fenced[1] : candidateText).trim();
     const start = candidate.indexOf('{');
     const end = candidate.lastIndexOf('}');
     if (start === -1 || end <= start) throw new Error('No JSON object found');
     parsed = JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
-  } catch {
-    parsed = { narrative: raw.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim() };
+    if (!content && !parsed.narrative && !Array.isArray(parsed.observed)) {
+      throw new Error('River AI returned reasoning without final content');
+    }
+  } catch (error) {
+    if (!content) throw error;
+    parsed = { narrative: content.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim() };
   }
+  const raw = content || String(parsed.narrative ?? 'Grounded analysis generated from the supplied evidence.');
   const strings = (value: unknown): string[] =>
     Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
   return {
