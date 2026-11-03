@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -10,14 +10,15 @@ import {
   Clock,
   Crosshair,
   Factory,
+  FileWarning,
   Filter,
+  Layers,
   Link2,
   MapPin,
   Pause,
   Play,
   Radio,
   RotateCcw,
-  Search,
   Wind,
 } from 'lucide-react';
 import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Chart';
@@ -37,7 +38,7 @@ import { AiActionText } from '../../components/AiActionText';
 import { LivePanel } from '../../components/LivePanel';
 import { useLiveFeed, useLiveStation } from '../../lib/liveFeed';
 import { api } from '../../lib/api';
-import { AQI_COLORS, CATEGORY_LABELS, categoryLabel, formatDate, number, timeAgo } from '../../lib/format';
+import { AQI_COLORS, CATEGORY_LABELS, RISK_COLORS, categoryLabel, classNames, formatDate, number, timeAgo } from '../../lib/format';
 import { useAuth } from '../../store/auth';
 import { toast } from 'sonner';
 
@@ -169,6 +170,94 @@ function stationToMap(station: TimelineStation, attribution: StationSourceAttrib
 function windLabel(wind: SourceImpactWind | null | undefined) {
   if (!wind) return 'Wind —';
   return `${wind.fromLabel} · ${Math.round(wind.speedKmh)} km/h`;
+}
+
+function SurfaceCard({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={classNames('rounded-[26px] border border-white/80 bg-white/85 shadow-[0_30px_80px_-64px_rgba(20,32,22,.55)] backdrop-blur-xl', className)}>
+      {children}
+    </div>
+  );
+}
+
+function SurfaceHeader({
+  label,
+  title,
+  subtitle,
+  aside,
+}: {
+  label: string;
+  title: string;
+  subtitle?: string;
+  aside?: ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-4">
+      <div className="min-w-0">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8a938b]">{label}</p>
+        <h3 className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-[#142016]">{title}</h3>
+        {subtitle ? <p className="mt-1 text-[10px] leading-relaxed text-[#8a938b]">{subtitle}</p> : null}
+      </div>
+      {aside ? <div className="shrink-0">{aside}</div> : null}
+    </div>
+  );
+}
+
+function MetricCell({
+  icon: Icon,
+  label,
+  value,
+  unit,
+  note,
+  className,
+}: {
+  icon: typeof Wind;
+  label: string;
+  value: string;
+  unit?: string;
+  note?: string;
+  className?: string;
+}) {
+  return (
+    <div className={classNames('p-3.5', className)}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[8.5px] font-semibold uppercase tracking-[0.12em] text-[#8a938b]">{label}</p>
+        <Icon className="h-3.5 w-3.5 text-[#a7b0a6]" />
+      </div>
+      <p className="display mt-2 text-[24px] font-semibold leading-none tracking-[-0.04em] text-[#142016]">
+        {value}
+        {unit ? <span className="ml-1 text-[9px] font-medium tracking-normal text-[#8a938b]">{unit}</span> : null}
+      </p>
+      {note ? <p className="mt-1.5 truncate text-[8.5px] text-[#8a938b]">{note}</p> : null}
+    </div>
+  );
+}
+
+function LayerToggle({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: typeof Wind;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={classNames(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] focus-visible:ring-offset-1',
+        active ? 'border-[#cfe2c4] bg-[#eef7e8] text-[#3f6b2d]' : 'border-[#e7eae3] bg-white/70 text-[#9aa39b] hover:text-[#4a554d]',
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+    </button>
+  );
 }
 
 function StationDrawer({
@@ -971,148 +1060,115 @@ export function MapPage() {
     setSourceListExpanded(false);
   };
 
+  const timelinePct = (timelineIndex / Math.max(1, timeline.length - 1)) * 100;
+  const onlineStations = data?.stations.filter((station) => station.healthStatus === 'ONLINE').length ?? 0;
+  const sourceImpactMax = Math.max(1, ...worstSources.map((source) => source.impactScore));
+
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
+    <div className="pb-2">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="lime" dot>Mumbai boundary</Badge>
-            <Badge tone={current.offset === 0 ? 'green' : current.offset > 0 ? 'teal' : 'neutral'}>{current.offset === 0 ? 'CURRENT' : current.offset > 0 ? 'FORECAST' : 'PAST'}</Badge>
-            <Badge tone={stationDataMode === 'SIMULATION' ? 'amber' : stationDataMode === 'MIXED' ? 'teal' : 'green'}>
-              {stationDataMode === 'SIMULATION' ? 'Station data simulated' : stationDataMode === 'MIXED' ? 'Mixed station sources' : 'Connected station source'}
+            <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#5f7065]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#4DA42A]" />
+              Live map · Greater Mumbai
+            </span>
+            <span className="hidden h-3 w-px bg-[#d7ddd3] sm:block" />
+            <Badge tone={stationDataMode === 'SIMULATION' ? 'amber' : stationDataMode === 'MIXED' ? 'teal' : 'green'} dot>
+              {stationDataMode === 'SIMULATION' ? 'Simulated station network' : stationDataMode === 'MIXED' ? 'Mixed station sources' : 'Connected station source'}
             </Badge>
-            {sourceImpact ? <Badge tone="amber" dot>Factory plume screen active</Badge> : null}
+            {sourceImpact ? <Badge tone="amber" dot>Plume screen active</Badge> : null}
           </div>
-          <h2 className="display mt-2 text-[24px] font-bold tracking-[-0.04em]">Live environmental intelligence map</h2>
-          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
-            Measured, predicted, reported and official records stay visually distinct. Simulated factories now cast a wind-aligned plume screen, flag affected monitors and show which sources may be influencing the land around them.
+          <h1 className="display mt-2 text-[30px] font-semibold leading-[0.98] tracking-[-0.05em] text-[#142016] sm:text-[36px]">
+            Mumbai, in real time.
+          </h1>
+          <p className="mt-2 max-w-2xl text-[11.5px] leading-relaxed text-[#6f7a70]">
+            Measured, predicted and reported signals in one calm view. Simulated factory plumes are screened against wind and flagged where they cross monitors.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="dark" size="sm" onClick={() => setFiltersOpen((v) => !v)}>
-            <Filter className="h-3.5 w-3.5" /> Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          <Button variant="ink" size="sm" onClick={() => setFiltersOpen((value) => !value)} aria-expanded={filtersOpen} aria-controls="map-filters">
+            <Filter className="h-3.5 w-3.5" />
+            Filters
+            {activeFilterCount > 0 ? <span className="ml-0.5 rounded-full bg-white/15 px-1.5 py-0.5 text-[9px]">{activeFilterCount}</span> : null}
           </Button>
-          <Button variant="dark" size="sm" onClick={reset}><RotateCcw className="h-3.5 w-3.5" /> Reset</Button>
+          <Button variant="outline" size="icon" onClick={reset} aria-label="Reset map view" title="Reset map view">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
       {filtersOpen ? (
-        <div className="grid gap-2 rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-3 md:grid-cols-2 xl:grid-cols-6">
-          <div>
-            <DataLabel>Category</DataLabel>
-            <Select value={category} onChange={(e) => { setCategory(e.target.value); setPollutant(e.target.value === 'air' ? 'aqi' : ''); }} className="mt-1 h-9 text-[11px]">
-              {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </Select>
+        <div id="map-filters" className="mt-4 rounded-[26px] border border-white/80 bg-white/85 p-4 shadow-[0_30px_80px_-64px_rgba(20,32,22,.55)] backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8a938b]">View filters</p>
+              <p className="mt-1 text-[10px] text-[#8a938b]">Narrow the frame by place, pollutant and evidence state.</p>
+            </div>
+            <button type="button" onClick={reset} className="text-[9px] font-semibold text-[#4f7a3d] transition hover:text-[#142016]">Clear all</button>
           </div>
-          <div>
-            <DataLabel>Locality</DataLabel>
-            <Select value={localityId} onChange={(e) => setLocalityId(e.target.value)} className="mt-1 h-9 text-[11px]">
-              <option value="">All Mumbai</option>
-              {data?.localities.map((locality) => <option key={locality.id} value={locality.id}>{locality.name}</option>)}
-            </Select>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div>
+              <DataLabel>Category</DataLabel>
+              <Select value={category} onChange={(e) => { setCategory(e.target.value); setPollutant(e.target.value === 'air' ? 'aqi' : ''); }} className="mt-1 h-9 text-[11px]">
+                {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </Select>
+            </div>
+            <div>
+              <DataLabel>Locality</DataLabel>
+              <Select value={localityId} onChange={(e) => setLocalityId(e.target.value)} className="mt-1 h-9 text-[11px]">
+                <option value="">All Mumbai</option>
+                {data?.localities.map((locality) => <option key={locality.id} value={locality.id}>{locality.name}</option>)}
+              </Select>
+            </div>
+            <div>
+              <DataLabel>Pollutant</DataLabel>
+              <Select value={pollutant} onChange={(e) => setPollutant(e.target.value)} className="mt-1 h-9 text-[11px]">
+                <option value="aqi">Indicative AQI</option>
+                {POLLUTANTS.filter(([code]) => code !== 'aqi').map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+              </Select>
+            </div>
+            <div>
+              <DataLabel>Source</DataLabel>
+              <Select value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="mt-1 h-9 text-[11px]">
+                <option value="">All sources</option>
+                <option value="demo-network">Demo network (simulated)</option>
+              </Select>
+            </div>
+            <div>
+              <DataLabel>Severity</DataLabel>
+              <Select value={severity} onChange={(e) => setSeverity(e.target.value)} className="mt-1 h-9 text-[11px]">
+                <option value="">Any</option>
+                {['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor', 'Severe'].map((value) => <option key={value} value={value}>{value}</option>)}
+              </Select>
+            </div>
+            <div>
+              <DataLabel>Report verification</DataLabel>
+              <Select value={verification} onChange={(e) => setVerification(e.target.value)} className="mt-1 h-9 text-[11px]">
+                <option value="">Any</option>
+                <option value="VERIFIED">Verified</option>
+                <option value="UNVERIFIED">Unverified</option>
+                <option value="REJECTED">Rejected</option>
+              </Select>
+            </div>
           </div>
-          <div>
-            <DataLabel>Pollutant</DataLabel>
-            <Select value={pollutant} onChange={(e) => setPollutant(e.target.value)} className="mt-1 h-9 text-[11px]">
-              <option value="aqi">Indicative AQI</option>
-              {POLLUTANTS.filter(([code]) => code !== 'aqi').map(([code, label]) => <option key={code} value={code}>{label}</option>)}
-            </Select>
-          </div>
-          <div>
-            <DataLabel>Source</DataLabel>
-            <Select value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="mt-1 h-9 text-[11px]">
-              <option value="">All sources</option>
-              <option value="demo-network">Demo network (simulated)</option>
-            </Select>
-          </div>
-          <div>
-            <DataLabel>Severity</DataLabel>
-            <Select value={severity} onChange={(e) => setSeverity(e.target.value)} className="mt-1 h-9 text-[11px]">
-              <option value="">Any</option>
-              {['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor', 'Severe'].map((value) => <option key={value} value={value}>{value}</option>)}
-            </Select>
-          </div>
-          <div>
-            <DataLabel>Report verification</DataLabel>
-            <Select value={verification} onChange={(e) => setVerification(e.target.value)} className="mt-1 h-9 text-[11px]">
-              <option value="">Any</option>
-              <option value="VERIFIED">Verified</option>
-              <option value="UNVERIFIED">Unverified</option>
-              <option value="REJECTED">Rejected</option>
-            </Select>
-          </div>
-          <div className="flex items-end gap-4 md:col-span-2 xl:col-span-6">
-            <label className="flex items-center gap-2 text-[10px] text-[#5a6a5f]">
-              <input type="checkbox" checked={includeForecast} onChange={(e) => setIncludeForecast(e.target.checked)} className="h-3.5 w-3.5 accent-[#5b9e46]" />
+          <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-dashed border-[#e7eae3] pt-3">
+            <label className="flex items-center gap-2 text-[10px] text-[#5f7065]">
+              <input type="checkbox" checked={includeForecast} onChange={(e) => setIncludeForecast(e.target.checked)} className="h-3.5 w-3.5 accent-[#4DA42A]" />
               Forecast layer
             </label>
-            <label className="flex items-center gap-2 text-[10px] text-[#66766b]" title="No interpolated surface is produced.">
+            <label className="flex items-center gap-2 text-[10px] text-[#9aa39b]" title="No interpolated surface is produced.">
               <input type="checkbox" disabled className="h-3.5 w-3.5" />
               Estimated zones (unavailable)
             </label>
-            <span className="ml-auto text-[9px] text-[#66766b]">{selectedLocality ? `${selectedLocality.name} filter active` : 'Greater Mumbai · all localities'}</span>
+            <span className="ml-auto text-[9px] text-[#8a938b]">{selectedLocality ? `${selectedLocality.name} filter active` : 'Greater Mumbai · all localities'}</span>
           </div>
         </div>
       ) : null}
 
-      {sourceImpact ? (
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          <button
-            type="button"
-            onClick={() => setSelectedSourceId(worstSource?.id ?? null)}
-            className="group flex items-center gap-3 rounded-2xl border border-[#efd3bd] bg-gradient-to-br from-[#fff7ef] to-[#fdfcf7] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#dfb58f] hover:shadow-[0_18px_36px_-32px_rgba(124,45,18,.65)]"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#7c2d12] text-white shadow-[0_10px_24px_-14px_rgba(124,45,18,.8)]"><Factory className="h-4 w-4" /></span>
-            <div className="min-w-0">
-              <DataLabel>Worst source</DataLabel>
-              <p className="mt-0.5 truncate text-[12px] font-semibold text-[#3f2b1d]">{worstSource?.name ?? 'None in range'}</p>
-              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Rank #{worstSource?.rank ?? '—'} · emission {worstSource?.emissionIndex ?? '—'}/100 · {worstSource?.affectedMonitors ?? 0} monitor(s)</p>
-            </div>
-          </button>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#e6d5c5] bg-white/65 p-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fdf1e6] text-[#b45309]"><Wind className="h-4 w-4" /></span>
-            <div>
-              <DataLabel>Plume wind</DataLabel>
-              <p className="mt-0.5 text-[12px] font-semibold text-[#3f2b1d]">{sourceImpact.wind.fromLabel} · {number(sourceImpact.wind.speedKmh)} km/h</p>
-              <p className="mt-0.5 text-[9px] text-[#9a7b66]">From {number(sourceImpact.wind.directionDeg, 0)}° · downwind {number((sourceImpact.wind.directionDeg + 180) % 360, 0)}°</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#e6d5c5] bg-white/65 p-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fdf1e6] text-[#9a3412]"><Radio className="h-4 w-4" /></span>
-            <div>
-              <DataLabel>Monitors flagged</DataLabel>
-              <p className="mt-0.5 text-[12px] font-semibold text-[#3f2b1d]">{sourceImpact.landImpact.affectedStations} <span className="text-[9px] font-normal text-[#9a7b66]">of {data?.stations.length ?? 0} shown</span></p>
-              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Downwind screening footprint</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#e6d5c5] bg-white/65 p-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fdf1e6] text-[#a16207]"><MapPin className="h-4 w-4" /></span>
-            <div>
-              <DataLabel>Plume area</DataLabel>
-              <p className="mt-0.5 text-[12px] font-semibold text-[#3f2b1d]">{sourceImpact.landImpact.impactedAreaKm2} km²</p>
-              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Screened footprint · not a measured area</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="grid gap-3 xl:grid-cols-[1fr_360px]">
-        <div className="relative overflow-hidden rounded-2xl border border-[#dfe6db] bg-[#ffffff]">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e7ece3] px-3 py-2">
-            <div className="flex items-center gap-2 text-[10px] text-[#5a6a5f]">
-              <Clock className="h-3.5 w-3.5 text-[#3f7d2a]" />
-              <span className="font-semibold text-[#26362a]">{formatDate(current.date.toISOString())}</span>
-              <span className="text-[#66766b]">Asia/Kolkata</span>
-              {data?.mode === 'FUTURE' ? <Badge tone="teal">Forecast · {data.forecastMeta?.method as string ?? 'unavailable'}</Badge> : null}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button variant="dark" size="icon" onClick={() => setTimelineIndex((v) => Math.max(0, v - 1))} aria-label="Previous timeline step"><ArrowLeft className="h-3.5 w-3.5" /></Button>
-              <Button variant={playing ? 'lime' : 'dark'} size="icon" onClick={() => setPlaying((v) => !v)} aria-label={playing ? 'Pause' : 'Play'}>{playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}</Button>
-              <Button variant="dark" size="icon" onClick={() => setTimelineIndex((v) => Math.min(timeline.length - 1, v + 1))} aria-label="Next timeline step"><ArrowRight className="h-3.5 w-3.5" /></Button>
-              <Button variant="dark" size="sm" onClick={() => { setTimelineIndex(4); setPlaying(false); }}>Current</Button>
-            </div>
-          </div>
-          <div className="relative">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0">
+          <div className="relative overflow-hidden rounded-[28px] border border-white/85 bg-[#eef1ec] shadow-[0_36px_100px_-72px_rgba(20,32,22,.65)]">
             <MumbaiMap
               stations={stations}
               reports={reports}
@@ -1130,46 +1186,26 @@ export function MapPage() {
               showSources={showSources}
               showPlumes={showPlumes}
               showImpactLinks={showImpactLinks}
-              className="h-[calc(100vh-300px)] min-h-[480px] w-full"
+              className="h-[calc(100dvh-290px)] min-h-[520px] max-h-[780px] w-full"
               theme="light"
               showBuildings
               autoFit={false}
               initialZoom={12.2}
               initialPitch={55}
             />
-            {sourceImpact ? (
-              <div className="absolute left-3 top-14 z-10 flex flex-wrap items-center gap-1.5 rounded-2xl border border-[#e6d5c5]/90 bg-white/80 p-1.5 shadow-[0_18px_36px_-32px_rgba(70,38,15,.5)] backdrop-blur">
-                <span className="px-1.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-[#8a7565]">Layers</span>
-                <button
-                  type="button"
-                  onClick={() => setShowSources((value) => !value)}
-                  aria-pressed={showSources}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[8.5px] font-semibold uppercase tracking-[0.06em] transition ${showSources ? 'border-[#c2410c]/30 bg-[#fdf0e7] text-[#9a3412]' : 'border-[#dfe6db] bg-white/60 text-[#7a8a7e]'}`}
-                >
-                  <Factory className="h-3 w-3" /> Factories
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPlumes((value) => !value)}
-                  aria-pressed={showPlumes}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[8.5px] font-semibold uppercase tracking-[0.06em] transition ${showPlumes ? 'border-[#b45309]/30 bg-[#fdf5e5] text-[#a16207]' : 'border-[#dfe6db] bg-white/60 text-[#7a8a7e]'}`}
-                >
-                  <Wind className="h-3 w-3" /> Plumes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowImpactLinks((value) => !value)}
-                  aria-pressed={showImpactLinks}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[8.5px] font-semibold uppercase tracking-[0.06em] transition ${showImpactLinks ? 'border-[#9a3412]/30 bg-[#fdf0e7] text-[#9a3412]' : 'border-[#dfe6db] bg-white/60 text-[#7a8a7e]'}`}
-                >
-                  <Link2 className="h-3 w-3" /> Impact links
-                </button>
+            {error ? (
+              <div className="absolute left-3 top-16 z-30 max-w-sm rounded-2xl border border-[#efd3bd] bg-[#fffaf4]/95 px-3 py-2 text-[10px] leading-relaxed text-[#8a5a3b] shadow-lg backdrop-blur">
+                {error}
               </div>
             ) : null}
-            <div className="pointer-events-none absolute bottom-3 left-3 z-10">
-              <div className="pointer-events-auto rounded-xl border border-[#dfe6db] bg-[#f5f8f2]/90 px-3 py-2 text-[9px] backdrop-blur">
-                <p className="font-semibold uppercase tracking-[0.1em] text-[#5a6a5f]">Marker legend</p>
-                <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[#5a6a5f]">
+            <details className="group absolute bottom-[92px] left-3 z-20 hidden w-[248px] rounded-2xl border border-white/90 bg-white/85 shadow-[0_24px_60px_-32px_rgba(20,32,22,.45)] backdrop-blur-xl sm:block">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#5f7065] [&::-webkit-details-marker]:hidden">
+                <Layers className="h-3 w-3" />
+                Legend
+                <ChevronDown className="ml-auto h-3 w-3 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="border-t border-dashed border-[#e7eae3] px-3 py-2.5">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] text-[#5f7065]">
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5b9e46]" /> Measured</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#2f8f84]" /> Predicted</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#b3860f]" /> Citizen report</span>
@@ -1177,253 +1213,284 @@ export function MapPage() {
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#c2410c]" /> Factory source</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-[#c2410c]/20" /> Plume screen</span>
                 </div>
-                <p className="mt-2 max-w-[210px] border-t border-dashed border-[#dbe5d6] pt-1.5 text-[8px] leading-relaxed text-[#66766b]">
+                <p className="mt-2 border-t border-dashed border-[#e7eae3] pt-2 text-[8px] leading-relaxed text-[#8a938b]">
                   Moving dots run factory → affected monitor. Plume footprints are a simulated wind screen, not measured pollution.
                 </p>
               </div>
+            </details>
+            <div className="absolute inset-x-3 bottom-3 z-20">
+              <div className="mx-auto w-full max-w-[720px] rounded-[20px] border border-white/90 bg-white/90 p-3 shadow-[0_24px_60px_-32px_rgba(20,32,22,.5)] backdrop-blur-xl">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-0.5">
+                    <button type="button" onClick={() => setTimelineIndex((value) => Math.max(0, value - 1))} aria-label="Previous timeline step" className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f7065] transition hover:bg-[#eef2ea] hover:text-[#142016]">
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" onClick={() => setPlaying((value) => !value)} aria-label={playing ? 'Pause timeline' : 'Play timeline'} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#142016] text-white shadow-[0_12px_24px_-16px_rgba(20,32,22,.8)] transition hover:bg-[#24352a]">
+                      {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                    </button>
+                    <button type="button" onClick={() => setTimelineIndex((value) => Math.min(timeline.length - 1, value + 1))} aria-label="Next timeline step" className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f7065] transition hover:bg-[#eef2ea] hover:text-[#142016]">
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[11px] font-semibold text-[#142016]">
+                      {current.label === 'Current' ? 'Live now' : `${current.label} frame`}
+                      <span className="font-normal text-[#8a938b]"> · {formatDate(current.date.toISOString())}</span>
+                    </p>
+                    <p className="truncate text-[8.5px] uppercase tracking-[0.12em] text-[#8a938b]">
+                      {current.offset === 0 ? 'Latest observations' : current.offset > 0 ? 'Forecast · not confirmed' : 'Archived observations'} · click map to analyse
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setTimelineIndex(4); setPlaying(false); }}
+                    className={classNames(
+                      'shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-semibold transition',
+                      current.offset === 0 ? 'border-[#cfe2c4] bg-[#eef7e8] text-[#3f6b2d]' : 'border-[#e7eae3] bg-white text-[#5f7065] hover:text-[#142016]',
+                    )}
+                  >
+                    Now
+                  </button>
+                </div>
+                <div className="mt-2.5 flex items-center gap-2.5">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#a0a8a0]">−24h</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={timeline.length - 1}
+                    value={timelineIndex}
+                    onChange={(e) => { setTimelineIndex(Number(e.target.value)); setPlaying(false); }}
+                    style={{ background: `linear-gradient(90deg,#4DA42A 0 ${timelinePct}%,#e6eae2 ${timelinePct}% 100%)` }}
+                    className="map-range min-w-0 flex-1"
+                    aria-label="Map timeline"
+                  />
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#a0a8a0]">+6h</span>
+                </div>
+              </div>
             </div>
-            <div className="pointer-events-none absolute left-1/2 top-3 z-10 hidden max-w-[240px] -translate-x-1/2 rounded-xl border border-[#2f8f84]/25 bg-white/90 px-3 py-2 text-[9px] leading-relaxed text-[#37655e] shadow-pill backdrop-blur lg:block">
-              <p className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.08em]"><Crosshair className="h-3 w-3" /> Analyse any point</p>
-              <p className="mt-1">Click anywhere on the map for the nearest place, evidence, sources and practical guidance.</p>
-            </div>
-            {loading ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#f5f8f2]/40 backdrop-blur-[1px]"><Spinner className="text-[#3f7d2a]" /></div> : null}
-          </div>
-          <div className="border-t border-[#e7ece3] px-3 py-2">
-            <div className="flex items-center justify-between text-[9px] text-[#66766b]">
-              <span>{current.label} · {data?.stations.length ?? 0} stations · {data?.reports.length ?? 0} reports · {data?.incidents.length ?? 0} incidents{sourceImpact ? ` · ${sourceImpact.landImpact.affectedStations} plume-flagged` : ''}</span>
-              <span>{data?.mode === 'FUTURE' ? 'Forecast values are not confirmed future conditions.' : data?.mode === 'PAST' ? 'Archived observations · ±90 minute match' : 'Latest valid observations · stale stations excluded after 6h'}</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={timeline.length - 1}
-              value={timelineIndex}
-              onChange={(e) => { setTimelineIndex(Number(e.target.value)); setPlaying(false); }}
-              className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-[#eaf2e4] accent-[#5b9e46]"
-              aria-label="Map timeline"
-            />
-            <div className="mt-1 flex justify-between text-[8px] uppercase tracking-[0.08em] text-[#66766b]">
-              {timeline.map((item) => <span key={item.label} className={item.label === current.label ? 'text-[#3f7d2a]' : ''}>{item.label}</span>)}
-            </div>
+            {loading ? <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/40 backdrop-blur-[1px]"><Spinner className="text-[#4e9b3f]" /></div> : null}
           </div>
         </div>
 
-        <div className="space-y-3">
+        <aside className="space-y-4">
           {data?.warnings.length ? (
-            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-3 text-[10px] leading-relaxed text-amber-700/80">
-              {data.warnings.map((warning) => <p key={warning}>• {warning}</p>)}
+            <div className="rounded-[22px] border border-[#f0e2c4] bg-[#fdf8ec]/95 px-4 py-3 shadow-[0_24px_60px_-52px_rgba(80,60,20,.5)] backdrop-blur">
+              <div className="flex gap-2.5">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#b3860f]" />
+                <div className="space-y-1">
+                  {data.warnings.map((warning) => <p key={warning} className="text-[9.5px] leading-relaxed text-[#8a6a1f]">{warning}</p>)}
+                </div>
+              </div>
             </div>
           ) : null}
-          {sourceImpact ? (
-            <div className="overflow-hidden rounded-2xl border border-[#efd3bd] bg-gradient-to-br from-[#fff8f1] via-[#fdfcf8] to-[#f8f5ec]">
-              <div className="flex items-center justify-between gap-2 border-b border-[#f0e2d5] px-4 py-3">
-                <div>
-                  <DataLabel>Worst industrial sources</DataLabel>
-                  <p className="mt-0.5 text-[9px] text-[#9a7b66]">Monitor + land screen · simulated facilities</p>
-                </div>
-                <Badge tone="amber">{windLabel(sourceImpact.wind)}</Badge>
+
+          <SurfaceCard>
+            <div className="flex items-start justify-between gap-3 px-5 pt-5">
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8a938b]">Current view</p>
+                <h2 className="display mt-1 text-[21px] font-semibold tracking-[-0.03em] text-[#142016]">{selectedLocality?.name ?? 'Greater Mumbai'}</h2>
+                <p className="mt-1 text-[9.5px] text-[#8a938b]">{current.offset === 0 ? 'Latest valid observations' : current.offset > 0 ? 'Forecast frame' : 'Archived frame'} · {formatDate(current.date.toISOString())}</p>
               </div>
-              <div className="space-y-1.5 p-2.5">
+              <Badge tone={current.offset === 0 ? 'green' : current.offset > 0 ? 'teal' : 'neutral'} dot>
+                {current.offset === 0 ? 'Current' : current.offset > 0 ? 'Forecast' : 'Past'}
+              </Badge>
+            </div>
+            <div className="mx-5 mt-4 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#ecefe8] bg-[#fbfcf9]">
+              <MetricCell icon={Radio} label="Monitors" value={number(data?.stations.length ?? 0, 0)} note={`${onlineStations} online`} className="border-b border-r border-dashed border-[#e7eae3]" />
+              <MetricCell icon={Wind} label="Plume wind" value={sourceImpact ? number(sourceImpact.wind.speedKmh) : '—'} unit={sourceImpact ? 'km/h' : undefined} note={sourceImpact ? `from ${sourceImpact.wind.fromLabel}` : 'No plume screen'} className="border-b border-dashed border-[#e7eae3]" />
+              <MetricCell icon={MapPin} label="Screened area" value={sourceImpact ? number(sourceImpact.landImpact.impactedAreaKm2) : '—'} unit={sourceImpact ? 'km²' : undefined} note="Not a measured area" className="border-r border-dashed border-[#e7eae3]" />
+              <MetricCell icon={FileWarning} label="Reports" value={number(data?.reports.length ?? 0, 0)} note="Citizen reports" />
+            </div>
+            <div className="px-5 pb-5 pt-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8a938b]">Map layers</p>
+                <span className="text-[8.5px] text-[#a0a8a0]">toggle visibility</span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <LayerToggle active={showSources} onClick={() => setShowSources((value) => !value)} icon={Factory} label="Factories" />
+                <LayerToggle active={showPlumes} onClick={() => setShowPlumes((value) => !value)} icon={Wind} label="Plumes" />
+                <LayerToggle active={showImpactLinks} onClick={() => setShowImpactLinks((value) => !value)} icon={Link2} label="Links" />
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-2 border-t border-dashed border-[#e7eae3] pt-3 text-[9px] text-[#8a938b]">
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#4DA42A]" /> Updated {liveFeed.generatedAt ? timeAgo(liveFeed.generatedAt) : 'just now'}</span>
+                <span className="inline-flex items-center gap-1.5"><Clock className="h-3 w-3" /> Asia/Kolkata</span>
+              </div>
+            </div>
+          </SurfaceCard>
+
+          {sourceImpact ? (
+            <SurfaceCard className="overflow-hidden">
+              <SurfaceHeader
+                label="Industrial plume screen"
+                title="Worst sources in view"
+                subtitle={`Ranked by monitor reach, plume footprint and emission index · ${windLabel(sourceImpact.wind)}`}
+                aside={<Badge tone="amber">Simulated</Badge>}
+              />
+              <div className="px-2.5">
                 {worstSources.slice(0, sourceListExpanded ? 10 : 4).map((source) => (
                   <button
                     key={source.id}
                     type="button"
                     onClick={() => { setSelectedStationId(null); setSelectedSourceId(source.id); }}
-                    className="group w-full rounded-xl border border-transparent bg-white/50 p-2.5 text-left transition hover:border-[#e2c6ae] hover:bg-white"
+                    className="group flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition hover:bg-[#f7f9f4]"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: sourceColor(source.rank) }}>{source.rank}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[11px] font-semibold text-[#3f2b1d]">{source.name}</p>
-                        <p className="truncate text-[8.5px] text-[#9a7b66]">{source.type} · emission {source.emissionIndex}/100 · {source.affectedMonitors} monitor(s)</p>
+                    <span className="display flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e8ebe4] bg-white text-[11px] font-semibold text-[#6f7a70]">{String(source.rank).padStart(2, '0')}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-[11px] font-semibold text-[#1d2a21]">{source.name}</p>
+                        <span className="shrink-0 text-[9px] font-semibold text-[#8a938b]">{source.impactScore}</span>
                       </div>
-                      <ChevronRight className="h-3 w-3 shrink-0 text-[#b8a08c] transition group-hover:translate-x-0.5" />
-                    </div>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f0e2d5]">
-                        <div className="h-full rounded-full" style={{ width: `${worstSource && worstSource.impactScore > 0 ? Math.max(4, (source.impactScore / worstSource.impactScore) * 100) : 4}%`, background: sourceColor(source.rank) }} />
+                      <p className="mt-0.5 truncate text-[8.5px] text-[#8a938b]">{source.type} · emission {source.emissionIndex}/100 · {source.affectedMonitors} monitor(s)</p>
+                      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[#edf0ea]">
+                        <div className="h-full rounded-full" style={{ width: `${Math.max(4, (source.impactScore / sourceImpactMax) * 100)}%`, background: sourceColor(source.rank) }} />
                       </div>
-                      <span className="text-[8.5px] font-semibold text-[#8a5a3b]">{source.impactScore} impact</span>
                     </div>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0c7bf] transition group-hover:translate-x-0.5 group-hover:text-[#6f7a70]" />
                   </button>
                 ))}
               </div>
               {highestEmission ? (
-                <p className="border-t border-[#f0e2d5] px-4 py-2 text-[8.5px] leading-relaxed text-[#9a7b66]">
-                  Largest emission index: <strong className="text-[#8a5a3b]">{highestEmission.name}</strong> · {highestEmission.emissionIndex}/100
+                <p className="border-t border-dashed border-[#e7eae3] px-5 py-2 text-[8.5px] text-[#8a938b]">
+                  Largest emission index: <span className="font-semibold text-[#5f6b60]">{highestEmission.name}</span> · {highestEmission.emissionIndex}/100
                 </p>
               ) : null}
-              <div className="flex items-center justify-between border-t border-[#f0e2d5] px-4 py-2.5">
-                <button
-                  type="button"
-                  onClick={() => setSourceListExpanded((expanded) => !expanded)}
-                  className="text-[9px] font-semibold text-[#8a5a3b] transition hover:text-[#7c2d12]"
-                >
+              <div className="flex items-center justify-between border-t border-dashed border-[#e7eae3] px-5 py-3">
+                <button type="button" onClick={() => setSourceListExpanded((expanded) => !expanded)} className="text-[9px] font-semibold text-[#5f7065] transition hover:text-[#142016]">
                   {sourceListExpanded ? 'Show top 4' : `Show all ${worstSources.length}`}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSourceId(worstSource?.id ?? null)}
-                  className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#9a3412] transition hover:text-[#7c2d12]"
-                >
-                  Open worst · #{worstSource?.rank ?? '—'} <ArrowRight className="h-3 w-3" />
+                <button type="button" onClick={() => setSelectedSourceId(worstSource?.id ?? null)} className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f6b2d] transition hover:text-[#142016]">
+                  Open rank #1 <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
-            </div>
+            </SurfaceCard>
           ) : null}
 
-          {sourceImpact ? (
-            <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-              <div className="flex items-center justify-between">
-                <DataLabel>Monitors in the plume screen</DataLabel>
-                <Badge tone={affectedAttributions.length ? 'amber' : 'neutral'}>{affectedAttributions.length}</Badge>
-              </div>
-              <div className="mt-2 space-y-1.5">
-                {affectedAttributions.slice(0, 5).map((attribution) => {
-                  const tone = impactTone(attribution.impactLevel);
-                  return (
-                    <button
-                      key={attribution.stationId}
-                      type="button"
-                      onClick={() => { setSelectedSourceId(null); setSelectedStationId(attribution.stationId); }}
-                      className="flex w-full items-center gap-2 rounded-xl border border-[#eef1eb] bg-[#f8faf6] p-2 text-left transition hover:border-[#d5e2cf] hover:bg-white"
-                    >
-                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tone.color }} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[10px] font-semibold text-[#3f5045]">{attribution.stationName.replace(' demo air monitor', '')}</p>
-                        <p className="truncate text-[8px] text-[#8a7565]">{attribution.primarySourceName} · {attribution.estimatedSharePct}% share</p>
-                      </div>
-                      <span className="shrink-0 rounded-full border px-1.5 py-0.5 text-[7.5px] font-semibold uppercase tracking-[0.05em]" style={{ color: tone.color, background: tone.background, borderColor: tone.border }}>{attribution.impactLevel}</span>
-                    </button>
-                  );
-                })}
-                {affectedAttributions.length === 0 ? <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] text-[#66766b]">No monitor passes the screening threshold at this time.</p> : null}
-              </div>
-            </div>
-          ) : null}
-
-          {sourceImpact ? (
-            <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-              <div className="flex items-center justify-between"><DataLabel>City source impact mix</DataLabel><Badge tone="neutral">Screening</Badge></div>
-              <Chart height={176} empty={worstSources.every((source) => source.impactScore <= 0)} option={sourceMixOption} />
-              <p className="mt-1 text-[8.5px] leading-relaxed text-[#9a7b66]">Share of the screened impact score across the monitors in view: monitor reach, plume footprint and emission index. Not a measured apportionment.</p>
-              <button type="button" onClick={() => setSelectedSourceId(worstSource?.id ?? null)} className="mt-2 inline-flex items-center gap-1 text-[9px] font-semibold text-[#9a3412] hover:text-[#7c2d12]">
-                Inspect rank #{worstSource?.rank ?? '—'} <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-          ) : null}
-
-          <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-            <div className="flex items-center justify-between"><DataLabel>Active alerts at selected time</DataLabel><Badge tone="neutral">{data?.alerts.length ?? 0}</Badge></div>
-            <div className="mt-2 space-y-2">
-              {data?.alerts.slice(0, 5).map((alert) => (
-                <button key={alert.id} onClick={() => navigate(`/alerts/${alert.id}`)} className="block w-full rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-left hover:border-[#5b9e46]/30">
-                  <div className="flex items-center justify-between gap-2"><RiskBadge level={alert.level} /><span className="text-[8px] uppercase text-[#66766b]">{alert.trigger_type}</span></div>
-                  <p className="mt-1 text-[11px] font-medium text-[#26362a]">{alert.title}</p>
-                  <p className="mt-0.5 text-[9px] text-[#66766b]">{alert.locality_name ?? 'Mumbai'} · {timeAgo(alert.triggered_at)}</p>
+          <SurfaceCard className="overflow-hidden">
+            <SurfaceHeader
+              label="Alerts"
+              title="Active at this frame"
+              subtitle="Live warnings tied to the selected time"
+              aside={<Badge tone="neutral">{data?.alerts.length ?? 0}</Badge>}
+            />
+            <div className="px-2.5 pb-3">
+              {data?.alerts.slice(0, 4).map((alert) => (
+                <button
+                  key={alert.id}
+                  type="button"
+                  onClick={() => navigate(`/alerts/${alert.id}`)}
+                  className="flex w-full items-start gap-2.5 rounded-2xl px-2.5 py-2.5 text-left transition hover:bg-[#f7f9f4]"
+                >
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: RISK_COLORS[alert.level] ?? '#8a938b' }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10.5px] font-medium leading-snug text-[#1d2a21]">{alert.title}</p>
+                    <p className="mt-1 text-[8.5px] text-[#8a938b]">{alert.locality_name ?? 'Mumbai'} · {timeAgo(alert.triggered_at)} · {alert.trigger_type.replace(/_/g, ' ')}</p>
+                  </div>
+                  <span className="shrink-0 pt-0.5 text-[8px] font-semibold uppercase tracking-[0.06em]" style={{ color: RISK_COLORS[alert.level] ?? '#8a938b' }}>{alert.level.replace(/_/g, ' ')}</span>
                 </button>
               ))}
-              {data && data.alerts.length === 0 ? <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4 text-center text-[10px] text-[#66766b]">No active alerts at this time.</p> : null}
+              {data && data.alerts.length === 0 ? <p className="rounded-2xl bg-[#fbfcf9] px-3 py-4 text-center text-[9.5px] text-[#8a938b]">No active alerts at this time.</p> : null}
             </div>
-          </div>
-          <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-            <DataLabel>Coverage & uncertainty</DataLabel>
-            <p className="mt-2 text-[10px] leading-relaxed text-[#6f7f74]">{data?.estimatedZoneNote}</p>
-            <div className="mt-3 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[9px] leading-relaxed text-[#66766b]">
-              <p><strong className="text-[#5a6a5f]">Boundary:</strong> {data?.boundary.note}</p>
-              <p className="mt-1"><strong className="text-[#5a6a5f]">Attribution:</strong> {data?.mapAttribution}</p>
-            </div>
-          </div>
-          {data?.forecastMeta ? (
-            <div className="rounded-2xl border border-[#2f8f84]/20 bg-[#2f8f84]/[0.04] p-4">
-              <div className="flex items-center justify-between"><DataLabel>Forecast metadata</DataLabel><Badge tone="teal">Baseline</Badge></div>
-              <div className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
-                <p>Method: {String(data.forecastMeta.method ?? '—')}</p>
-                <p>Status: {String(data.forecastMeta.status ?? '—')}</p>
-                <p>Horizon: {String(data.forecastMeta.horizonHours ?? '—')} h</p>
-              </div>
-              <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">{String(data.forecastMeta.note ?? '')}</p>
-            </div>
-          ) : null}
-          {isAuthority() ? (
-            <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-              <DataLabel>Nearby reports</DataLabel>
-              <div className="mt-2 space-y-2">
-                {data?.reports.slice(0, 4).map((report) => (
-                  <button key={report.id} onClick={() => navigate(`/reports/${report.id}`)} className="flex w-full items-center justify-between gap-2 text-left text-[10px] text-[#5a6a5f] hover:text-[#142016]">
-                    <span>{categoryLabel(report.category)} · {report.incident_type.replace(/_/g, ' ')}</span>
-                    <ChevronRight className="h-3 w-3 shrink-0" />
-                  </button>
-                ))}
-                {data && data.reports.length === 0 ? <p className="text-[10px] text-[#66766b]">No reports in this view.</p> : null}
-              </div>
-            </div>
-          ) : null}
-        </div>
+          </SurfaceCard>
+        </aside>
       </div>
 
       {sourceImpact ? (
-        <div className="grid gap-3 xl:grid-cols-12">
-          <Card className="overflow-hidden xl:col-span-7">
-            <CardHeader>
-              <div>
-                <CardTitle>Monitor-by-monitor source mix</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Share of the screened industrial contribution · sources reaching these monitors</p>
-              </div>
-              <Badge tone="amber">Screening estimate</Badge>
-            </CardHeader>
-            <div className="px-2 pb-2 pt-3">
-              <Chart height={300} empty={affectedAttributions.length === 0} option={monitorMixOption} />
+        <section className="mt-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8a938b]">Attribution & provenance</p>
+              <h2 className="display mt-1 text-[24px] font-semibold tracking-[-0.04em] text-[#142016]">How the screen is built</h2>
+              <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-[#6f7a70]">The map keeps measured, predicted, reported and screened layers distinct. Open a source or monitor to inspect the evidence behind each flag.</p>
             </div>
-            <p className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] leading-relaxed text-[#9a7b66]">
-              Each bar shows how the screen divides the industrial contribution at a monitor between the factories inside its plume footprint. The remaining share is traffic, dust or other sources outside the simulated catalogue. It is not a measured apportionment.
-            </p>
-          </Card>
-
-          <Card className="overflow-hidden xl:col-span-5">
-            <CardHeader>
-              <div>
-                <CardTitle>Worst sources in view</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Ranked by screened impact: monitor reach, plume footprint and emission index</p>
+            <Badge tone="neutral">Screening estimate</Badge>
+          </div>
+          <div className="mt-4 grid gap-4 xl:grid-cols-12">
+            <SurfaceCard className="overflow-hidden xl:col-span-7">
+              <SurfaceHeader label="Monitor-by-monitor" title="Source mix" subtitle="Share of the screened industrial contribution reaching each monitor" aside={<Badge tone="amber">Estimate</Badge>} />
+              <div className="px-2 pb-2 pt-1">
+                <Chart height={300} empty={affectedAttributions.length === 0} option={monitorMixOption} />
               </div>
-              <Badge tone="neutral">{worstSources.filter((source) => source.impactScore > 0).length}</Badge>
-            </CardHeader>
-            <div className="px-2 pb-2 pt-3">
-              <Chart height={300} empty={worstSources.every((source) => source.impactScore <= 0)} option={sourceRankingOption} />
-            </div>
-            <p className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] leading-relaxed text-[#9a7b66]">
-              A high rank means the source reaches several monitors and localities in the current wind screen, not that a violation has occurred.
-            </p>
-          </Card>
-
-          <Card className="xl:col-span-12">
-            <CardHeader>
-              <div>
-                <CardTitle>Plume and locality flags</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Places where the wind screen places a factory plume across land and water</p>
+              <p className="border-t border-dashed border-[#e7eae3] px-5 py-3 text-[9px] leading-relaxed text-[#8a938b]">
+                Each bar shows how the screen divides the industrial contribution at a monitor between the factories inside its plume footprint. The remaining share is traffic, dust or other sources outside the simulated catalogue. It is not a measured apportionment.
+              </p>
+            </SurfaceCard>
+            <SurfaceCard className="overflow-hidden xl:col-span-5">
+              <SurfaceHeader label="Ranking" title="Worst sources in view" subtitle="Ranked by screened impact: monitor reach, plume footprint and emission index" aside={<Badge tone="neutral">{worstSources.filter((source) => source.impactScore > 0).length}</Badge>} />
+              <div className="px-2 pb-2 pt-1">
+                <Chart height={300} empty={worstSources.every((source) => source.impactScore <= 0)} option={sourceRankingOption} />
               </div>
-              <Badge tone="amber">{sourceImpact.landImpact.impactedAreaKm2} km² screened</Badge>
-            </CardHeader>
-            <div className="space-y-3 p-4">
-              <div className="flex flex-wrap gap-1.5">
-                {sourceImpact.landImpact.impactedLocalities.map((locality) => (
-                  <span key={locality} className="rounded-full border border-[#e6d5c5] bg-[#fdf5ed] px-2.5 py-1 text-[9px] font-medium text-[#8a5a3b]">{locality}</span>
-                ))}
-                {sourceImpact.landImpact.impactedLocalities.length === 0 ? <span className="text-[10px] text-[#66766b]">No locality passes the screening threshold.</span> : null}
+              <p className="border-t border-dashed border-[#e7eae3] px-5 py-3 text-[9px] leading-relaxed text-[#8a938b]">
+                A high rank means the source reaches several monitors and localities in the current wind screen, not that a violation has occurred.
+              </p>
+            </SurfaceCard>
+          </div>
+          <div className="mt-4 grid gap-4 xl:grid-cols-3">
+            <SurfaceCard>
+              <SurfaceHeader label="Plume screen" title="Locality flags" subtitle={`${sourceImpact.landImpact.impactedAreaKm2} km² screened · not a measured area`} />
+              <div className="px-5 pb-5">
+                <div className="flex flex-wrap gap-1.5">
+                  {sourceImpact.landImpact.impactedLocalities.map((locality) => (
+                    <span key={locality} className="rounded-full border border-[#e6e9e2] bg-[#fbfcf9] px-2.5 py-1 text-[9px] font-medium text-[#5f6b60]">{locality}</span>
+                  ))}
+                  {sourceImpact.landImpact.impactedLocalities.length === 0 ? <span className="text-[10px] text-[#8a938b]">No locality passes the screening threshold.</span> : null}
+                </div>
+                <p className="mt-3 text-[9px] leading-relaxed text-[#8a938b]">{sourceImpact.landImpact.note}</p>
+                <p className="mt-2 text-[8.5px] leading-relaxed text-[#a0a8a0]">{sourceImpact.disclaimer}</p>
               </div>
-              <p className="text-[9px] leading-relaxed text-[#9a7b66]">{sourceImpact.landImpact.note}</p>
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#efd3bd] bg-[#fff8f1] px-3 py-2.5">
-                <p className="max-w-3xl text-[9px] leading-relaxed text-[#8a5a3b]">{sourceImpact.disclaimer}</p>
-                <button type="button" onClick={() => setSelectedSourceId(worstSource?.id ?? null)} className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#9a3412] hover:text-[#7c2d12]">
-                  Inspect worst source <ArrowRight className="h-3 w-3" />
-                </button>
+            </SurfaceCard>
+            <SurfaceCard>
+              <SurfaceHeader label="Coverage" title="What this map can say" subtitle="Boundary, uncertainty and nearby citizen evidence" />
+              <div className="px-5 pb-5">
+                <p className="text-[9.5px] leading-relaxed text-[#6f7a70]">{data?.estimatedZoneNote}</p>
+                <div className="mt-3 rounded-2xl border border-[#ecefe8] bg-[#fbfcf9] p-3 text-[8.5px] leading-relaxed text-[#8a938b]">
+                  <p><strong className="text-[#5f6b60]">Boundary:</strong> {data?.boundary.note}</p>
+                  <p className="mt-1"><strong className="text-[#5f6b60]">Attribution:</strong> {data?.mapAttribution}</p>
+                </div>
+                {isAuthority() && data?.reports.length ? (
+                  <div className="mt-3 border-t border-dashed border-[#e7eae3] pt-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[8.5px] font-semibold uppercase tracking-[0.12em] text-[#8a938b]">Nearby reports</p>
+                      <Badge tone="neutral">{data.reports.length}</Badge>
+                    </div>
+                    <div className="mt-1.5 space-y-1">
+                      {data.reports.slice(0, 3).map((report) => (
+                        <button key={report.id} type="button" onClick={() => navigate(`/reports/${report.id}`)} className="flex w-full items-center justify-between gap-2 text-left text-[9px] text-[#6f7a70] transition hover:text-[#142016]">
+                          <span className="truncate">{categoryLabel(report.category)} · {report.incident_type.replace(/_/g, ' ')}</span>
+                          <ChevronRight className="h-3 w-3 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
-            </div>
-          </Card>
-        </div>
+            </SurfaceCard>
+            <SurfaceCard>
+              <SurfaceHeader label="Forecast" title="Method & horizon" aside={data?.forecastMeta ? <Badge tone="teal">Baseline</Badge> : null} />
+              <div className="px-5 pb-5">
+                {data?.forecastMeta ? (
+                  <>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        ['Method', String(data.forecastMeta.method ?? '—')],
+                        ['Status', String(data.forecastMeta.status ?? '—')],
+                        ['Horizon', `${String(data.forecastMeta.horizonHours ?? '—')} h`],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-2xl border border-[#ecefe8] bg-[#fbfcf9] p-2.5">
+                          <p className="text-[7.5px] font-semibold uppercase tracking-[0.12em] text-[#a0a8a0]">{label}</p>
+                          <p className="mt-1 text-[9.5px] font-semibold leading-snug text-[#3f4b42]">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-[9px] leading-relaxed text-[#8a938b]">{String(data.forecastMeta.note ?? '')}</p>
+                  </>
+                ) : (
+                  <p className="text-[10px] leading-relaxed text-[#8a938b]">No forecast metadata for this frame. Forecast values are not confirmed future conditions.</p>
+                )}
+              </div>
+            </SurfaceCard>
+          </div>
+        </section>
       ) : null}
-
-      {error ? <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-xs text-red-700">{error}</div> : null}
 
       <StationDrawer
         stationId={selectedStationId}

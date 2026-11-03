@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
 import {
   ArrowUpRight,
+  Bookmark,
   Clock3,
   ExternalLink,
   Leaf,
@@ -13,24 +14,7 @@ import {
 import { Button, Card, CardHeader, CardTitle, DataLabel, EmptyState } from '../../components/ui';
 import { api } from '../../lib/api';
 import { timeAgo } from '../../lib/format';
-
-interface NewsItem {
-  id: string;
-  title: string;
-  url: string;
-  summary: string;
-  imageUrl: string | null;
-  source: string;
-  topic: string;
-  publishedAt: string | null;
-}
-
-interface NewsFeed {
-  fetchedAt: string;
-  stale: boolean;
-  sources: Array<{ name: string; url: string; topic: string }>;
-  items: NewsItem[];
-}
+import { useSavedNews, type NewsFeed, type NewsItem, type SavedNewsItem } from '../../lib/news';
 
 const POLL_MS = 5 * 60_000;
 
@@ -113,6 +97,103 @@ function Thumb({ item }: { item: NewsItem }) {
   );
 }
 
+function SaveButton({
+  item,
+  saved,
+  onToggle,
+  className = '',
+}: {
+  item: NewsItem;
+  saved: boolean;
+  onToggle: (item: NewsItem) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(item)}
+      aria-pressed={saved}
+      aria-label={saved ? `Remove “${item.title}” from saved stories` : `Save “${item.title}” for later`}
+      title={saved ? 'Remove from saved' : 'Save for later'}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fc47a] ${
+        saved
+          ? 'border-[#cbe8a5] bg-[#eefbdc] text-[#3f7d2a]'
+          : 'border-white/35 bg-[#12251a]/45 text-white hover:bg-[#12251a]/70'
+      } ${className}`}
+    >
+      <Bookmark className={`h-3.5 w-3.5 ${saved ? 'fill-current' : ''}`} />
+    </button>
+  );
+}
+
+function StoryCard({ item, saved, onToggle }: { item: NewsItem; saved: boolean; onToggle: (item: NewsItem) => void }) {
+  return (
+    <div className="group glass-card relative flex flex-col overflow-hidden rounded-[24px] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_50px_-36px_rgba(23,42,29,.55)]">
+      <a href={item.url} target="_blank" rel="noreferrer noopener" className="flex flex-1 flex-col">
+        <div className="relative h-40 overflow-hidden">
+          <StoryArt item={item} />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0c1c13]/35 to-transparent" />
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-[#12251a]/40 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+            {item.topic}
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7a8b7e]">
+            {item.source} <span className="text-[#b3c0b6]">·</span> {timeAgo(item.publishedAt)}
+          </p>
+          <h3 className="mt-1.5 line-clamp-2 text-[14px] font-semibold leading-snug text-[#1b2a1f]">{item.title}</h3>
+          {item.summary ? <p className="mt-1.5 line-clamp-2 text-[10px] leading-relaxed text-[#66766b]">{item.summary}</p> : null}
+          <span className="mt-auto inline-flex items-center gap-1 pt-3 text-[10px] font-semibold text-[#3f7d2a]">
+            Read story
+            <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </a>
+      <SaveButton item={item} saved={saved} onToggle={onToggle} className="absolute right-3 top-3 z-10" />
+    </div>
+  );
+}
+
+function SavedStories({
+  saved,
+  onToggle,
+  onBrowse,
+}: {
+  saved: SavedNewsItem[];
+  onToggle: (item: NewsItem) => void;
+  onBrowse?: () => void;
+}) {
+  if (saved.length === 0) {
+    return (
+      <Card>
+        <EmptyState
+          title="No saved stories yet"
+          description="Tap the bookmark on any story to keep it here. Saved stories stay in this browser on this device."
+          icon={<Bookmark className="h-6 w-6" />}
+          action={onBrowse ? <Button variant="outline" onClick={onBrowse}>Browse the wire</Button> : undefined}
+        />
+      </Card>
+    );
+  }
+
+  return (
+    <section>
+      <div className="mb-2.5 flex items-center justify-between px-1">
+        <div>
+          <DataLabel>Saved stories</DataLabel>
+          <p className="mt-1 text-[10px] text-[#66766b]">Kept in this browser on this device</p>
+        </div>
+        <span className="text-[9px] uppercase tracking-[0.1em] text-[#7a8b7e]">{saved.length} saved</span>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {saved.map((item) => (
+          <StoryCard key={item.id} item={item} saved onToggle={onToggle} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function NewsSkeleton() {
   return (
     <div className="space-y-4">
@@ -144,6 +225,8 @@ export function NewsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [view, setView] = useState<'wire' | 'saved'>('wire');
+  const { saved, toggle, isSaved } = useSavedNews();
 
   const load = useCallback((quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -177,27 +260,33 @@ export function NewsPage() {
 
   if (!feed) {
     return (
-      <Card>
-        <EmptyState
-          title="The newsroom is offline"
-          description={error ?? 'The publisher feeds could not be reached. This page retries automatically.'}
-          icon={<Newspaper className="h-6 w-6" />}
-          action={<Button variant="lime" onClick={() => load()} disabled={refreshing}>Try again</Button>}
-        />
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <EmptyState
+            title="The newsroom is offline"
+            description={error ?? 'The publisher feeds could not be reached. This page retries automatically.'}
+            icon={<Newspaper className="h-6 w-6" />}
+            action={<Button variant="lime" onClick={() => load()} disabled={refreshing}>Try again</Button>}
+          />
+        </Card>
+        {saved.length > 0 ? <SavedStories saved={saved} onToggle={toggle} /> : null}
+      </div>
     );
   }
 
   if (feed.items.length === 0) {
     return (
-      <Card>
-        <EmptyState
-          title="No fresh headlines yet"
-          description="The feeds are reachable but have no recent environmental stories. The page checks again every five minutes."
-          icon={<Rss className="h-6 w-6" />}
-          action={<Button variant="outline" onClick={() => load(true)} disabled={refreshing}>Refresh now</Button>}
-        />
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <EmptyState
+            title="No fresh headlines yet"
+            description="The feeds are reachable but have no recent environmental stories. The page checks again every five minutes."
+            icon={<Rss className="h-6 w-6" />}
+            action={<Button variant="outline" onClick={() => load(true)} disabled={refreshing}>Refresh now</Button>}
+          />
+        </Card>
+        {saved.length > 0 ? <SavedStories saved={saved} onToggle={toggle} /> : null}
+      </div>
     );
   }
 
@@ -279,42 +368,85 @@ export function NewsPage() {
         </div>
       ) : null}
 
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="inline-flex items-center gap-1 rounded-full border border-white/80 bg-white/60 p-1 shadow-pill backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setView('wire')}
+            aria-pressed={view === 'wire'}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold transition ${
+              view === 'wire' ? 'bg-[#142016] text-white shadow-pill' : 'text-[#5f7065] hover:bg-white/70 hover:text-[#142016]'
+            }`}
+          >
+            <Newspaper className="h-3.5 w-3.5" /> The wire
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('saved')}
+            aria-pressed={view === 'saved'}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold transition ${
+              view === 'saved' ? 'bg-[#142016] text-white shadow-pill' : 'text-[#5f7065] hover:bg-white/70 hover:text-[#142016]'
+            }`}
+          >
+            <Bookmark className={`h-3.5 w-3.5 ${view === 'saved' ? 'fill-current' : ''}`} /> Saved
+            {saved.length > 0 ? (
+              <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${view === 'saved' ? 'bg-[#d3f8a1] text-[#25461c]' : 'bg-[#e4f5d8] text-[#2f6a24]'}`}>
+                {saved.length}
+              </span>
+            ) : null}
+          </button>
+        </div>
+        <p className="text-[9px] uppercase tracking-[0.12em] text-[#7a8b7e]">Saved stories stay in this browser</p>
+      </div>
+
+      {view === 'saved' ? (
+        <SavedStories saved={saved} onToggle={toggle} onBrowse={() => setView('wire')} />
+      ) : (
+        <>
       <div className="grid gap-4 xl:grid-cols-12">
         <div className="xl:col-span-8">
           {/* Lead story */}
-          <a
-            href={feature.url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="group relative flex min-h-[420px] flex-col justify-end overflow-hidden rounded-[26px] border border-white/60 p-5 shadow-[0_28px_60px_-42px_rgba(16,32,22,.7)] sm:min-h-[460px] sm:p-7"
-          >
-            <StoryArt item={feature} large />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#08180f]/95 via-[#0c1c13]/45 to-[#0c1c13]/5" />
-            <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-4 sm:p-5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-[#12251a]/35 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
-                <Rss className="h-3 w-3" /> {feature.topic}
-              </span>
-              <span className="rounded-full border border-white/25 bg-[#12251a]/30 px-2.5 py-1 text-[9px] font-medium text-white/90 backdrop-blur-md">
-                {timeAgo(feature.publishedAt)}
-              </span>
-            </div>
-            <div className="relative">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c9f0a2]">Lead story</p>
-              <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60">
-                {feature.source} <span className="text-white/30">·</span> {hostOf(feature.url)}
-              </p>
-              <h2 className="display mt-2 max-w-3xl text-[24px] font-semibold leading-[1.08] tracking-[-0.035em] text-white sm:text-[32px] lg:text-[34px]">
-                {feature.title}
-              </h2>
-              {feature.summary ? (
-                <p className="mt-2.5 line-clamp-2 max-w-[68ch] text-[11px] leading-relaxed text-white/70 sm:text-[12px]">{feature.summary}</p>
-              ) : null}
-              <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3.5 py-2 text-[10px] font-semibold text-white backdrop-blur-md transition group-hover:bg-white/20">
-                Read the full story
-                <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-              </span>
-            </div>
-          </a>
+          <div className="group relative">
+            <a
+              href={feature.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="relative flex min-h-[420px] flex-col justify-end overflow-hidden rounded-[26px] border border-white/60 p-5 shadow-[0_28px_60px_-42px_rgba(16,32,22,.7)] sm:min-h-[460px] sm:p-7"
+            >
+              <StoryArt item={feature} large />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#08180f]/95 via-[#0c1c13]/45 to-[#0c1c13]/5" />
+              <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-4 pr-12 sm:p-5 sm:pr-16">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-[#12251a]/35 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
+                  <Rss className="h-3 w-3" /> {feature.topic}
+                </span>
+                <span className="rounded-full border border-white/25 bg-[#12251a]/30 px-2.5 py-1 text-[9px] font-medium text-white/90 backdrop-blur-md">
+                  {timeAgo(feature.publishedAt)}
+                </span>
+              </div>
+              <div className="relative">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#c9f0a2]">Lead story</p>
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                  {feature.source} <span className="text-white/30">·</span> {hostOf(feature.url)}
+                </p>
+                <h2 className="display mt-2 max-w-3xl text-[24px] font-semibold leading-[1.08] tracking-[-0.035em] text-white sm:text-[32px] lg:text-[34px]">
+                  {feature.title}
+                </h2>
+                {feature.summary ? (
+                  <p className="mt-2.5 line-clamp-2 max-w-[68ch] text-[11px] leading-relaxed text-white/70 sm:text-[12px]">{feature.summary}</p>
+                ) : null}
+                <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3.5 py-2 text-[10px] font-semibold text-white backdrop-blur-md transition group-hover:bg-white/20">
+                  Read the full story
+                  <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </a>
+            <SaveButton
+              item={feature}
+              saved={isSaved(feature.id)}
+              onToggle={toggle}
+              className="absolute right-4 top-4 z-10 sm:right-5 sm:top-5"
+            />
+          </div>
         </div>
 
         <aside className="space-y-4 xl:col-span-4">
@@ -409,38 +541,13 @@ export function NewsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {more.map((item) => (
-              <a
-                key={item.id}
-                href={item.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="group glass-card flex flex-col overflow-hidden rounded-[24px] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_50px_-36px_rgba(23,42,29,.55)]"
-              >
-                <div className="relative h-40 overflow-hidden">
-                  <StoryArt item={item} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0c1c13]/35 to-transparent" />
-                  <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-[#12251a]/40 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
-                    {item.topic}
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#7a8b7e]">
-                    {item.source} <span className="text-[#b3c0b6]">·</span> {timeAgo(item.publishedAt)}
-                  </p>
-                  <h3 className="mt-1.5 line-clamp-2 text-[14px] font-semibold leading-snug text-[#1b2a1f]">{item.title}</h3>
-                  {item.summary ? (
-                    <p className="mt-1.5 line-clamp-2 text-[10px] leading-relaxed text-[#66766b]">{item.summary}</p>
-                  ) : null}
-                  <span className="mt-auto inline-flex items-center gap-1 pt-3 text-[10px] font-semibold text-[#3f7d2a]">
-                    Read story
-                    <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                  </span>
-                </div>
-              </a>
+              <StoryCard key={item.id} item={item} saved={isSaved(item.id)} onToggle={toggle} />
             ))}
           </div>
         </section>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

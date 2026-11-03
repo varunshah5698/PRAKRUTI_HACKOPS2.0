@@ -251,7 +251,41 @@ textarea {
 .maplibregl-ctrl-group {
   background: rgba(255, 255, 255, 0.92) !important;
   border: 1px solid rgba(23, 42, 29, 0.1) !important;
+  border-radius: 14px !important;
+  overflow: hidden;
   box-shadow: 0 10px 30px -20px rgba(23, 42, 29, 0.45) !important;
+}
+
+.map-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.map-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #4da42a;
+  box-shadow: 0 2px 8px -2px rgba(20, 32, 22, 0.35);
+  cursor: pointer;
+}
+.map-range::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #4da42a;
+  box-shadow: 0 2px 8px -2px rgba(20, 32, 22, 0.35);
+  cursor: pointer;
+}
+.map-range:focus-visible {
+  box-shadow: 0 0 0 3px rgba(77, 164, 42, 0.18);
 }
 .maplibregl-ctrl-group button {
   filter: none;

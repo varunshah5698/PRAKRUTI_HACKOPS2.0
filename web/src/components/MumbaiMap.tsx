@@ -370,6 +370,7 @@ function MumbaiMapInner({
   const popupRef = useRef<Popup | null>(null);
   const boundaryBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'3d' | 'flat'>(compact ? 'flat' : '3d');
   const handlersRef = useRef({ onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick });
   handlersRef.current = { onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick };
   const dataRef = useRef({ stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks });
@@ -424,19 +425,19 @@ function MumbaiMapInner({
           id: 'mumbai-outside-mask',
           type: 'fill',
           source: 'mumbai-outside-mask',
-          paint: { 'fill-color': theme === 'dark' ? '#0b0e11' : '#eef3ec', 'fill-opacity': 1 },
+          paint: { 'fill-color': theme === 'dark' ? '#0b0e11' : '#f3f5f1', 'fill-opacity': 1 },
         });
         map.addLayer({
           id: 'mumbai-boundary-fill',
           type: 'fill',
           source: 'mumbai-boundary',
-          paint: { 'fill-color': theme === 'dark' ? '#b5e36b' : '#b9ff66', 'fill-opacity': theme === 'dark' ? 0.035 : 0.08 },
+          paint: { 'fill-color': theme === 'dark' ? '#b5e36b' : '#dfe8db', 'fill-opacity': theme === 'dark' ? 0.035 : 0.25 },
         });
         map.addLayer({
           id: 'mumbai-boundary-line',
           type: 'line',
           source: 'mumbai-boundary',
-          paint: { 'line-color': theme === 'dark' ? '#b5e36b' : '#557a4b', 'line-width': 1.4, 'line-opacity': 0.75 },
+          paint: { 'line-color': theme === 'dark' ? '#b5e36b' : '#7d8b7b', 'line-width': 1.2, 'line-opacity': 0.55 },
         });
         const bbox = boundary.features.flatMap((feature) => {
           const coords: number[][] = [];
@@ -477,10 +478,10 @@ function MumbaiMapInner({
               'source-layer': 'building',
               minzoom: 12.2,
               paint: {
-                'fill-extrusion-color': theme === 'dark' ? '#29313a' : '#d7e0d3',
+                'fill-extrusion-color': theme === 'dark' ? '#29313a' : '#e2e6df',
                 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 12],
                 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-                'fill-extrusion-opacity': theme === 'dark' ? 0.72 : 0.5,
+                'fill-extrusion-opacity': theme === 'dark' ? 0.72 : 0.45,
               },
             },
             beforeId,
@@ -931,32 +932,42 @@ function MumbaiMapInner({
     <div className={classNames('relative overflow-hidden', className)}>
       <div ref={containerRef} className="absolute inset-0" />
       {!compact ? (
-        <div className="absolute left-3 top-3 z-10 flex gap-1.5">
+        <div className="absolute left-3 top-3 z-10 flex items-center gap-0.5 rounded-full border border-white/85 bg-white/85 p-1 shadow-[0_18px_36px_-28px_rgba(23,42,29,.55)] backdrop-blur-xl">
           <button
             type="button"
             onClick={() => {
               const map = mapRef.current;
               if (map && boundaryBoundsRef.current) map.fitBounds(boundaryBoundsRef.current, { padding: 40, duration: 900, maxZoom: 11.8 });
             }}
-            className="rounded-full border border-white/85 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#4d5e52] shadow-pill backdrop-blur hover:bg-white hover:text-[#142016]"
+            className="rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#4d5e52] transition hover:bg-white hover:text-[#142016]"
           >
             Fit Mumbai
           </button>
           <button
             type="button"
             onClick={() => {
+              setViewMode('3d');
               mapRef.current?.easeTo({ center: [72.8777, 19.076], zoom: 14.1, pitch: 60, bearing: -18, duration: 1200 });
             }}
-            className="rounded-full border border-[#b3df7c] bg-[#e9fbd3] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#2f5f20] shadow-pill backdrop-blur hover:bg-[#def8c4]"
+            aria-pressed={viewMode === '3d'}
+            className={classNames(
+              'rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+              viewMode === '3d' ? 'bg-[#eef7e8] text-[#3f6b2d]' : 'text-[#4d5e52] hover:bg-white hover:text-[#142016]',
+            )}
           >
             3D city
           </button>
           <button
             type="button"
             onClick={() => {
+              setViewMode('flat');
               mapRef.current?.easeTo({ center: [72.8777, 19.076], zoom: 12.2, pitch: 0, bearing: 0, duration: 1000 });
             }}
-            className="rounded-full border border-white/85 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#4d5e52] shadow-pill backdrop-blur hover:bg-white hover:text-[#142016]"
+            aria-pressed={viewMode === 'flat'}
+            className={classNames(
+              'rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+              viewMode === 'flat' ? 'bg-[#eef7e8] text-[#3f6b2d]' : 'text-[#4d5e52] hover:bg-white hover:text-[#142016]',
+            )}
           >
             Flat
           </button>
