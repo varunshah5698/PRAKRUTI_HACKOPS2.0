@@ -20,8 +20,8 @@ This is a working demonstration application, not a static dashboard. It connects
 | Area | Status in this deployment |
 |---|---|
 | CPCB CAAQMS | **NOT CONNECTED** — no data.gov.in API key is configured. The official resource ID is pre-filled. |
-| MPCB | **LIVE SUBSET via OpenAQ** — 12 Mumbai stations (MPCB/IITM operators) ingested with source timestamps; not a direct MPCB API |
-| OpenAQ | **CONNECTED locally** — key in gitignored `.env.local`; 12 Mumbai stations and 91 observations at verification, growing with live polling |
+| MPCB | **LIVE SUBSET via OpenAQ** — 12 Mumbai stations (MPCB/IITM operators); 7 reporting within 6 hours; not a direct MPCB API |
+| OpenAQ | **CONNECTED locally** — key in gitignored `.env.local`; 12 Mumbai stations, hourly PM2.5 backfill, live polling. Stations stale for more than 6 hours are excluded from current counts and the current map. |
 | Demo monitoring stations | **SIMULATION DATA** — 15 synthetic stations, every record `is_simulated=true` |
 | Weather | **LIVE** — Open-Meteo at station coordinates |
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |
@@ -30,7 +30,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Forecasts shown | **LIGHTGBM_TRAINED when `ML_SERVICE_URL` points at the local service**; otherwise the labelled `PERSISTENCE_BASELINE_V1` with an empirical, non-calibrated band |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
 | Vision AI | **CONFIGURED locally** — Groq (`qwen/qwen3.8-27b`) with a River open-weight fallback; keys only in `.env.local`. |
-| Email | **SIMULATED** — no provider configured; records are stored, not sent |
+| Email | **SMTP transport verified; no recipient configured** — adding `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` enables real delivery. Without them, records remain `SIMULATED` and nothing is sent. |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |
 | Database | PostgreSQL 18 + PostGIS 3.7 |
