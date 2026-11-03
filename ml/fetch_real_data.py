@@ -645,7 +645,6 @@ def main() -> None:
                 data["coverage"][code] = coverage
                 print(f"  {location['id']} {code:5s} {len(series):6d} rows ({coverage:5.1%})")
 
-    index = pd.date_range(start, end, freq="h", inclusive="left", tz="UTC")
     frames = []
     stations_meta = []
     for station_id in sorted(keep):
@@ -668,6 +667,12 @@ def main() -> None:
             weather = fetch_weather(CACHE, lat, lng, start, end).reindex(index)
         except Exception as error:  # Weather is required by the pipeline; fail loudly.
             raise SystemExit(f"Weather fetch failed for station {location['id']}: {error}")
+        # Prefer co-located station measurements; fill missing hours from ERA5.
+        station_weather = data.get("station_weather")
+        weather_quality = data.get("weather_quality", {})
+        if station_weather is not None:
+            for column in weather.columns:
+                weather[column] = station_weather[column].combine_first(weather[column])
         for column in ("temperature", "humidity", "wind_speed", "wind_dir", "precipitation"):
             frame[column] = weather[column]
         frame.insert(0, "timestamp", index)
