@@ -1227,11 +1227,11 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11px] font-semibold text-[#142016]">
-                      {current.label === 'Current' ? 'Live now' : `${current.label} frame`}
+                      {current.label === 'Current' ? 'Now' : `${current.label} frame`}
                       <span className="font-normal text-[#8a938b]"> · {formatDate(current.date.toISOString())}</span>
                     </p>
                     <p className="truncate text-[8.5px] uppercase tracking-[0.12em] text-[#8a938b]">
-                      {current.offset === 0 ? 'Latest observations' : current.offset > 0 ? 'Forecast · not confirmed' : 'Archived observations'} · click map to analyse
+                      {current.offset === 0 ? 'Latest available frame' : current.offset > 0 ? 'Forecast · not confirmed' : 'Archived observations'} · click map to analyse
                     </p>
                   </div>
                   <button
@@ -1282,7 +1282,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8a938b]">Current view</p>
                 <h2 className="display mt-1 text-[21px] font-semibold tracking-[-0.03em] text-[#142016]">{selectedLocality?.name ?? 'Greater Mumbai'}</h2>
-                <p className="mt-1 text-[9.5px] text-[#8a938b]">{current.offset === 0 ? 'Latest valid observations' : current.offset > 0 ? 'Forecast frame' : 'Archived frame'} · {formatDate(current.date.toISOString())}</p>
+                <p className="mt-1 text-[9.5px] text-[#8a938b]">{current.offset === 0 ? 'Latest available observations' : current.offset > 0 ? 'Forecast frame' : 'Archived frame'} · {formatDate(current.date.toISOString())}</p>
               </div>
               <Badge tone={current.offset === 0 ? 'green' : current.offset > 0 ? 'teal' : 'neutral'} dot>
                 {current.offset === 0 ? 'Current' : current.offset > 0 ? 'Forecast' : 'Past'}
