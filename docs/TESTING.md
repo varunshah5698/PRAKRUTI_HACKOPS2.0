@@ -73,7 +73,7 @@ The following were exercised during implementation:
 ### D — Citizen report
 
 1. Open `/report`, choose a category, place a pin on the interactive Mumbai map, upload a photo, consent and submit.
-2. Confirm the reference, AWAITING_VERIFICATION/UNVERIFIED state and AI vision NOT_CONFIGURED.
+2. Confirm the reference, UNVERIFIED state and the AI vision status (COMPLETED when a vision key is configured, otherwise NOT_CONFIGURED).
 3. Sign in as authority, open `/reports/:id`, view the private image, verify.
 4. Link the verified report to a matching incident.
 5. Confirm audit entries.

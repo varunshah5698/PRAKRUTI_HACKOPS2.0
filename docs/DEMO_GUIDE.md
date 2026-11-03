@@ -27,7 +27,7 @@ Password `Demo@1234` for all:
 - **Simulated:** 15 demo stations, all air/water/industrial observations, all seeded reports, alerts, incidents, notifications, risk assessments.
 - **Live:** Open-Meteo weather observations/forecasts.
 - **Modelled:** CAMS PM2.5/PM10 via Open-Meteo.
-- **Not configured:** CPCB, MPCB, River AI (without key), vision AI, email provider, trained ML.
+- **Configured when keys are set:** River AI and Gemini vision. **Not configured by default:** CPCB, MPCB, email provider, trained ML.
 - **Real in the app:** the incident workflow, audit trail, report verification, compliance comparison logic, map boundary, source registry.
 
 ## Demo A — Live Mumbai air quality
@@ -62,7 +62,7 @@ Password `Demo@1234` for all:
 1. Open `/report` (public, no login).
 2. Choose Air pollution → Open burning.
 3. Click the map to move the pin; select a locality; add a description; upload a JPEG/PNG/WebP (≤8 MB); consent; submit.
-4. Note the reference, UNVERIFIED state, AI vision NOT_CONFIGURED and nearby evidence enrichment.
+4. Note the reference, UNVERIFIED state, AI vision assessment (COMPLETED when a vision key is configured) and nearby evidence enrichment.
 5. Sign in as authority; open `/reports`; open the new report.
 6. View the private photograph, verify the report with a reason.
 7. Link it to a matching incident (verified reports only).
