@@ -1203,7 +1203,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#2f8f84]" /> CAMS model</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#b3860f]" /> Citizen report</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#c94a50]" /> Incident</span>
-                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#c2410c]" /> Factory source</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#c2410c]" /> OSM facility</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-[#c2410c]/20" /> Wind screen</span>
                 </div>
                 <p className="mt-2 border-t border-dashed border-[#e7eae3] pt-2 text-[8px] leading-relaxed text-[#8a938b]">
@@ -1300,8 +1300,8 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
                 <span className="text-[8.5px] text-[#a0a8a0]">toggle visibility</span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                <LayerToggle active={showSources} onClick={() => setShowSources((value) => !value)} icon={Factory} label="Factories" />
-                <LayerToggle active={showPlumes} onClick={() => setShowPlumes((value) => !value)} icon={Wind} label="Plumes" />
+                <LayerToggle active={showSources} onClick={() => setShowSources((value) => !value)} icon={Factory} label="Facilities" />
+                <LayerToggle active={showPlumes} onClick={() => setShowPlumes((value) => !value)} icon={Wind} label="Corridors" />
                 <LayerToggle active={showImpactLinks} onClick={() => setShowImpactLinks((value) => !value)} icon={Link2} label="Links" />
                 <LayerToggle active={showModelled} onClick={() => setShowModelled((value) => !value)} icon={CloudSun} label="CAMS" />
               </div>
