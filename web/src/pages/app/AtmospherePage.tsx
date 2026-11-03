@@ -31,7 +31,11 @@ import {
 import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Chart';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel } from '../../components/ui';
 import { api } from '../../lib/api';
+import { aqiCategory, aqiFromPm25 } from '../../lib/aqi';
 import { AQI_COLORS, formatDate, number, timeAgo } from '../../lib/format';
+
+// Kept as a page export so existing analysis tests and imports stay stable.
+export { aqiCategory, aqiFromPm25 } from '../../lib/aqi';
 
 /* ------------------------------------------------------------------ */
 /*  Types and deterministic simulation model                           */
@@ -191,37 +195,6 @@ export interface Seed {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const mean = (values: number[]) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null);
-
-/** CPCB sub-index breakpoints applied to an indicative PM2.5 value. */
-export function aqiFromPm25(value: number | null): number | null {
-  if (value === null || !Number.isFinite(value) || value < 0) return null;
-  const points = [
-    { concentration: 0, aqi: 0 },
-    { concentration: 30, aqi: 50 },
-    { concentration: 60, aqi: 100 },
-    { concentration: 90, aqi: 200 },
-    { concentration: 120, aqi: 300 },
-    { concentration: 250, aqi: 400 },
-    { concentration: 500, aqi: 500 },
-  ];
-  for (let i = 1; i < points.length; i += 1) {
-    const low = points[i - 1];
-    const high = points[i];
-    if (value <= high.concentration) {
-      return Math.round(((high.aqi - low.aqi) / (high.concentration - low.concentration)) * (value - low.concentration) + low.aqi);
-    }
-  }
-  return 500;
-}
-
-export function aqiCategory(value: number): string {
-  if (value <= 50) return 'Good';
-  if (value <= 100) return 'Satisfactory';
-  if (value <= 200) return 'Moderate';
-  if (value <= 300) return 'Poor';
-  if (value <= 400) return 'Very Poor';
-  return 'Severe';
-}
 
 function aqiColor(value: number): string {
   return AQI_COLORS[aqiCategory(value)] ?? '#728176';
