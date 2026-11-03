@@ -52,12 +52,15 @@ async function checkRiver() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${riverConfig.apiKey}` },
       body: JSON.stringify({
         model: riverConfig.model,
-        max_tokens: 20,
+        max_tokens: 200,
+        reasoning_effort: 'low',
         messages: [{ role: 'user', content: 'Reply with the word READY only.' }],
       }),
       signal: AbortSignal.timeout(30_000),
     });
-    return `${response.status} ${(await response.text()).slice(0, 220)}`;
+    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string; reasoning_content?: string } }> };
+    const content = data.choices?.[0]?.message?.content?.trim();
+    return `${response.status} finalContent=${content ? content.slice(0, 80) : 'EMPTY (reasoning-only response)'}`;
   } catch (error) {
     return `FAILED: ${error instanceof Error ? error.message : 'unknown'}`;
   }

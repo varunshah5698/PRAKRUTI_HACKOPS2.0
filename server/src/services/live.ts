@@ -226,8 +226,8 @@ function mulberry32(seed: number) {
 
 /**
  * Simulated stations emit a labelled reading every tick so the demo network
- * behaves like a real one. Values are a bounded random walk from the previous
- * reading; nothing here is presented as a regulatory measurement.
+ * behaves like a real one. Values follow a mean-reverting walk around the
+ * station's own 24 h profile; nothing here is a regulatory measurement.
  */
 export async function tickSimulatedStations(): Promise<{ records: number; message?: string }> {
   if (!env.DEMO_MODE) return { records: 0 };
@@ -242,13 +242,23 @@ export async function tickSimulatedStations(): Promise<{ records: number; messag
     locality_id: string | null;
     lat: number;
     lng: number;
+    baseline: number | null;
   }>(
-    `SELECT DISTINCT ON (o.station_id, o.pollutant_code)
-            o.station_id, s.code AS station_code, o.category, o.pollutant_code, o.value::float8 AS value, o.unit,
-            s.locality_id, ST_Y(s.location::geometry)::float8 AS lat, ST_X(s.location::geometry)::float8 AS lng
-     FROM environmental_observations o JOIN monitoring_stations s ON s.id = o.station_id
-     WHERE s.is_simulated = true AND o.source_id = 'demo-network' AND o.quality_state <> 'INVALID'
-     ORDER BY o.station_id, o.pollutant_code, o.observed_at DESC`,
+    `SELECT station_id, station_code, category, pollutant_code, value, unit, locality_id, lat, lng, baseline
+     FROM (
+       SELECT o.station_id, s.code AS station_code, o.category, o.pollutant_code,
+              o.value::float8 AS value, o.unit, s.locality_id,
+              ST_Y(s.location::geometry)::float8 AS lat, ST_X(s.location::geometry)::float8 AS lng,
+              AVG(o.value::float8) OVER (PARTITION BY o.station_id, o.pollutant_code) AS baseline,
+              ROW_NUMBER() OVER (
+                PARTITION BY o.station_id, o.pollutant_code ORDER BY o.observed_at DESC
+              ) AS latest
+       FROM environmental_observations o JOIN monitoring_stations s ON s.id = o.station_id
+       WHERE s.is_simulated = true AND o.source_id = 'demo-network' AND o.quality_state <> 'INVALID'
+         AND o.observed_at > now() - interval '24 hours'
+     ) ranked
+     WHERE latest = 1
+     ORDER BY station_code, pollutant_code`,
   );
   if (previous.length === 0) return { records: 0, message: 'No simulated stations to tick.' };
 
@@ -262,8 +272,12 @@ export async function tickSimulatedStations(): Promise<{ records: number; messag
       const digits = Number(row.station_code.replace(/\D/g, '')) || 1;
       const random = mulberry32(digits * 7919 + minuteIndex * 104729 + row.pollutant_code.length * 31);
       const drift = (random() - 0.5) * 2;
-      const spread = Math.max(0.4, row.value * 0.015);
-      const next = Math.max(0.05, Number((row.value + drift * spread).toFixed(2)));
+      // Mean reversion keeps the walk around the station's own 24 h profile
+      // instead of wandering to physically implausible values.
+      const baseline = Number(row.baseline) || row.value;
+      const pull = 0.12 * (baseline - row.value);
+      const spread = Math.max(baseline * 0.012, 0.004);
+      const next = Math.max(0.01, Number((row.value + pull + drift * spread).toFixed(2)));
       await query(
         `INSERT INTO environmental_observations
            (station_id, locality_id, category, pollutant_code, value, unit, observed_at, retrieved_at,

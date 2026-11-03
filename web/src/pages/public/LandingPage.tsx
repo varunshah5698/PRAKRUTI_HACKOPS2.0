@@ -10,7 +10,6 @@ import {
   Building2,
   Camera,
   CheckCircle2,
-  CloudSun,
   Droplets,
   Factory,
   FileSearch,
@@ -18,7 +17,6 @@ import {
   Gauge,
   Layers3,
   MapPin,
-  Radio,
   Scale,
   ShieldAlert,
   Sparkles,
@@ -182,11 +180,8 @@ export function LandingPage() {
 
   const activeAlerts = overview?.alertCounts.reduce((sum, row) => sum + row.count, 0) ?? 0;
   const stationMode = overview?.stationDataMode ?? 'SIMULATION';
-  const cpcbConnected = overview?.sources.some((source) => ['cpcb-caaqms', 'data-gov-in-air', 'openaq'].includes(source.id) && source.status === 'CONNECTED');
-  const stationOverlay = stationMode === 'LIVE_SOURCE' ? 'Live stations' : stationMode === 'MIXED' ? 'Live + demo stations' : 'Demo stations';
   const reports7d = overview?.reportCounts.reduce((sum, row) => sum + row.count, 0) ?? 0;
   const demoStations = overview?.stations.length ?? 0;
-  const weather = overview?.weather;
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -257,30 +252,7 @@ export function LandingPage() {
                 theme="light"
                 initialZoom={10.9}
                 initialPitch={26}
-                overlayLabel={stationOverlay}
               />
-              <div className="absolute inset-x-4 bottom-9 z-20 grid gap-2 sm:grid-cols-3">
-                <div className="rounded-xl border border-ink/10 bg-white/90 p-3 backdrop-blur">
-                  <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-ink/45">
-                    <CloudSun className="h-3 w-3" /> Weather · live
-                  </div>
-                  <p className="mt-1 text-sm font-semibold">
-                    {weather ? `${number(weather.temperature_c)}°C · ${number(weather.wind_speed_kmh)} km/h` : 'Unavailable'}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-ink/10 bg-white/90 p-3 backdrop-blur">
-                  <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-ink/45">
-                    <Radio className="h-3 w-3" /> CPCB / source
-                  </div>
-                  <p className={`mt-1 text-sm font-semibold ${cpcbConnected ? 'text-emerald-700' : 'text-amber-700'}`}>{cpcbConnected ? 'Connected' : 'Not connected'}</p>
-                </div>
-                <div className="rounded-xl border border-ink/10 bg-white/90 p-3 backdrop-blur">
-                  <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-ink/45">
-                    <BrainCircuit className="h-3 w-3" /> ML forecast
-                  </div>
-                  <p className="mt-1 text-sm font-semibold text-amber-700">Not trained</p>
-                </div>
-              </div>
             </div>
 
           </div>
@@ -384,7 +356,6 @@ export function LandingPage() {
                 theme="light"
                 initialZoom={11.2}
                 initialPitch={34}
-                overlayLabel={stationOverlay}
               />
               <div className="absolute bottom-9 right-4 z-20 max-w-[260px] rounded-xl border border-ink/10 bg-white/90 p-3 text-[10px] leading-relaxed text-ink/60 backdrop-blur">
                 <strong className="text-ink">No interpolated pollution surface.</strong> The monitoring network is sparse and

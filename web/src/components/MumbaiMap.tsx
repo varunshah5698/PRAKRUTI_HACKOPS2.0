@@ -245,7 +245,7 @@ export function MumbaiMap({
       pitch: initialPitch ?? (compact ? 32 : 55),
       bearing: compact ? 0 : -18,
       interactive: interactive ?? !compact,
-      attributionControl: { compact: true },
+      attributionControl: compact ? false : { compact: true },
       maxBounds: [
         [72.55, 18.75],
         [73.18, 19.38],

@@ -335,7 +335,6 @@ export function DashboardPage() {
             autoFit={false}
             initialZoom={12.35}
             initialPitch={46}
-            overlayLabel={data.dataMode.stationObservations === 'SIMULATION' ? 'Demo stations' : data.dataMode.stationObservations === 'MIXED' ? 'Live + demo' : 'Live stations'}
           />
           <div className="grid grid-cols-2 gap-2 border-t border-[#2b333e] p-3 sm:grid-cols-4">
             <div className="rounded-xl bg-[#101317] p-3">

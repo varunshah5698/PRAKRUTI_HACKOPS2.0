@@ -26,8 +26,6 @@ FEATURE_COLUMNS = ["pm25", "pm10", "no2", "so2", "co", "o3", "temperature", "hum
 API_KEY = os.environ.get("ML_SERVICE_API_KEY", "")
 
 app = FastAPI(title="Mumbai EnviroPulse ML inference", version="1.0.0")
-
-
 def require_api_key(authorization: str | None) -> None:
     if not API_KEY:
         return

@@ -520,7 +520,17 @@ export function MapPage() {
   const [playing, setPlaying] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(params.get('station'));
+  const [liveTick, setLiveTick] = useState(0);
+  const liveFeed = useLiveFeed();
   const playRef = useRef<number | null>(null);
+
+  // New minute readings re-pull the current map frame.
+  useEffect(() => {
+    if (!liveFeed.generatedAt) return;
+    if (playing) return;
+    if (timeline[timelineIndex]?.offset !== 0) return;
+    setLiveTick((tick) => tick + 1);
+  }, [liveFeed.generatedAt, playing, timeline, timelineIndex]);
 
   useEffect(() => {
     const query = new URLSearchParams();
@@ -529,9 +539,12 @@ export function MapPage() {
   }, [selectedStationId, setParams]);
 
   useEffect(() => {
-    setLoading(true);
+    // "Current" must track real time, not the moment the page mounted.
+    const slot = timeline[timelineIndex];
+    const at = slot && slot.offset === 0 ? new Date() : slot?.date ?? new Date();
+    if (!data) setLoading(true);
     const query = new URLSearchParams({
-      at: timeline[timelineIndex].date.toISOString(),
+      at: at.toISOString(),
       category,
       includeForecast: String(includeForecast),
     });
@@ -545,7 +558,7 @@ export function MapPage() {
       .then((result) => { setData(result); setError(null); })
       .catch((err) => setError(err instanceof Error ? err.message : 'Could not load map timeline'))
       .finally(() => setLoading(false));
-  }, [timeline, timelineIndex, category, localityId, pollutant, sourceId, severity, verification, includeForecast]);
+  }, [timeline, timelineIndex, category, localityId, pollutant, sourceId, severity, verification, includeForecast, liveTick]);
 
   useEffect(() => {
     if (!playing) {
