@@ -444,7 +444,7 @@ export async function ingestOpenAq(): Promise<IngestResult> {
           `SELECT COUNT(DISTINCT date_trunc('hour', observed_at))::int AS count
            FROM environmental_observations
            WHERE station_id=$1 AND pollutant_code='pm25' AND source_id=$2
-             AND observed_at > now() - interval '25 hours'`,
+             AND observed_at > now() - interval '26 hours'`,
           [station.id, sourceId],
         );
         if ((historyCount?.count ?? 0) < 25) {
