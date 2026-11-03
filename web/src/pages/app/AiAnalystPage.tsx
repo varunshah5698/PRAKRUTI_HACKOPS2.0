@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, Bot, BrainCircuit, Info, Send, ShieldAlert, Sparkles, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, LoadingBlock, Select, Textarea } from '../../components/ui';
-import { api } from '../../lib/api';
+import { api, ApiError } from '../../lib/api';
 import { CATEGORY_LABELS, formatDate } from '../../lib/format';
 
 interface AiAnswer {
@@ -75,11 +75,20 @@ export function AiAnalystPage() {
     setQuestion('');
     setLoading(true);
     try {
-      const answer = await api.post<AiAnswer>('/ai/chat', {
+      const post = () => api.post<AiAnswer>('/ai/chat', {
         question: prompt,
         stationId: stationId || undefined,
         category,
       });
+      let answer: AiAnswer;
+      try {
+        answer = await post();
+      } catch (error) {
+        // Deploys and free-tier cold starts can return 502/503 before the request reaches the API.
+        if (!(error instanceof ApiError) || ![502, 503, 504].includes(error.status)) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        answer = await post();
+      }
       setMessages((prev) => [...prev, { role: 'assistant', answer }]);
     } catch (error) {
       const detail = error instanceof Error ? error.message : 'Unknown network or server error';
