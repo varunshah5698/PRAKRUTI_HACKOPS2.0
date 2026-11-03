@@ -531,7 +531,7 @@ export async function analyzeEvidenceImage(
           lastError = error instanceof Error ? error.message : 'Gemini vision request failed';
         }
       }
-      if (!content) throw new Error(lastError || 'Gemini vision unavailable');
+      if (!content || !parsed) throw new Error(lastError || 'Gemini vision unavailable');
     } else {
       const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
       const response = await fetch(`${base}/chat/completions`, {
@@ -556,15 +556,16 @@ export async function analyzeEvidenceImage(
       const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
       content = data.choices?.[0]?.message?.content ?? '';
     }
-    let parsed: Record<string, unknown> = { raw: content };
-    try {
-      const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
-      const candidate = (fenced ? fenced[1] : content).trim();
-      const start = candidate.indexOf('{');
-      const end = candidate.lastIndexOf('}');
-      parsed = start >= 0 && end > start ? (JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>) : { description: content };
-    } catch {
-      parsed = { description: content };
+    if (!parsed) {
+      try {
+        const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+        const candidate = (fenced ? fenced[1] : content).trim();
+        const start = candidate.indexOf('{');
+        const end = candidate.lastIndexOf('}');
+        parsed = start >= 0 && end > start ? (JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>) : { description: content };
+      } catch {
+        parsed = { description: content };
+      }
     }
     return {
       status: 'COMPLETED',

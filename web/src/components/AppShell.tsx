@@ -246,9 +246,9 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   );
 
   return (
-    <div className="dashboard-root relative flex h-[100dvh] flex-col overflow-hidden lg:p-5">
+    <div className="dashboard-root relative flex h-[100dvh] flex-col overflow-hidden lg:p-6 xl:p-10">
       <div className="app-sky" aria-hidden />
-      <div className="app-frame relative z-10 flex min-h-0 flex-1 overflow-hidden lg:rounded-[32px]">
+      <div className="app-frame relative z-10 flex min-h-0 flex-1 overflow-hidden lg:rounded-[34px]">
         <aside className="hidden w-[94px] shrink-0 flex-col border-r border-white/70 bg-white/25 backdrop-blur-xl lg:flex">
           {iconRail}
         </aside>

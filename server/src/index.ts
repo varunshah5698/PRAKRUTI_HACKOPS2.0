@@ -218,6 +218,10 @@ async function shutdown(signal: string) {
   server.close(() => {
     pool.end().finally(() => process.exit(0));
   });
+  // Keep-alive and SSE connections otherwise hold close() open until tsx's
+  // 5 s force-kill, making every dev restart look like an outage.
+  server.closeAllConnections();
+  setTimeout(() => process.exit(0), 1000).unref();
 }
 process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
