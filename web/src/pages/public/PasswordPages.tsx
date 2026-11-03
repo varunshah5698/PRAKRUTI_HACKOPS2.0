@@ -46,7 +46,7 @@ export function ForgotPasswordPage() {
             </div>
           </div>
           {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">{error}</p> : null}
-          <Button type="submit" variant="lime" size="lg" className="w-full border border-ink/10" disabled={submitting}>
+          <Button type="submit" variant="ink" size="lg" className="w-full" disabled={submitting}>
             {submitting ? <Spinner /> : null} {submitting ? 'Generating…' : 'Generate reset instruction'}
           </Button>
           <p className="text-center text-xs text-ink/50"><Link to="/login" className="underline underline-offset-2">Back to sign in</Link></p>
@@ -99,7 +99,7 @@ export function ResetPasswordPage() {
           <PublicInput id="confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={10} />
         </div>
         {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">{error}</p> : null}
-        <Button type="submit" variant="lime" size="lg" className="w-full border border-ink/10" disabled={submitting}>
+        <Button type="submit" variant="ink" size="lg" className="w-full" disabled={submitting}>
           {submitting ? <Spinner /> : null} {submitting ? 'Updating…' : 'Update password'}
         </Button>
       </form>

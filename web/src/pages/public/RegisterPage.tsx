@@ -204,7 +204,7 @@ export function RegisterPage() {
         )}
 
         {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">{error}</p> : null}
-        <Button type="submit" variant="lime" size="lg" className="w-full border border-ink/10" disabled={submitting}>
+        <Button type="submit" variant="ink" size="lg" className="w-full" disabled={submitting}>
           {submitting ? <Spinner /> : null}
           {submitting ? 'Creating account…' : accountType === 'authority' ? 'Request authority access' : 'Create citizen account'}
         </Button>

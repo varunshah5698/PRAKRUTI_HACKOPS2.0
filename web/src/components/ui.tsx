@@ -9,7 +9,7 @@ export function Button({
   size = 'md',
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'default' | 'lime' | 'teal' | 'outline' | 'ghost' | 'dark' | 'danger' | 'subtle';
+  variant?: 'default' | 'lime' | 'teal' | 'outline' | 'ghost' | 'dark' | 'ink' | 'danger' | 'subtle';
   size?: 'sm' | 'md' | 'lg' | 'icon';
 }) {
   const variants: Record<string, string> = {
@@ -19,6 +19,7 @@ export function Button({
     outline: 'bg-white/70 text-[#223328] border border-[#d5e0d1] hover:bg-white hover:border-[#bfd0b9]',
     ghost: 'bg-transparent text-[#4d5e52] hover:text-[#142016] hover:bg-white/70 border border-transparent',
     dark: 'bg-white/80 text-[#223328] border border-[#d5e0d1] hover:bg-white hover:border-[#bfd0b9]',
+    ink: 'bg-[#111310] text-white border border-[#111310] hover:bg-[#1e2a21] shadow-[0_18px_40px_-26px_rgba(17,19,16,.85)]',
     danger: 'bg-[#c94a50] text-white hover:bg-[#b84046] border border-transparent',
     subtle: 'bg-[#edf2e9] text-[#223328] hover:bg-[#e3ebe0] border border-transparent',
   };
@@ -129,7 +130,7 @@ export const PublicInput = React.forwardRef<HTMLInputElement, React.InputHTMLAtt
     <input
       ref={ref}
       className={classNames(
-        'h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-sm text-ink placeholder:text-ink/35 focus:border-ink focus:outline-none focus:ring-2 focus:ring-lime/50',
+        'h-[52px] w-full rounded-2xl border border-ink/10 bg-white px-4 text-sm text-ink shadow-[inset_0_1px_2px_rgba(17,19,16,.04)] placeholder:text-ink/30 focus:border-ink/40 focus:outline-none focus:ring-4 focus:ring-lime/30',
         className,
       )}
       {...props}
@@ -159,7 +160,7 @@ export const PublicSelect = React.forwardRef<HTMLSelectElement, React.SelectHTML
     <select
       ref={ref}
       className={classNames(
-        'h-12 w-full rounded-xl border border-ink/20 bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-lime/50',
+        'h-[52px] w-full rounded-2xl border border-ink/10 bg-white px-3 text-sm text-ink shadow-[inset_0_1px_2px_rgba(17,19,16,.04)] focus:border-ink/40 focus:outline-none focus:ring-4 focus:ring-lime/30',
         className,
       )}
       {...props}
@@ -208,7 +209,7 @@ export function Label({ children, className, htmlFor }: { children: React.ReactN
 
 export function PublicLabel({ children, className, htmlFor }: { children: React.ReactNode; className?: string; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className={classNames('mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.1em] text-ink/60', className)}>
+    <label htmlFor={htmlFor} className={classNames('mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45', className)}>
       {children}
     </label>
   );
