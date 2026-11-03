@@ -58,7 +58,7 @@ const categories = [
   {
     id: 'air',
     title: 'Air pollution',
-    copy: 'PM2.5, PM10 and gaseous pollutants, with persistence baselines and forecast transparency.',
+    copy: 'PM2.5, PM10 and gaseous pollutants, with forecast transparency.',
     stat: 'Primary predictive capability',
     icon: Wind,
     art: 'air',
@@ -374,24 +374,6 @@ export function LandingPage() {
               <h2 className="display mt-4 text-[36px] font-bold leading-[1.02] sm:text-[46px]">
                 Forecasts with the receipts attached.
               </h2>
-              <p className="mt-5 max-w-lg text-sm leading-relaxed text-ink/55">
-                The platform is designed for 1-hour, 3-hour and 6-hour PM2.5 forecasts, quantile intervals, a calibrated
-                deterioration classifier and anomaly detection. In this deployment those capabilities run on a persistence
-                baseline because no verified Mumbai historical extract has been supplied.
-              </p>
-              <div className="mt-6 grid grid-cols-3 gap-3">
-                {[
-                  ['1 hour', 'baseline'],
-                  ['3 hours', 'baseline'],
-                  ['6 hours', 'baseline'],
-                ].map(([horizon, status]) => (
-                  <div key={horizon} className="rounded-xl border border-ink/10 bg-white/45 p-3">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-ink/45">Horizon</p>
-                    <p className="mt-1 text-sm font-semibold">{horizon}</p>
-                    <p className="mt-2 text-[9px] uppercase tracking-[0.08em] text-amber-700">{status}</p>
-                  </div>
-                ))}
-              </div>
             </Reveal>
             <Reveal delay={0.1}>
               <div className="rounded-2xl border border-white/80 bg-white/55 p-4">
@@ -400,7 +382,6 @@ export function LandingPage() {
                     <p className="text-[10px] uppercase tracking-[0.12em] text-ink/45">Chembur demo station</p>
                     <p className="mt-1 text-sm font-semibold">PM2.5 forecast context</p>
                   </div>
-                  <PublicBadge tone="lime">Baseline</PublicBadge>
                 </div>
                 <div className="mt-4 grid grid-cols-4 items-end gap-2">
                   {[
@@ -565,7 +546,7 @@ export function LandingPage() {
           <div className="mt-9 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {[
               ['01', 'Observe', 'Ingest observations and reports with source timestamps, quality state and simulation flags.', Gauge],
-              ['02', 'Analyse', 'Apply category-specific risk methods, anomaly checks and labelled persistence baselines.', BrainCircuit],
+              ['02', 'Analyse', 'Apply category-specific risk methods and anomaly checks.', BrainCircuit],
               ['03', 'Assess', 'Compare evidence with applicable standards only where unit, averaging and source type match.', Scale],
               ['04', 'Act', 'Route alerts, assign investigations, record corrective actions and close with authorised approval.', ShieldAlert],
             ].map(([step, title, copy, Icon], index) => {
