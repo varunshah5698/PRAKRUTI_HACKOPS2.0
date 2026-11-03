@@ -80,10 +80,10 @@ mapRouter.get('/layers', async (_req, res, next) => {
     ]);
     res.json({
       categories: [
-        { id: 'air', label: 'Air pollution', monitoring: '10 demo air monitors', forecast: 'Persistence baseline only' },
-        { id: 'water', label: 'Water pollution', monitoring: '3 demo water sampling points', forecast: 'No forecast' },
+        { id: 'air', label: 'Air pollution', monitoring: 'OpenAQ/CPCB stations + CAMS modelled context', forecast: 'Persistence baseline only' },
+        { id: 'water', label: 'Water pollution', monitoring: 'No live water monitoring stations; report evidence', forecast: 'No forecast' },
         { id: 'waste', label: 'Unsafe waste disposal', monitoring: 'No monitoring stations; report evidence', forecast: 'No forecast' },
-        { id: 'industrial', label: 'Industrial emissions', monitoring: '2 demo stack monitors', forecast: 'No forecast' },
+        { id: 'industrial', label: 'Industrial emissions', monitoring: 'OpenStreetMap facility locations; screening only', forecast: 'No forecast' },
       ],
       markerKinds: {
         OBSERVED: 'Filled marker with measured value and source timestamp',
@@ -94,7 +94,7 @@ mapRouter.get('/layers', async (_req, res, next) => {
       estimatedZones: {
         available: false,
         reason:
-          'No interpolated surface is produced. The station network is sparse and demo observations are synthetic; a point measurement cannot establish concentration across an area.',
+          'No interpolated surface is produced. The station network is sparse; a point measurement cannot establish concentration across an area. CAMS modelled values are shown separately as regional context.',
       },
       sources: sources.filter((s) =>
         ['demo-network', 'open-meteo-weather', 'open-meteo-cams', 'data-gov-in-air', 'openaq'].includes(s.id),

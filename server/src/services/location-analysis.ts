@@ -530,7 +530,7 @@ export async function getLocationAnalysis(input: { lat: number; lng: number; cat
   );
   const locality = localityRows[0] ?? null;
 
-  const snapshots = await getStationSnapshots();
+  const snapshots = await getStationSnapshots(undefined, { includeSimulated: false });
   const withDistance = snapshots
     .map((station) => ({ station, distance: haversineMeters(lat, lng, Number(station.lat), Number(station.lng)) }))
     .sort((a, b) => a.distance - b.distance);
@@ -749,7 +749,7 @@ export async function getLocationAnalysis(input: { lat: number; lng: number; cat
   const limitations = [
     'Point screen only: no interpolated pollution surface is produced. The analysis describes nearby evidence and does not measure the selected coordinate.',
     'Citizen reports are not measurements until an authorised reviewer verifies them.',
-    'Industrial source shares are a distance-and-wind screening estimate over a simulated catalogue, not measured source apportionment or a regulatory determination.',
+    'Facility locations are from OpenStreetMap. Source shares are a distance-and-wind screening estimate, not measured source apportionment or a regulatory determination.',
   ];
   if (primary?.isSimulated) limitations.push('The nearest monitor is simulation-labelled and is not an official CPCB record.');
   if (primary?.isStale) limitations.push('The nearest monitor reading is older than six hours.');

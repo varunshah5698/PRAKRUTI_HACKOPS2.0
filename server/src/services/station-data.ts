@@ -31,7 +31,10 @@ export interface StationSnapshot {
   isStale: boolean;
 }
 
-export async function getStationSnapshots(category?: string): Promise<StationSnapshot[]> {
+export async function getStationSnapshots(
+  category?: string,
+  options: { includeSimulated?: boolean } = {},
+): Promise<StationSnapshot[]> {
   const rows = await query<{
     id: string;
     code: string;
@@ -129,7 +132,8 @@ export async function getStationSnapshots(category?: string): Promise<StationSna
     industrial: 'INDUSTRIAL_STACK',
   };
   const wanted = category ? categoryType[category] : null;
-  return [...map.values()].filter((s) => !wanted || s.stationType === wanted);
+  const result = [...map.values()].filter((s) => !wanted || s.stationType === wanted);
+  return options.includeSimulated === false ? result.filter((s) => !s.isSimulated) : result;
 }
 
 export async function getStationSeries(stationId: string, pollutant: string, hours = 48) {

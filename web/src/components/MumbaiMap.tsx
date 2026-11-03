@@ -33,6 +33,17 @@ export interface MapStation {
   primarySourceName?: string | null;
 }
 
+export interface MapModelled {
+  localityId: string;
+  localityName: string;
+  lat: number;
+  lng: number;
+  pm25: number | null;
+  pm10: number | null;
+  observedAt: string;
+  sourceId: string;
+}
+
 export interface MapSourceLink {
   id: string;
   sourceId: string;
@@ -69,6 +80,7 @@ export interface MapIncident {
 
 interface Props {
   stations?: MapStation[];
+  modelled?: MapModelled[];
   reports?: MapReport[];
   incidents?: MapIncident[];
   sources?: SourceImpactSource[];
@@ -84,6 +96,7 @@ interface Props {
   showSources?: boolean;
   showPlumes?: boolean;
   showImpactLinks?: boolean;
+  showModelled?: boolean;
   className?: string;
   compact?: boolean;
   theme?: 'dark' | 'light';
@@ -191,6 +204,28 @@ function stationFeatures(stations: MapStation[], selectedStationId?: string | nu
   };
 }
 
+function modelledFeatures(modelled: MapModelled[]): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: modelled
+      .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng) && (item.pm25 !== null || item.pm10 !== null))
+      .map((item) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [item.lng, item.lat] },
+        properties: {
+          id: item.localityId,
+          label: item.localityName,
+          pm25: item.pm25,
+          pm10: item.pm10,
+          pollutant: item.pm25 !== null ? 'PM2.5' : 'PM10',
+          valueLabel: `${item.pm25 ?? item.pm10} µg/m³`,
+          observedAt: item.observedAt,
+          sourceId: item.sourceId,
+        },
+      })),
+  };
+}
+
 function reportFeatures(reports: MapReport[]): FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -247,13 +282,14 @@ function sourceFeatures(sources: SourceImpactSource[], selectedSourceId?: string
           locality: source.localityName,
           rank: source.rank,
           color: sourceColor(source.rank),
-          emissionIndex: source.emissionIndex,
+          capacityMW: source.capacityMW ?? null,
           affectedMonitors: source.affectedMonitors,
           impactScore: source.impactScore,
           landKm2: source.estimatedLandKm2,
           plumeLengthKm: source.plumeLengthKm,
-          stackHeightM: source.stackHeightM,
-          primaryPollutant: source.primaryPollutant,
+          primaryPollutant: source.primaryPollutant ?? '',
+          osmId: source.osmId ?? null,
+          source: source.source ?? 'OpenStreetMap',
           selected: source.id === selectedSourceId,
           note: source.note,
         },
@@ -338,6 +374,7 @@ function flowFeatures(links: MapSourceLink[], progress: number): FeatureCollecti
 
 function MumbaiMapInner({
   stations = [],
+  modelled = [],
   reports = [],
   incidents = [],
   sources = [],
@@ -353,6 +390,7 @@ function MumbaiMapInner({
   showSources = true,
   showPlumes = true,
   showImpactLinks = true,
+  showModelled = true,
   className,
   compact = false,
   theme = 'light',
@@ -373,8 +411,8 @@ function MumbaiMapInner({
   const [viewMode, setViewMode] = useState<'3d' | 'flat'>(compact ? 'flat' : '3d');
   const handlersRef = useRef({ onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick });
   handlersRef.current = { onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick };
-  const dataRef = useRef({ stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks });
-  dataRef.current = { stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks };
+  const dataRef = useRef({ stations, modelled, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks, showModelled });
+  dataRef.current = { stations, modelled, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks, showModelled };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -607,7 +645,20 @@ function MumbaiMapInner({
           'circle-color': ['get', 'color'],
           'circle-stroke-width': 1.5,
           'circle-stroke-color': theme === 'dark' ? '#101317' : '#ffffff',
-          'circle-opacity': 0.95,
+          'circle-opacity': ['case', ['get', 'isStale'], 0.5, 0.95],
+        },
+      });
+      map.addLayer({
+        id: 'ep-station-stale-ring',
+        type: 'circle',
+        source: 'ep-stations',
+        filter: ['==', ['get', 'isStale'], true],
+        paint: {
+          'circle-radius': ['case', ['get', 'selected'], 14, 11],
+          'circle-color': 'rgba(0,0,0,0)',
+          'circle-stroke-width': 1.4,
+          'circle-stroke-color': '#b3860f',
+          'circle-stroke-opacity': 0.8,
         },
       });
       map.addLayer({
@@ -653,6 +704,49 @@ function MumbaiMapInner({
           'circle-stroke-width': 1.4,
           'circle-stroke-color': ['get', 'impactColor'],
           'circle-stroke-opacity': 0.78,
+        },
+      });
+      map.addSource('ep-modelled', { type: 'geojson', data: modelledFeatures(dataRef.current.modelled) });
+      map.addLayer({
+        id: 'ep-modelled-halo',
+        type: 'circle',
+        source: 'ep-modelled',
+        paint: {
+          'circle-radius': 14,
+          'circle-color': '#2f8f84',
+          'circle-opacity': 0.1,
+          'circle-blur': 1,
+        },
+      });
+      map.addLayer({
+        id: 'ep-modelled',
+        type: 'circle',
+        source: 'ep-modelled',
+        paint: {
+          'circle-radius': 4.5,
+          'circle-color': '#2f8f84',
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': theme === 'dark' ? '#101317' : '#ffffff',
+          'circle-opacity': 0.95,
+        },
+      });
+      map.addLayer({
+        id: 'ep-modelled-labels',
+        type: 'symbol',
+        source: 'ep-modelled',
+        minzoom: 10.8,
+        layout: {
+          'text-field': ['get', 'valueLabel'],
+          'text-size': 8.5,
+          'text-font': ['Noto Sans Regular'],
+          'text-offset': [0, 1.4],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': theme === 'dark' ? '#9fe0d6' : '#1f766d',
+          'text-halo-color': theme === 'dark' ? '#101317' : '#ffffff',
+          'text-halo-width': 2,
         },
       });
       map.addSource('ep-reports', { type: 'geojson', data: reportFeatures(dataRef.current.reports) });
@@ -771,12 +865,31 @@ function MumbaiMapInner({
              <div style="color:#5f7065;font-size:11px">${escapeHtml(p.locality)}</div>
              <div style="margin-top:6px;font-size:12px"><strong>${escapeHtml(p.valueLabel)}</strong></div>
              ${impact}
-             <div style="margin-top:4px;font-size:10px;color:#66766b">${p.isSimulated ? 'SIMULATION DATA · ' : ''}${escapeHtml(p.health)}</div></div>`,
+             <div style="margin-top:4px;font-size:10px;color:${p.isStale ? '#b3860f' : '#66766b'}">${p.isStale ? 'STALE · last observed ' : ''}${p.observedAt ? escapeHtml(new Date(String(p.observedAt)).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) : escapeHtml(p.health)}</div></div>`,
           )
           .addTo(map);
       };
       map.on('mousemove', 'ep-stations-observed', stationPopup);
       map.on('mousemove', 'ep-stations-predicted', stationPopup);
+      map.on('mousemove', 'ep-modelled', (event: any) => {
+        const feature = event.features?.[0];
+        if (!feature) return;
+        const p = feature.properties ?? {};
+        const observed = p.observedAt
+          ? new Date(String(p.observedAt)).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })
+          : '—';
+        popupRef.current?.remove();
+        popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: 'ep-map-popup' })
+          .setLngLat(event.lngLat)
+          .setHTML(
+            `<div style="min-width:180px"><div style="font-weight:700">${escapeHtml(p.label)}</div>
+             <div style="color:#5f7065;font-size:10px">CAMS modelled · ${escapeHtml(observed)} IST</div>
+             <div style="margin-top:6px;font-size:12px"><strong>PM2.5 ${p.pm25 === null ? '—' : escapeHtml(p.pm25)} µg/m³</strong></div>
+             <div style="font-size:10px;color:#5f7065">PM10 ${p.pm10 === null ? '—' : escapeHtml(p.pm10)} µg/m³</div>
+             <div style="margin-top:5px;font-size:9px;color:#66766b">MODELLED CONTEXT · not a station measurement</div></div>`,
+          )
+          .addTo(map);
+      });
       map.on('mousemove', 'ep-sources', (event: any) => {
         const feature = event.features?.[0];
         if (!feature) return;
@@ -787,9 +900,9 @@ function MumbaiMapInner({
           .setHTML(
             `<div style="min-width:190px"><div style="display:flex;align-items:center;gap:6px"><span style="display:inline-flex;height:18px;width:18px;align-items:center;justify-content:center;border-radius:50%;background:${escapeHtml(p.color)};color:#fff;font-size:9px;font-weight:700">${escapeHtml(p.rank)}</span><span style="font-weight:700">${escapeHtml(p.label)}</span></div>
              <div style="color:#8a5a3b;font-size:10px;margin-top:3px">${escapeHtml(p.type)} · ${escapeHtml(p.locality)}</div>
-             <div style="margin-top:6px;font-size:11px"><strong>Emission index ${escapeHtml(p.emissionIndex)}/100</strong></div>
-             <div style="margin-top:3px;font-size:10px;color:#7c5a45">${escapeHtml(p.affectedMonitors)} affected monitor(s) · ${escapeHtml(p.plumeLengthKm)} km plume screen</div>
-             <div style="margin-top:5px;font-size:9px;color:#9a7b66">SIMULATED SOURCE · screening only</div></div>`,
+             <div style="margin-top:6px;font-size:11px"><strong>${p.capacityMW ? `Capacity ${escapeHtml(p.capacityMW)} MW` : 'Capacity not published'}</strong></div>
+             <div style="margin-top:3px;font-size:10px;color:#7c5a45">${escapeHtml(p.affectedMonitors)} monitor(s) in wind screen · ${escapeHtml(p.plumeLengthKm)} km corridor</div>
+             <div style="margin-top:5px;font-size:9px;color:#9a7b66">OPENSTREETMAP FACILITY · screening only</div></div>`,
           )
           .addTo(map);
       });
@@ -800,6 +913,9 @@ function MumbaiMapInner({
         popupRef.current?.remove();
       });
       map.on('mouseleave', 'ep-sources', () => {
+        popupRef.current?.remove();
+      });
+      map.on('mouseleave', 'ep-modelled', () => {
         popupRef.current?.remove();
       });
       map.on('click', (event: any) => {
@@ -841,6 +957,8 @@ function MumbaiMapInner({
     if (!map || !loadedRef.current) return;
     const source = map.getSource('ep-stations') as maplibregl.GeoJSONSource | undefined;
     source?.setData(stationFeatures(stations, selectedStationId));
+    const modelledSource = map.getSource('ep-modelled') as maplibregl.GeoJSONSource | undefined;
+    modelledSource?.setData(modelledFeatures(modelled));
     const reportsSource = map.getSource('ep-reports') as maplibregl.GeoJSONSource | undefined;
     reportsSource?.setData(reportFeatures(reports));
     const incidentsSource = map.getSource('ep-incidents') as maplibregl.GeoJSONSource | undefined;
@@ -853,7 +971,7 @@ function MumbaiMapInner({
     linksSource?.setData(sourceLinkFeatures(sourceLinks));
     const flowSource = map.getSource('ep-source-flow') as maplibregl.GeoJSONSource | undefined;
     flowSource?.setData(flowFeatures(sourceLinks, 0.25));
-  }, [stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId]);
+  }, [stations, modelled, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -893,6 +1011,16 @@ function MumbaiMapInner({
       }
     }
   }, [showImpactLinks]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    for (const layer of ['ep-modelled-halo', 'ep-modelled', 'ep-modelled-labels']) {
+      if (map.getLayer(layer)) {
+        map.setLayoutProperty(layer, 'visibility', showModelled ? 'visible' : 'none');
+      }
+    }
+  }, [showModelled]);
 
   useEffect(() => {
     const map = mapRef.current;

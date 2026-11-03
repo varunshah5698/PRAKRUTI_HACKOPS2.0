@@ -8,8 +8,8 @@ import { query } from '../db/pool.js';
  *
  * This is deliberately not a regulatory dispersion model and not a measured
  * source apportionment. It applies a Gaussian-style distance and wind-alignment
- * weight to a simulated source catalogue so the map can show which monitors and
- * land areas could be downwind of an industrial source.
+ * weight to a catalogue of real OpenStreetMap facilities so the map can show
+ * which monitors and land areas could be downwind of an industrial site.
  */
 
 export interface IndustrialSource {
@@ -19,10 +19,14 @@ export interface IndustrialSource {
   localityName: string;
   lat: number;
   lng: number;
-  stackHeightM: number;
-  emissionIndex: number;
-  primaryPollutant: string;
+  stackHeightM: number | null;
+  emissionIndex: number | null;
+  capacityMW?: number | null;
+  primaryPollutant: string | null;
   isSimulated: boolean;
+  source?: string;
+  osmType?: string;
+  osmId?: number;
   note: string;
 }
 
@@ -147,8 +151,24 @@ function angleDifference(a: number, b: number): number {
   return diff;
 }
 
+/**
+ * The OSM catalogue has no emission measurements. Published capacity is used
+ * where it exists; otherwise the facility type supplies a conservative screen
+ * weight. This is an assumption for screening, never an emission estimate.
+ */
+function screenWeight(source: IndustrialSource): number {
+  // Keep an explicitly supplied index for callers that have a measured or
+  // modelled value; the OSM catalogue leaves this null.
+  if (source.emissionIndex !== null) return clamp(source.emissionIndex / 100, 0.05, 1);
+  if (source.capacityMW && source.capacityMW >= 500) return 1;
+  if (source.capacityMW && source.capacityMW >= 100) return 0.8;
+  if (/power|refinery|chemical|steel|metal|cement|shipbuild/i.test(`${source.name} ${source.type}`)) return 0.75;
+  if (/industrial estate|engineering|manufactur|works|factory|dairy/i.test(source.type)) return 0.5;
+  return 0.35;
+}
+
 export function buildPlumePolygon(source: IndustrialSource, wind: ScreenWind) {
-  const lengthM = clamp(1_100 + source.emissionIndex * 38 + wind.speedKmh * 70, 1_600, 6_200);
+  const lengthM = clamp(1_400 + screenWeight(source) * 3_000 + wind.speedKmh * 70, 1_600, 6_200);
   const halfWidthM = lengthM * 0.22;
   const downwind = (wind.directionDeg + 180) % 360;
   const steps = 12;
@@ -214,7 +234,7 @@ export async function getWindAt(at: Date): Promise<ScreenWind> {
       source: 'OPEN_METEO_WEATHER_NEAREST',
     };
   }
-  return { speedKmh: 12, directionDeg: 240, observedAt: null, source: 'FALLBACK_SCREEN_WIND' };
+  return { speedKmh: 0, directionDeg: 0, observedAt: null, source: 'UNAVAILABLE' };
 }
 
 export function computeSourceImpact(
@@ -222,6 +242,24 @@ export function computeSourceImpact(
   wind: ScreenWind,
   sources: IndustrialSource[] = INDUSTRIAL_SOURCES,
 ): SourceImpactResult {
+  if (wind.source === 'UNAVAILABLE') {
+    return {
+      method: 'GAUSSIAN_DISTANCE_WIND_SCREEN_V1',
+      status: 'SCREENING_ESTIMATE',
+      wind: { ...wind, fromLabel: '—' },
+      sources: [],
+      stationAttributions: {},
+      landImpact: {
+        impactedAreaKm2: 0,
+        impactedLocalities: [],
+        affectedStations: 0,
+        note: 'Wind is unavailable, so no facility wind screen is drawn.',
+      },
+      note: 'The facility screen needs a real wind observation. No wind record is available for this frame.',
+      disclaimer: 'No screen was produced. Facility locations are from OpenStreetMap; this is not a regulatory determination.',
+    };
+  }
+
   const stationAttributions: Record<string, StationAttribution> = {};
   const sourceTotals = new Map<string, { score: number; affected: number }>();
   for (const source of sources) sourceTotals.set(source.id, { score: 0, affected: 0 });
@@ -230,7 +268,7 @@ export function computeSourceImpact(
     if (!Number.isFinite(station.lat) || !Number.isFinite(station.lng)) continue;
     const raw = sources.map((source) => {
       const distanceM = haversineMeters(source.lat, source.lng, station.lat, station.lng);
-      const reachM = 1_700 + source.emissionIndex * 32 + source.stackHeightM * 6;
+      const reachM = 1_700 + screenWeight(source) * 3_200 + (source.capacityMW ? Math.min(1_000, source.capacityMW) * 0.8 : 0);
       const decay = Math.exp(-((distanceM / reachM) ** 2));
       const stationBearing = bearingDegrees(source.lat, source.lng, station.lat, station.lng);
       const downwindBearing = (wind.directionDeg + 180) % 360;
@@ -241,7 +279,7 @@ export function computeSourceImpact(
         source,
         distanceM,
         alignment,
-        rawWeight: (source.emissionIndex / 100) * decay * directional * stability,
+        rawWeight: screenWeight(source) * decay * directional * stability,
       };
     });
 
@@ -316,7 +354,7 @@ export function computeSourceImpact(
         // A source still matters when the wind carries its plume over land but
         // no monitor sits directly inside it. The score therefore keeps a small
         // emission and land component alongside the monitor contribution.
-        impactScore: round(total.score + source.emissionIndex * 0.5 + plume.areaKm2 * 0.75),
+        impactScore: round(total.score + screenWeight(source) * 10 + plume.areaKm2 * 0.75),
         affectedMonitors: total.affected,
         estimatedLandKm2: round(plume.areaKm2),
         plumeLengthKm: round(plume.lengthM / 1_000, 1),
@@ -324,7 +362,7 @@ export function computeSourceImpact(
         plume: { type: 'Polygon' as const, coordinates: plume.coordinates },
       };
     })
-    .sort((a, b) => b.impactScore - a.impactScore || b.emissionIndex - a.emissionIndex)
+    .sort((a, b) => b.impactScore - a.impactScore || screenWeight(b) - screenWeight(a))
     .map((source, index) => ({ ...source, rank: index + 1 }));
 
   const impacted = Object.values(stationAttributions).filter((row) => row.impactLevel !== 'NONE');
@@ -341,12 +379,12 @@ export function computeSourceImpact(
       impactedAreaKm2: round(impactedAreaKm2),
       impactedLocalities,
       affectedStations: impacted.length,
-      note: 'Plume footprints are screening geometry derived from simulated sources and the latest wind. They are not a measured pollution surface or a regulatory impact zone.',
+      note: 'Screening corridors are wind-alignment geometry around real OpenStreetMap facility locations. They are not a measured pollution surface or a regulatory impact zone.',
     },
     note:
-      'Source shares are a distance-and-wind screening estimate applied to simulated industrial sources, using PM2.5 and wind. Future frames use the available PM2.5 forecast where present. They show which monitors could be in a source plume, not a measured apportionment.',
+      'Facility locations and tags are from OpenStreetMap (ODbL). Screen weights use published capacity where available; otherwise a conservative type-based assumption. Shares are a distance-and-wind screening estimate, not a measured apportionment. No stack height or emission measurement is used.',
     disclaimer:
-      'SIMULATED SOURCES · SCREENING ONLY. No real facility is identified, no legal threshold is applied, and this is not a regulatory determination.',
+      'SCREENING ESTIMATE · NOT A REGULATORY DETERMINATION. Facility locations are real OSM features; corridors and shares are modelled, not measured.',
   };
 }
 

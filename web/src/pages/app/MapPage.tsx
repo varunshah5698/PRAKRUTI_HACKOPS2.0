@@ -8,9 +8,8 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  Crosshair,
+  CloudSun,
   Factory,
-  FileWarning,
   Filter,
   Layers,
   Link2,
@@ -58,6 +57,10 @@ interface TimelineData {
   incidents: Array<{ id: string; public_ref: string; title: string; category: string; status: string; risk_level: string; detected_at: string; lat: number; lng: number; is_simulated: boolean }>;
   alerts: Array<{ id: string; public_ref: string; category: string; level: string; state: string; trigger_type: string; title: string; triggered_at: string; locality_name: string | null; is_simulated: boolean }>;
   localities: Locality[];
+  modelled: Array<{
+    localityId: string; localityName: string; lat: number; lng: number;
+    pm25: number | null; pm10: number | null; observedAt: string; sourceId: string;
+  }>;
   warnings: string[];
   forecastMeta: Record<string, unknown> | null;
   sourceImpact: SourceImpactData | null;
@@ -382,7 +385,7 @@ function StationDrawer({
             <Badge tone={detail.station.healthStatus === 'ONLINE' ? 'green' : 'amber'}>{detail.station.healthStatus}</Badge>
             {detail.station.aqi?.aqi !== null && detail.station.aqi?.aqi !== undefined ? <Badge tone="neutral">Indicative AQI {detail.station.aqi.aqi}</Badge> : null}
             {screen && screen.impactLevel !== 'NONE' ? (
-              <Badge tone="amber" dot>Plume screen {screen.estimatedSharePct}%</Badge>
+              <Badge tone="amber" dot>Wind screen {screen.estimatedSharePct}%</Badge>
             ) : null}
             <span className="ml-auto flex items-center gap-2 text-[9px] text-[#66766b]">
               {refreshing ? (
@@ -472,7 +475,7 @@ function StationDrawer({
                   {screen.sources.length ? (
                     <>
                       <p className="mt-2 text-[11px] leading-relaxed text-[#5a4636]">
-                        This monitor falls inside the plume screen of <strong className="text-[#7c2d12]">{screen.primarySourceName}</strong>. The screen attributes{' '}
+                        This monitor falls inside the wind screen of <strong className="text-[#7c2d12]">{screen.primarySourceName}</strong>. The screen attributes{' '}
                         <strong>{screen.estimatedSharePct}%</strong> of the industrial contribution here to that source.
                       </p>
                       <div className="mt-3 space-y-2.5">
@@ -491,7 +494,7 @@ function StationDrawer({
                               <div className="h-full rounded-full" style={{ width: `${Math.max(3, contribution.contributionPct)}%`, background: sourceColor(index + 1) }} />
                             </div>
                             <p className="mt-0.5 text-[8px] text-[#9a7b66]">
-                              {contribution.distanceKm} km · {contribution.downwind ? 'downwind' : 'plume edge'} · open source
+                              {contribution.distanceKm} km · {contribution.downwind ? 'downwind' : 'screen edge'} · OpenStreetMap
                             </p>
                           </button>
                         ))}
@@ -724,15 +727,15 @@ function SourceSheet({
       open={Boolean(source)}
       onOpenChange={(open) => !open && onClose()}
       title={source?.name ?? 'Industrial source'}
-      description={source ? `${source.type} · ${source.localityName} · simulated source` : 'Loading source…'}
+      description={source ? `${source.type} · ${source.localityName} · OpenStreetMap facility` : 'Loading source…'}
     >
       {source ? (
         <div className="space-y-5 px-5 py-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="amber" dot>Rank #{source.rank}</Badge>
-            <Badge tone="neutral">Emission index {source.emissionIndex}/100</Badge>
-            <Badge tone="teal">Plume screen {source.plumeLengthKm} km</Badge>
-            <Badge tone="outline">Simulated</Badge>
+            <Badge tone="neutral">Screen score {source.impactScore}</Badge>
+            <Badge tone="teal">Wind corridor {source.plumeLengthKm} km</Badge>
+            <Badge tone="outline">OSM</Badge>
           </div>
 
           <div className="rounded-2xl border border-[#efd3bd] bg-gradient-to-br from-[#fff8f1] to-[#fdfcf7] p-4">
@@ -742,25 +745,25 @@ function SourceSheet({
                 <p className="display mt-1 text-[26px] font-bold leading-none tracking-[-0.04em] text-[#7c2d12]">#{source.rank}</p>
               </div>
               <div className="text-right text-[10px] text-[#8a5a3b]">
-                <p>Screened city impact <strong>{source.impactScore}</strong></p>
+                <p>Screen score <strong>{source.impactScore}</strong></p>
                 <p>{source.affectedMonitors} monitor(s) downwind</p>
               </div>
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-[#5a4636]">
-              When wind arrives from <strong>{wind?.fromLabel ?? '—'}</strong> at {number(wind?.speedKmh ?? 0)} km/h, the plume footprint points{' '}
-              {source.plumeBearingDeg}° and can cover about {source.estimatedLandKm2} km² in this screen. Monitors and localities inside that footprint are flagged below.
+              When wind arrives from <strong>{wind?.fromLabel ?? '—'}</strong> at {number(wind?.speedKmh ?? 0)} km/h, the screening corridor points{' '}
+              {source.plumeBearingDeg}° and can cover about {source.estimatedLandKm2} km² in this screen. Monitors and localities inside that corridor are flagged below.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-[#6f5b4b] sm:grid-cols-4">
-              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Stack</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.stackHeightM} m</p></div>
-              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Pollutant</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.primaryPollutant}</p></div>
-              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Plume footprint</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.estimatedLandKm2} km²</p></div>
+              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Capacity</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.capacityMW ? `${source.capacityMW} MW` : 'Not published'}</p></div>
+              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Pollutant</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.primaryPollutant ?? 'Not published'}</p></div>
+              <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Screen corridor</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{source.estimatedLandKm2} km²</p></div>
               <div className="rounded-xl border border-white/80 bg-white/55 p-2.5"><DataLabel>Wind from</DataLabel><p className="mt-1 font-semibold text-[#3f2b1d]">{wind?.fromLabel ?? '—'} · {number(wind?.speedKmh ?? 0)} km/h</p></div>
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between">
-              <DataLabel>Monitors in this plume</DataLabel>
+              <DataLabel>Monitors in this wind screen</DataLabel>
               <Badge tone="neutral">{entries.length}</Badge>
             </div>
             <div className="mt-2 space-y-2">
@@ -776,7 +779,7 @@ function SourceSheet({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-[11px] font-semibold text-[#3f2b1d]">{attribution.stationName.replace(' demo air monitor', '')}</p>
-                        <p className="mt-0.5 text-[9px] text-[#9a7b66]">{attribution.localityName ?? 'Mumbai'} · {contribution.distanceKm} km · {contribution.downwind ? 'downwind' : 'plume edge'}</p>
+                        <p className="mt-0.5 text-[9px] text-[#9a7b66]">{attribution.localityName ?? 'Mumbai'} · {contribution.distanceKm} km · {contribution.downwind ? 'downwind' : 'screen edge'}</p>
                       </div>
                       <span className="rounded-full border px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.06em]" style={{ color: tone.color, background: tone.background, borderColor: tone.border }}>
                         {tone.label}
@@ -793,7 +796,7 @@ function SourceSheet({
               })}
               {entries.length === 0 ? (
                 <p className="rounded-xl border border-[#ecdfd2] bg-white/55 p-4 text-[10px] leading-relaxed text-[#8a7565]">
-                  No monitor currently passes the screening threshold for this source. The plume footprint still shows where the screen places the downwind area.
+                  No monitor currently passes the screening threshold for this source. The wind corridor still shows where the screen places the downwind area.
                 </p>
               ) : null}
             </div>
@@ -801,7 +804,7 @@ function SourceSheet({
 
           <div className="rounded-xl border border-[#ecdfd2] bg-[#fdf8f2] p-4 text-[9px] leading-relaxed text-[#8a7565]">
             <p>{source.note}</p>
-            <p className="mt-1">Source shares are a distance-and-wind screening estimate, not a measured apportionment. No legal threshold is applied and this is not a regulatory determination.</p>
+            <p className="mt-1">Facility location and tags are from OpenStreetMap (ODbL). Shares are a distance-and-wind screening estimate, not a measured apportionment. No legal threshold is applied and this is not a regulatory determination.</p>
           </div>
         </div>
       ) : null}
@@ -834,6 +837,7 @@ export function MapPage() {
   const [showSources, setShowSources] = useState(true);
   const [showPlumes, setShowPlumes] = useState(true);
   const [showImpactLinks, setShowImpactLinks] = useState(true);
+  const [showModelled, setShowModelled] = useState(true);
   const [sourceListExpanded, setSourceListExpanded] = useState(false);
   const [liveTick, setLiveTick] = useState(0);
   const liveFeed = useLiveFeed();
@@ -906,7 +910,6 @@ export function MapPage() {
   );
   const worstSources = sourceImpact?.sources ?? [];
   const worstSource = worstSources[0] ?? null;
-  const highestEmission = [...worstSources].sort((a, b) => b.emissionIndex - a.emissionIndex)[0] ?? null;
   const selectedSource = worstSources.find((source) => source.id === selectedSourceId) ?? null;
   const sourceLinks = useMemo<MapSourceLink[]>(() => {
     if (!sourceImpact) return [];
@@ -939,7 +942,7 @@ export function MapPage() {
   const sourceMixOption = useMemo(() => {
     const active = worstSources.filter((source) => source.impactScore > 0).slice(0, 6);
     return {
-      tooltip: { trigger: 'item', formatter: '{b}<br/>{c} screened impact · {d}%' },
+      tooltip: { trigger: 'item', formatter: '{b}<br/>{c} screen score · {d}%' },
       series: [
         {
           type: 'pie',
@@ -956,8 +959,8 @@ export function MapPage() {
         },
       ],
       graphic: [
-        { type: 'text', left: 'center', top: '40%', style: { text: 'CITY', fill: '#9a7b66', fontSize: 9, fontWeight: 700, letterSpacing: 2 } },
-        { type: 'text', left: 'center', top: '48%', style: { text: 'SOURCE MIX', fill: '#7c2d12', fontSize: 10, fontWeight: 700, letterSpacing: 1 } },
+        { type: 'text', left: 'center', top: '40%', style: { text: 'FACILITY', fill: '#9a7b66', fontSize: 9, fontWeight: 700, letterSpacing: 2 } },
+        { type: 'text', left: 'center', top: '48%', style: { text: 'SCREEN', fill: '#7c2d12', fontSize: 10, fontWeight: 700, letterSpacing: 1 } },
       ],
     };
   }, [worstSources]);
@@ -1004,7 +1007,7 @@ export function MapPage() {
       tooltip: { ...chartTooltip, trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params: Array<{ dataIndex: number; value: number }>) => {
         const point = params[0];
         const source = ranked[point?.dataIndex ?? 0];
-        return source ? `<div style="font-size:10px;color:#8a7565">${source.localityName}</div><div style="font-size:12px;font-weight:600;color:#7c2d12">${source.name}</div><div style="margin-top:3px;font-size:10px">${source.impactScore} screened impact · ${source.affectedMonitors} monitor(s)</div>` : '';
+        return source ? `<div style="font-size:10px;color:#8a7565">${source.localityName}</div><div style="font-size:12px;font-weight:600;color:#7c2d12">${source.name}</div><div style="margin-top:3px;font-size:10px">${source.impactScore} screen score · ${source.affectedMonitors} monitor(s)</div>` : '';
       } },
       xAxis: { type: 'value', ...chartAxis, axisLabel: { ...chartAxis.axisLabel, fontSize: 9 } },
       yAxis: {
@@ -1028,7 +1031,9 @@ export function MapPage() {
     ? 'MIXED'
     : data?.stations.some((station) => !station.isSimulated)
       ? 'LIVE_SOURCE'
-      : 'SIMULATION';
+      : data?.stations.length
+        ? 'SIMULATION'
+        : 'NONE';
   const reports: MapReport[] = useMemo(() => (data?.reports ?? []).map((report) => ({ ...report, verification_state: report.verification_state })), [data]);
   const incidents: MapIncident[] = useMemo(() => data?.incidents ?? [], [data]);
   const current = timeline[timelineIndex];
@@ -1057,12 +1062,21 @@ export function MapPage() {
     setShowSources(true);
     setShowPlumes(true);
     setShowImpactLinks(true);
+    setShowModelled(true);
     setSourceListExpanded(false);
   };
 
   const timelinePct = (timelineIndex / Math.max(1, timeline.length - 1)) * 100;
   const onlineStations = data?.stations.filter((station) => station.healthStatus === 'ONLINE').length ?? 0;
   const sourceImpactMax = Math.max(1, ...worstSources.map((source) => source.impactScore));
+  const camsValues = (data?.modelled ?? []).map((item) => item.pm25).filter((value): value is number => value !== null);
+  const camsAverage = camsValues.length ? Math.round(camsValues.reduce((sum, value) => sum + value, 0) / camsValues.length) : null;
+  const staleStations = data?.stations.filter((station) => station.isStale).length ?? 0;
+  const latestStationAt = (data?.stations ?? [])
+    .map((station) => station.latestObservedAt)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1) ?? null;
 
   return (
     <div className="pb-2">
@@ -1074,16 +1088,16 @@ export function MapPage() {
               Live map · Greater Mumbai
             </span>
             <span className="hidden h-3 w-px bg-[#d7ddd3] sm:block" />
-            <Badge tone={stationDataMode === 'SIMULATION' ? 'amber' : stationDataMode === 'MIXED' ? 'teal' : 'green'} dot>
-              {stationDataMode === 'SIMULATION' ? 'Simulated station network' : stationDataMode === 'MIXED' ? 'Mixed station sources' : 'Connected station source'}
+            <Badge tone={stationDataMode === 'SIMULATION' ? 'amber' : stationDataMode === 'MIXED' ? 'teal' : stationDataMode === 'NONE' ? 'neutral' : 'green'} dot>
+              {stationDataMode === 'SIMULATION' ? 'Simulation-only network' : stationDataMode === 'MIXED' ? 'Mixed station sources' : stationDataMode === 'NONE' ? 'No live station readings' : 'OpenAQ station network'}
             </Badge>
-            {sourceImpact ? <Badge tone="amber" dot>Plume screen active</Badge> : null}
+            {sourceImpact ? <Badge tone="amber" dot>OSM wind screen</Badge> : null}
           </div>
           <h1 className="display mt-2 text-[30px] font-semibold leading-[0.98] tracking-[-0.05em] text-[#142016] sm:text-[36px]">
             Mumbai, in real time.
           </h1>
           <p className="mt-2 max-w-2xl text-[11.5px] leading-relaxed text-[#6f7a70]">
-            Measured, predicted and reported signals in one calm view. Simulated factory plumes are screened against wind and flagged where they cross monitors.
+Measured, predicted and reported signals in one calm view. Real OpenStreetMap facility locations are screened against live wind and flagged where they sit near monitors.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1110,41 +1124,42 @@ export function MapPage() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <div>
               <DataLabel>Category</DataLabel>
-              <Select value={category} onChange={(e) => { setCategory(e.target.value); setPollutant(e.target.value === 'air' ? 'aqi' : ''); }} className="mt-1 h-9 text-[11px]">
+              <Select aria-label="Category" value={category} onChange={(e) => { setCategory(e.target.value); setPollutant(e.target.value === 'air' ? 'aqi' : ''); }} className="mt-1 h-9 text-[11px]">
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </Select>
             </div>
             <div>
               <DataLabel>Locality</DataLabel>
-              <Select value={localityId} onChange={(e) => setLocalityId(e.target.value)} className="mt-1 h-9 text-[11px]">
+              <Select aria-label="Locality" value={localityId} onChange={(e) => setLocalityId(e.target.value)} className="mt-1 h-9 text-[11px]">
                 <option value="">All Mumbai</option>
                 {data?.localities.map((locality) => <option key={locality.id} value={locality.id}>{locality.name}</option>)}
               </Select>
             </div>
             <div>
               <DataLabel>Pollutant</DataLabel>
-              <Select value={pollutant} onChange={(e) => setPollutant(e.target.value)} className="mt-1 h-9 text-[11px]">
+              <Select aria-label="Pollutant" value={pollutant} onChange={(e) => setPollutant(e.target.value)} className="mt-1 h-9 text-[11px]">
                 <option value="aqi">Indicative AQI</option>
                 {POLLUTANTS.filter(([code]) => code !== 'aqi').map(([code, label]) => <option key={code} value={code}>{label}</option>)}
               </Select>
             </div>
             <div>
               <DataLabel>Source</DataLabel>
-              <Select value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="mt-1 h-9 text-[11px]">
+              <Select aria-label="Source" value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="mt-1 h-9 text-[11px]">
                 <option value="">All sources</option>
-                <option value="demo-network">Demo network (simulated)</option>
+                <option value="openaq">OpenAQ stations</option>
+                <option value="open-meteo-cams">CAMS modelled</option>
               </Select>
             </div>
             <div>
               <DataLabel>Severity</DataLabel>
-              <Select value={severity} onChange={(e) => setSeverity(e.target.value)} className="mt-1 h-9 text-[11px]">
+              <Select aria-label="Severity" value={severity} onChange={(e) => setSeverity(e.target.value)} className="mt-1 h-9 text-[11px]">
                 <option value="">Any</option>
                 {['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor', 'Severe'].map((value) => <option key={value} value={value}>{value}</option>)}
               </Select>
             </div>
             <div>
               <DataLabel>Report verification</DataLabel>
-              <Select value={verification} onChange={(e) => setVerification(e.target.value)} className="mt-1 h-9 text-[11px]">
+              <Select aria-label="Report verification" value={verification} onChange={(e) => setVerification(e.target.value)} className="mt-1 h-9 text-[11px]">
                 <option value="">Any</option>
                 <option value="VERIFIED">Verified</option>
                 <option value="UNVERIFIED">Unverified</option>
@@ -1167,7 +1182,7 @@ export function MapPage() {
       ) : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="min-w-0">
+        <div className="min-w-0 xl:sticky xl:top-0 xl:self-start">
           <div className="map-studio relative overflow-hidden rounded-[28px] border border-white/85 bg-[#eef1ec] shadow-[0_36px_100px_-72px_rgba(20,32,22,.65)]">
             <MumbaiMap
               stations={stations}
@@ -1183,12 +1198,13 @@ export function MapPage() {
               onMapClick={(point) => { setSelectedStationId(null); setSelectedSourceId(null); setAnalysisPoint(point); }}
               onReportSelect={isAuthority() ? (id) => navigate(`/reports/${id}`) : undefined}
               onIncidentSelect={isAuthority() ? (id) => navigate(`/incidents/${id}`) : undefined}
+              modelled={data?.modelled ?? []}
               showSources={showSources}
               showPlumes={showPlumes}
               showImpactLinks={showImpactLinks}
-              className="h-[calc(100dvh-340px)] min-h-[500px] max-h-[740px] w-full"
+              showModelled={showModelled}
+              className="h-[calc(100dvh-340px)] min-h-[460px] max-h-[740px] w-full"
               theme="light"
-              styleUrl="https://tiles.openfreemap.org/styles/positron"
               showBuildings
               autoFit={false}
               initialZoom={12.2}
@@ -1208,14 +1224,16 @@ export function MapPage() {
               <div className="border-t border-dashed border-[#e7eae3] px-3 py-2.5">
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] text-[#5f7065]">
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5b9e46]" /> Measured</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#b3860f]" /> Last report &gt;6h</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#2f8f84]" /> Predicted</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#2f8f84]" /> CAMS model</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#b3860f]" /> Citizen report</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-[#c94a50]" /> Incident</span>
                   <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#c2410c]" /> Factory source</span>
-                  <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-[#c2410c]/20" /> Plume screen</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-[#c2410c]/20" /> Wind screen</span>
                 </div>
                 <p className="mt-2 border-t border-dashed border-[#e7eae3] pt-2 text-[8px] leading-relaxed text-[#8a938b]">
-                  Moving dots run factory → affected monitor. Plume footprints are a simulated wind screen, not measured pollution.
+                  Moving dots run facility → monitor. Wind corridors are a screening estimate around real OSM facilities, not measured pollution.
                 </p>
               </div>
             </details>
@@ -1297,10 +1315,10 @@ export function MapPage() {
               </Badge>
             </div>
             <div className="mx-5 mt-4 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#ecefe8] bg-[#fbfcf9]">
-              <MetricCell icon={Radio} label="Monitors" value={number(data?.stations.length ?? 0, 0)} note={`${onlineStations} online`} className="border-b border-r border-dashed border-[#e7eae3]" />
-              <MetricCell icon={Wind} label="Plume wind" value={sourceImpact ? number(sourceImpact.wind.speedKmh) : '—'} unit={sourceImpact ? 'km/h' : undefined} note={sourceImpact ? `from ${sourceImpact.wind.fromLabel}` : 'No plume screen'} className="border-b border-dashed border-[#e7eae3]" />
+              <MetricCell icon={Radio} label="Monitors" value={number(data?.stations.length ?? 0, 0)} note={staleStations ? `${staleStations} stale` : `${onlineStations} online`} className="border-b border-r border-dashed border-[#e7eae3]" />
+              <MetricCell icon={Wind} label="Screen wind" value={sourceImpact ? number(sourceImpact.wind.speedKmh) : '—'} unit={sourceImpact ? 'km/h' : undefined} note={sourceImpact ? `from ${sourceImpact.wind.fromLabel}` : 'No wind screen'} className="border-b border-dashed border-[#e7eae3]" />
               <MetricCell icon={MapPin} label="Screened area" value={sourceImpact ? number(sourceImpact.landImpact.impactedAreaKm2) : '—'} unit={sourceImpact ? 'km²' : undefined} note="Not a measured area" className="border-r border-dashed border-[#e7eae3]" />
-              <MetricCell icon={FileWarning} label="Reports" value={number(data?.reports.length ?? 0, 0)} note="At this frame" />
+              <MetricCell icon={CloudSun} label="CAMS PM2.5" value={camsAverage === null ? '—' : String(camsAverage)} unit={camsAverage === null ? undefined : 'µg/m³'} note="Modelled context" />
             </div>
             <div className="px-5 pb-5 pt-4">
               <div className="flex items-center justify-between">
@@ -1311,9 +1329,10 @@ export function MapPage() {
                 <LayerToggle active={showSources} onClick={() => setShowSources((value) => !value)} icon={Factory} label="Factories" />
                 <LayerToggle active={showPlumes} onClick={() => setShowPlumes((value) => !value)} icon={Wind} label="Plumes" />
                 <LayerToggle active={showImpactLinks} onClick={() => setShowImpactLinks((value) => !value)} icon={Link2} label="Links" />
+                <LayerToggle active={showModelled} onClick={() => setShowModelled((value) => !value)} icon={CloudSun} label="CAMS" />
               </div>
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-dashed border-[#e7eae3] pt-3 text-[9px] text-[#8a938b]">
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#4DA42A]" /> Updated {liveFeed.generatedAt ? timeAgo(liveFeed.generatedAt) : 'just now'}</span>
+                <span className="inline-flex items-center gap-1.5"><span className={classNames('h-1.5 w-1.5 rounded-full', staleStations ? 'bg-[#b3860f]' : 'bg-[#4DA42A]')} /> {staleStations ? 'Last station report' : 'Updated'} {latestStationAt ? timeAgo(latestStationAt) : 'unavailable'}</span>
                 <span className="inline-flex items-center gap-1.5"><Clock className="h-3 w-3" /> Asia/Kolkata</span>
               </div>
             </div>
@@ -1322,10 +1341,10 @@ export function MapPage() {
           {sourceImpact ? (
             <SurfaceCard className="overflow-hidden">
               <SurfaceHeader
-                label="Industrial plume screen"
-                title="Worst sources in view"
-                subtitle={`Ranked by screened impact · ${windLabel(sourceImpact.wind)}`}
-                aside={<Badge tone="amber">Simulated</Badge>}
+                label="OpenStreetMap facilities"
+                title="Facilities in view"
+                subtitle={`Ranked by wind-screen score · ${windLabel(sourceImpact.wind)}`}
+                aside={<Badge tone="amber">OSM</Badge>}
               />
               <div className="px-2.5">
                 {worstSources.slice(0, sourceListExpanded ? 10 : 4).map((source) => (
@@ -1341,7 +1360,7 @@ export function MapPage() {
                         <p className="truncate text-[11px] font-semibold text-[#1d2a21]">{source.name}</p>
                         <span className="shrink-0 text-[9px] font-semibold text-[#8a938b]">{source.impactScore}</span>
                       </div>
-                      <p className="mt-0.5 truncate text-[8.5px] text-[#8a938b]">{source.type} · emission {source.emissionIndex}/100 · {source.affectedMonitors} monitor(s)</p>
+                      <p className="mt-0.5 truncate text-[8.5px] text-[#8a938b]">{source.type} · {source.capacityMW ? `${source.capacityMW} MW · ` : ''}{source.affectedMonitors} monitor(s)</p>
                       <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[#edf0ea]">
                         <div className="h-full rounded-full" style={{ width: `${Math.max(4, (source.impactScore / sourceImpactMax) * 100)}%`, background: sourceColor(source.rank) }} />
                       </div>
@@ -1350,11 +1369,9 @@ export function MapPage() {
                   </button>
                 ))}
               </div>
-              {highestEmission ? (
-                <p className="border-t border-dashed border-[#e7eae3] px-5 py-2 text-[8.5px] text-[#8a938b]">
-                  Largest emission index: <span className="font-semibold text-[#5f6b60]">{highestEmission.name}</span> · {highestEmission.emissionIndex}/100
-                </p>
-              ) : null}
+              <p className="border-t border-dashed border-[#e7eae3] px-5 py-2 text-[8.5px] text-[#8a938b]">
+                Facility locations © OpenStreetMap contributors (ODbL) · no emission measurements
+              </p>
               <div className="flex items-center justify-between border-t border-dashed border-[#e7eae3] px-5 py-3">
                 <button type="button" onClick={() => setSourceListExpanded((expanded) => !expanded)} className="text-[9px] font-semibold text-[#5f7065] transition hover:text-[#142016]">
                   {sourceListExpanded ? 'Show top 4' : `Show all ${worstSources.length}`}
@@ -1391,6 +1408,13 @@ export function MapPage() {
               ))}
               {data && data.alerts.length === 0 ? <p className="rounded-2xl bg-[#fbfcf9] px-3 py-4 text-center text-[9.5px] text-[#8a938b]">No active alerts at this time.</p> : null}
             </div>
+            {data?.alerts.length ? (
+              <div className="border-t border-dashed border-[#e7eae3] px-5 py-3">
+                <button type="button" onClick={() => navigate('/alerts')} className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#5f7065] transition hover:text-[#142016]">
+                  All alerts <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+            ) : null}
           </SurfaceCard>
         </aside>
       </div>
@@ -1412,11 +1436,11 @@ export function MapPage() {
                 <Chart height={300} empty={affectedAttributions.length === 0} option={monitorMixOption} />
               </div>
               <p className="border-t border-dashed border-[#e7eae3] px-5 py-3 text-[9px] leading-relaxed text-[#8a938b]">
-                Each bar shows how the screen divides the industrial contribution at a monitor between the factories inside its plume footprint. The remaining share is traffic, dust or other sources outside the simulated catalogue. It is not a measured apportionment.
+                Each bar shows how the screen divides the industrial contribution at a monitor between the OSM facilities inside its wind corridor. The remaining share is traffic, dust or other sources outside this catalogue. It is not a measured apportionment.
               </p>
             </SurfaceCard>
             <SurfaceCard className="overflow-hidden xl:col-span-5">
-              <SurfaceHeader label="Ranking" title="Worst sources in view" subtitle="Ranked by screened impact: monitor reach, plume footprint and emission index" aside={<Badge tone="neutral">{worstSources.filter((source) => source.impactScore > 0).length}</Badge>} />
+              <SurfaceHeader label="Ranking" title="Facilities in view" subtitle="Ranked by wind-screen score: monitor reach, corridor footprint and capacity/type" aside={<Badge tone="neutral">{worstSources.filter((source) => source.impactScore > 0).length}</Badge>} />
               <div className="px-2 pb-2 pt-1">
                 <Chart height={300} empty={worstSources.every((source) => source.impactScore <= 0)} option={sourceRankingOption} />
               </div>
@@ -1427,7 +1451,7 @@ export function MapPage() {
           </div>
           <div className="mt-4 grid gap-4 xl:grid-cols-3">
             <SurfaceCard>
-              <SurfaceHeader label="Plume screen" title="Locality flags" subtitle={`${sourceImpact.landImpact.impactedAreaKm2} km² screened · not a measured area`} />
+              <SurfaceHeader label="Wind screen" title="Locality flags" subtitle={`${sourceImpact.landImpact.impactedAreaKm2} km² screened · not a measured area`} />
               <div className="px-5 pb-5">
                 <div className="flex flex-wrap gap-1.5">
                   {sourceImpact.landImpact.impactedLocalities.map((locality) => (

@@ -27,10 +27,14 @@ export interface SourceImpactSource {
   localityName: string;
   lat: number;
   lng: number;
-  stackHeightM: number;
-  emissionIndex: number;
-  primaryPollutant: string;
+  stackHeightM: number | null;
+  emissionIndex: number | null;
+  capacityMW?: number | null;
+  primaryPollutant: string | null;
   isSimulated: boolean;
+  source?: string;
+  osmType?: string;
+  osmId?: number;
   note: string;
   rank: number;
   impactScore: number;

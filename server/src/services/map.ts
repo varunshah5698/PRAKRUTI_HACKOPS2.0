@@ -70,7 +70,7 @@ export async function getMapTimeline(filters: MapFilters) {
            GROUP BY 1
            ORDER BY 1 DESC LIMIT 48
          ) o ON true
-         WHERE s.station_type='AIR_CAAQMS'
+         WHERE s.station_type='AIR_CAAQMS' AND s.is_simulated=false
          ORDER BY s.code, o.observed_at ASC`,
         [],
       );
@@ -211,7 +211,7 @@ export async function getMapTimeline(filters: MapFilters) {
            AND quality_state <> 'INVALID'
          ORDER BY pollutant_code, ABS(EXTRACT(EPOCH FROM (observed_at - $1::timestamptz)))
        ) o ON true
-       WHERE ($3::text IS NULL OR s.station_type=$3)
+       WHERE ($3::text IS NULL OR s.station_type=$3) AND s.is_simulated=false
        ORDER BY s.code, o.pollutant_code`,
       [at.toISOString(), category, stationType ?? null],
     );
@@ -268,22 +268,28 @@ export async function getMapTimeline(filters: MapFilters) {
       warnings.push('No archived observation was found within ±90 minutes for the selected time.');
     }
   } else {
-    const snapshots = await getStationSnapshots(category === 'waste' ? undefined : category);
-    const staleCount = snapshots.filter((s) => s.isStale).length;
-    stations = snapshots
-      .filter((s) => !s.isStale)
-      .map((s) => ({
-        ...s,
-        markerKind: 'OBSERVED',
-      }));
+    // The map is a real-data surface. Demonstration stations remain available
+    // for the seeded demo screens, but they never stand in for a live station.
+    const snapshots = await getStationSnapshots(
+      category === 'waste' ? undefined : category,
+      { includeSimulated: false },
+    );
+    const withData = snapshots.filter((s) => s.latestObservedAt);
+    const staleCount = withData.filter((s) => s.isStale).length;
+    stations = withData.map((s) => ({
+      ...s,
+      markerKind: 'OBSERVED',
+    }));
     if (category === 'waste') {
       stations = [];
       warnings.push('No waste monitoring stations exist. Waste is represented by citizen reports and incidents.');
     }
     if (staleCount > 0) {
-      warnings.push(`${staleCount} stale station(s) excluded from the current map. Their last observation is older than 6 hours.`);
+      warnings.push(`${staleCount} real station(s) last reported more than 6 hours ago. Their last values are shown as stale, not as current measurements.`);
     }
-    if (!stations.some((s) => s.latestObservedAt)) warnings.push('No recent observations available for this category.');
+    if (!stations.some((s) => s.latestObservedAt)) {
+      warnings.push('No real station readings are available. Add DATA_GOV_IN_API_KEY or OPENAQ_API_KEY to ingest CPCB/OpenAQ data.');
+    }
   }
 
   if (filters.localityId) stations = stations.filter((s) => s.localityId === filters.localityId);
@@ -325,7 +331,7 @@ export async function getMapTimeline(filters: MapFilters) {
   const sourceImpact = impactResult && impactResult.sources.length ? impactResult : null;
   if (sourceImpact && sourceImpact.landImpact.affectedStations > 0) {
     warnings.push(
-      `${sourceImpact.landImpact.affectedStations} monitor(s) fall inside a simulated industrial plume screen. Source shares are screening estimates, not measured apportionment or regulatory attribution.`,
+      `${sourceImpact.landImpact.affectedStations} monitor(s) fall inside an OpenStreetMap facility wind screen. Shares are screening estimates, not measured apportionment or regulatory attribution.`,
     );
   }
 
@@ -335,7 +341,7 @@ export async function getMapTimeline(filters: MapFilters) {
             r.is_simulated, r.locality_id, l.name AS locality_name,
             ST_Y(r.location::geometry)::float8 AS lat, ST_X(r.location::geometry)::float8 AS lng
      FROM environmental_reports r LEFT JOIN localities l ON l.id=r.locality_id
-     WHERE r.submitted_at >= $1 AND r.submitted_at <= $2
+     WHERE r.submitted_at >= $1 AND r.submitted_at <= $2 AND r.is_simulated=false
        AND ($3::text IS NULL OR r.category=$3)
        AND ($4::uuid IS NULL OR r.locality_id=$4)
        AND ($5::text IS NULL OR r.verification_state=$5)
@@ -354,7 +360,7 @@ export async function getMapTimeline(filters: MapFilters) {
             i.locality_id, l.name AS locality_name,
             ST_Y(i.location::geometry)::float8 AS lat, ST_X(i.location::geometry)::float8 AS lng
      FROM environmental_incidents i LEFT JOIN localities l ON l.id=i.locality_id
-     WHERE i.detected_at <= $1 AND i.simulation_session_id IS NULL AND ($2::text IS NULL OR i.category=$2)
+     WHERE i.detected_at <= $1 AND i.simulation_session_id IS NULL AND i.is_simulated=false AND ($2::text IS NULL OR i.category=$2)
        AND ($3::uuid IS NULL OR i.locality_id=$3)
      ORDER BY i.detected_at DESC LIMIT 100`,
     [mode === 'PAST' ? at.toISOString() : new Date().toISOString(), category, filters.localityId ?? null],
@@ -364,7 +370,7 @@ export async function getMapTimeline(filters: MapFilters) {
     `SELECT a.id, a.public_ref, a.category, a.level, a.state, a.trigger_type, a.title, a.triggered_at,
             a.is_simulated, a.locality_id, l.name AS locality_name
      FROM environmental_alerts a LEFT JOIN localities l ON l.id=a.locality_id
-     WHERE a.triggered_at <= $1 AND a.state NOT IN ('CLOSED') AND a.simulation_session_id IS NULL
+     WHERE a.triggered_at <= $1 AND a.state NOT IN ('CLOSED') AND a.simulation_session_id IS NULL AND a.is_simulated=false
        AND ($2::text IS NULL OR a.category=$2)
        AND ($3::uuid IS NULL OR a.locality_id=$3)
      ORDER BY a.triggered_at DESC LIMIT 100`,
@@ -375,12 +381,61 @@ export async function getMapTimeline(filters: MapFilters) {
     `SELECT id, name, lat::float8, lng::float8 FROM localities ORDER BY name`,
   );
 
+  const camsRows = await query<{
+    locality_id: string;
+    locality_name: string;
+    lat: number;
+    lng: number;
+    pollutant_code: string;
+    value: number;
+    unit: string;
+    observed_at: string;
+  }>(
+    `SELECT DISTINCT ON (l.id, o.pollutant_code)
+            l.id AS locality_id, l.name AS locality_name, l.lat::float8 AS lat, l.lng::float8 AS lng,
+            o.pollutant_code, o.value::float8 AS value, o.unit, o.observed_at
+     FROM environmental_observations o
+     JOIN localities l ON l.id=o.locality_id
+     WHERE o.source_id='open-meteo-cams' AND o.quality_state='MODELLED' AND o.observed_at <= $1
+     ORDER BY l.id, o.pollutant_code, o.observed_at DESC`,
+    [mode === 'PAST' ? at.toISOString() : new Date().toISOString()],
+  );
+  const camsByLocality = new Map<string, {
+    localityId: string;
+    localityName: string;
+    lat: number;
+    lng: number;
+    pm25: number | null;
+    pm10: number | null;
+    observedAt: string;
+    sourceId: string;
+  }>();
+  for (const row of camsRows) {
+    if (!camsByLocality.has(row.locality_id)) {
+      camsByLocality.set(row.locality_id, {
+        localityId: row.locality_id,
+        localityName: row.locality_name,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        pm25: null,
+        pm10: null,
+        observedAt: row.observed_at,
+        sourceId: 'open-meteo-cams',
+      });
+    }
+    const entry = camsByLocality.get(row.locality_id)!;
+    if (row.pollutant_code === 'pm25') entry.pm25 = Number(row.value);
+    if (row.pollutant_code === 'pm10') entry.pm10 = Number(row.value);
+  }
+  const modelled = [...camsByLocality.values()];
+
   return {
     at: at.toISOString(),
     mode,
     category,
     filters,
     stations,
+    modelled,
     reports,
     incidents,
     alerts,
@@ -390,7 +445,7 @@ export async function getMapTimeline(filters: MapFilters) {
     sourceImpact,
     estimatedZones: [],
     estimatedZoneNote:
-      'Station values are point observations, not an interpolated surface. Industrial plumes are screening footprints derived from simulated sources and current wind; they are not measured pollution areas. A point measurement does not establish concentration across a locality.',
+      'Station values are point observations, not an interpolated surface. CAMS values are modelled regional context, not monitor measurements. Facility corridors are wind-alignment geometry around real OpenStreetMap locations; they are not measured pollution areas. A point measurement does not establish concentration across a locality.',
     boundary: {
       url: '/geo/mumbai-boundary.geojson',
       source: 'OpenStreetMap via Nominatim (ODbL 1.0)',

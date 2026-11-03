@@ -291,6 +291,10 @@ textarea {
 .map-studio .maplibregl-ctrl-bottom-right {
   bottom: 88px;
 }
+
+.map-studio .maplibregl-canvas {
+  filter: saturate(0.8) contrast(0.98) brightness(1.02);
+}
 .maplibregl-ctrl-group button {
   filter: none;
 }
