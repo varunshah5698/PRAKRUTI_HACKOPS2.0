@@ -31,7 +31,7 @@ const DISCLAIMER =
 
 // Greetings and pleasantries should get a short human reply, not a full evidence digest.
 const SMALL_TALK =
-  /^(?:(?:hi|hello|hey)[,\s]+(?:how are you|how'?s it going|what'?s up|hope you(?:'re| are) well)|hi+|hello+|hey+|heyy+|yo|namaste|namaskar|greetings|good\s+(?:morning|afternoon|evening)|how\s+are\s+you|how'?s\s+it\s+going|what'?s\s+up|sup|thanks?(?:\s+you)?|thank\s+you|thx|ty|bye|goodbye|see\s+you|good\s+night)(?:\s+(?:there|everyone|all|prakriti|a\s+lot|so\s+much|very\s+much))?[\s!.,?]*$/i;
+  /^(?:(?:hi|hello|hey)[,\s]+(?:how are you|how'?s it going|what'?s up|hope you(?:'re| are) well)|hi+|hello+|hey+|heyy+|yo|namaste|namaskar|greetings|good\s+(?:morning|afternoon|evening)|how\s+are\s+you|how'?s\s+it\s+going|what'?s\s+up|sup|thanks?(?:\s+you)?|thank\s+you|thx|ty|bye|goodbye|see\s+you|good\s+night)(?:\s+(?:there|everyone|all|prakriti|ji|sir|madam|a\s+lot|so\s+much|very\s+much))?[\s!.,?]*$/i;
 
 export function isSmallTalk(question: string): boolean {
   return SMALL_TALK.test(question.trim());

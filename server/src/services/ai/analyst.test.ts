@@ -3,7 +3,7 @@ import { isSmallTalk } from './analyst.js';
 
 describe('conversational small talk', () => {
   it('recognises greetings and pleasantries', () => {
-    for (const question of ['hi', 'Hello!', 'hey there', 'hi, how are you?', 'Namaste', 'good morning', 'thanks', 'thank you so much', 'bye', 'see you']) {
+    for (const question of ['hi', 'Hello!', 'hey there', 'hi, how are you?', 'Namaste ji', 'good morning', 'thanks', 'thank you so much', 'bye', 'see you']) {
       expect(isSmallTalk(question)).toBe(true);
     }
   });
