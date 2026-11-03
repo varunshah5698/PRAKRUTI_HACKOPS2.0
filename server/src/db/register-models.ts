@@ -13,6 +13,9 @@ interface ModelCard {
   rows?: number;
   stations?: number;
   split?: string;
+  dataset_sha256?: string;
+  date_range?: { start?: string; end?: string };
+  deployment_recommendation?: string;
 }
 
 async function main() {
@@ -25,7 +28,12 @@ async function main() {
   }
   const trainedAt = card.trained_at ?? new Date().toISOString();
   const version = card.model_version ?? 'trained-v1';
-  const note = `Registered from ml/artifacts/model_card.json. Metrics apply only to the registered training extract (${card.rows ?? '?'} rows, ${card.stations ?? '?'} stations).`;
+  const recommendation = card.deployment_recommendation ?? 'APPROVED';
+  const status = recommendation === 'REJECTED' ? 'FAILED' : 'TRAINED';
+  const period = card.date_range?.start && card.date_range?.end
+    ? `${card.date_range.start.slice(0, 10)} to ${card.date_range.end.slice(0, 10)}`
+    : 'period unknown';
+  const note = `Registered from ml/artifacts/model_card.json (${period}; ${card.rows ?? '?'} rows, ${card.stations ?? '?'} stations; SHA-256 ${card.dataset_sha256 ?? 'unknown'}; ${recommendation}). Metrics apply only to that extract.`;
 
   const updates: Array<{ name: string; version: string; metrics: unknown }> = [
     { name: 'lightgbm_pm25', version: 'v1-1h', metrics: card.metrics?.['pm25_1h'] ?? null },
@@ -36,9 +44,9 @@ async function main() {
   ];
   for (const model of updates) {
     await query(
-      `UPDATE model_registry SET status='TRAINED', metrics=$3::jsonb, trained_at=$4, notes=$5
+      `UPDATE model_registry SET status=$6, metrics=$3::jsonb, trained_at=$4, notes=$5
        WHERE name=$1 AND version=$2`,
-      [model.name, model.version, JSON.stringify(model.metrics), trainedAt, `${note} Model version ${version}.`],
+      [model.name, model.version, JSON.stringify(model.metrics), trainedAt, `${note} Model version ${version}.`, status],
     );
   }
   await query(`UPDATE model_registry SET status='BASELINE', notes=$1 WHERE name='persistence_baseline' AND version='v1'`, [

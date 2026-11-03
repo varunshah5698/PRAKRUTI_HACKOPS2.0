@@ -29,7 +29,7 @@ quantile coverage and classifier calibration for that extract. A model is marked
 `REJECTED` when its +3h or +6h MAE does not beat persistence; the inference
 service then returns `503` and the app keeps the baseline.
 
-## What is shown instead
+## Fallback shown when the trained service is unavailable
 
 `PERSISTENCE_BASELINE_V1` (server: `server/src/services/forecast.ts`):
 
@@ -60,7 +60,7 @@ It never creates a critical observed alert or an official violation.
 
 ## Training pipeline
 
-`ml/train.py` is the real training pipeline for a future trained deployment. It refuses to run without a verified CSV and at least 30 days of hourly rows.
+`ml/train.py` is the real training pipeline. It refuses to run without a verified CSV and at least 30 days of hourly rows. `ml/fetch_real_data.py` builds the reference extract described above.
 
 ### Inputs
 
@@ -105,6 +105,23 @@ If SHAP fails, the pipeline records a failure rather than inventing values.
 
 The test partition is also scored with persistence (`prediction = current PM2.5`). A complex model should beat this baseline; otherwise it should not be deployed.
 
+### Reference run results
+
+Reference extract: 2025-11-01 to 2026-10-27, 23 stations, SHA-256
+`34f9567adec60889934e836727d946eb1c93ab005e6dcf780a73066741bc7e92`.
+Test window: 2026-09-02 to 2026-10-23 (22,415 rows).
+
+| Horizon | Model MAE | Persistence MAE | Skill | RMSE model/persistence | 80% coverage |
+|---|---|---|---|---|---|
+| 1h | 3.74 | 3.88 | +3.6% | 8.57 / 8.92 | 0.821 |
+| 3h | 6.05 | 6.92 | +12.5% | 11.44 / 14.35 | 0.822 |
+| 6h | 7.06 | 8.73 | +19.2% | 12.47 / 16.22 | 0.820 |
+
+The 3h >60 µg/m³ classifier has ROC-AUC 0.959, PR-AUC 0.745, Brier 0.042 and
+precision/recall 0.758/0.588 at threshold 0.5. Full per-station metrics and SHAP
+values are in `ml/artifacts/metrics.json`, `model_card.json` and
+`shap_summary.json`.
+
 ## Inference service
 
 `ml/serve.py` is the optional FastAPI inference service:
@@ -112,11 +129,18 @@ The test partition is also scored with persistence (`prediction = current PM2.5`
 ```bash
 cd ml
 pip install -r requirements-serve.txt
-python train.py --input data/mumbai_air_quality.csv --output artifacts
+python fetch_real_data.py --source archive --start 2025-11-01 --end 2026-10-27 \
+  --output data/mumbai_air_quality_archive.csv \
+  --metadata data/mumbai_air_quality_archive.meta.json
+python train.py --input data/mumbai_air_quality_archive.csv --output artifacts
 uvicorn serve:app --host 0.0.0.0 --port 8000
 ```
 
-It returns `503 MODEL_NOT_TRAINED` until artifacts and `model_card.json` exist. The Node adapter (`server/src/services/ml.ts`) calls `/health` and `/predict`; if the service is not configured, not trained or unreachable, the app falls back to `PERSISTENCE_BASELINE_V1` and says so.
+It returns `503` with `NOT_TRAINED`/`INCOMPLETE` until every required artifact
+and an approved `model_card.json` exist. The Node adapter
+(`server/src/services/ml.ts`) calls `/health` and `/predict`; if the service is
+not configured, incomplete, rejected or unreachable, the app falls back to
+`PERSISTENCE_BASELINE_V1` and says so.
 
 After training, register the model metrics:
 

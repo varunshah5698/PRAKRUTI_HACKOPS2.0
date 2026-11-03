@@ -48,6 +48,11 @@ The 2025-11-01 to 2026-10-27 extract contains 23 stations and 198,720 station-ho
 (72% PM2.5 coverage, 100% weather coverage). Re-running is cheap because raw
 OpenAQ pages and S3 daily files are cached under `data/raw/`.
 
+The local reference artifacts (`lightgbm-202611030753-34f9567a`) score 3.74 / 6.05 /
+7.06 µg/m³ MAE at 1 / 3 / 6h versus 3.88 / 6.92 / 8.73 for persistence; 80%
+quantile coverage is 0.82 at every horizon. See `docs/MODEL_CARD.md` for the
+full evaluation and limitations.
+
 ## Expected input
 
 A CSV with one row per station per timestamp:

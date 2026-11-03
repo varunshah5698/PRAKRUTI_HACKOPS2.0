@@ -65,6 +65,17 @@ def artifact(name: str) -> dict[str, Any] | None:
     return joblib.load(path)
 
 
+def known_station_ids() -> set[str]:
+    card_path = ARTIFACT_DIR / "model_card.json"
+    if not card_path.exists():
+        return set()
+    try:
+        card = json.loads(card_path.read_text())
+        return set(card.get("metrics", {}).get("pm25_1h", {}).get("per_station", {}).keys())
+    except Exception:
+        return set()
+
+
 def model_manifest() -> dict[str, Any]:
     card_path = ARTIFACT_DIR / "model_card.json"
     if not card_path.exists():
@@ -160,6 +171,12 @@ def predict(request: PredictRequest, authorization: str | None = Header(default=
     manifest = model_manifest()
     if manifest["status"] != "TRAINED":
         raise HTTPException(503, "MODEL_NOT_TRAINED: train and register a verified model first.")
+    known = known_station_ids()
+    if known and request.station_id not in known:
+        raise HTTPException(
+            422,
+            "STATION_NOT_IN_TRAINING: this model was trained on OpenAQ station IDs only; use a connected-source station or the labelled baseline.",
+        )
     features = build_features(request)
     forecasts: list[dict[str, Any]] = []
     for horizon in HORIZONS:

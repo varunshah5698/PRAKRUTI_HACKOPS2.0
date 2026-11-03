@@ -25,8 +25,9 @@ This is a working demonstration application, not a static dashboard. It connects
 | Demo monitoring stations | **SIMULATION DATA** — 15 synthetic stations, every record `is_simulated=true` |
 | Weather | **LIVE** — Open-Meteo at station coordinates |
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |
-| LightGBM / quantile / deterioration / anomaly models | **NOT TRAINED** — no verified Mumbai historical extract supplied |
-| Forecasts shown | **PERSISTENCE_BASELINE_V1** — labelled, empirical band, not calibrated |
+| LightGBM / quantile / deterioration models | **TRAINED LOCALLY** — 23-station OpenAQ Mumbai extract, 2025-11-01 to 2026-10-27; metrics in `ml/artifacts/model_card.json`. Artifacts are gitignored, so a clean or Render deployment stays `NOT_TRAINED` until they are force-added. |
+| Anomaly detector | **NOT TRAINED** — `ZSCORE_V1` analytical check only |
+| Forecasts shown | **LIGHTGBM_TRAINED when `ML_SERVICE_URL` points at the local service**; otherwise the labelled `PERSISTENCE_BASELINE_V1` with an empirical, non-calibrated band |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
 | Vision AI | **CONFIGURED locally** — Google Gemini (`gemini-3.5-flash`, fallback `gemini-3.5-flash-lite`); key only in `.env.local`. The River text model is still not assumed to inspect images. |
 | Email | **SIMULATED** — no provider configured; records are stored, not sent |
@@ -145,26 +146,43 @@ Notes:
 - If you attach a custom domain, update `FRONTEND_URL` to `https://your-domain` so CORS and the same-origin check accept it.
 - The database is private-network only (`ipAllowList: []`); use Render's dashboard shell to inspect it.
 
-## Optional trained ML service
+## Trained ML service
 
-The training pipeline is in `ml/train.py`. It refuses to run without a verified historical CSV. When the CSV is in place:
+`ml/fetch_real_data.py` builds a traceable Mumbai extract from OpenAQ station
+measurements and Open-Meteo ERA5 weather. The reference extract covers
+2025-11-01 to 2026-10-27, 23 stations and 198,720 station-hours; raw sub-hourly
+readings are aggregated to hourly means and gaps are not imputed. Sources, QC
+rules, unit conversions and the CSV SHA-256 are in
+`ml/data/mumbai_air_quality_archive.meta.json`.
 
 ```bash
 cd ml
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-serve.txt
-python train.py --input data/mumbai_air_quality.csv --output artifacts
+pip install -r requirements.txt
+python fetch_real_data.py --source archive --start 2025-11-01 --end 2026-10-27 \
+  --output data/mumbai_air_quality_archive.csv \
+  --metadata data/mumbai_air_quality_archive.meta.json
+python train.py --input data/mumbai_air_quality_archive.csv --output artifacts
 uvicorn serve:app --host 0.0.0.0 --port 8000
 ```
 
-Then set `ML_SERVICE_URL=http://localhost:8000` in `.env.local`, register the model metrics:
+Chronological hold-out (Sep-Oct 2026) versus persistence:
 
-```bash
-npm run ml:register
-```
+| Horizon | Model MAE | Persistence MAE | Skill |
+|---|---|---|---|
+| 1h | 3.74 µg/m³ | 3.88 µg/m³ | +3.6% |
+| 3h | 6.05 µg/m³ | 6.92 µg/m³ | +12.5% |
+| 6h | 7.06 µg/m³ | 8.73 µg/m³ | +19.2% |
 
-Restart the API. The predictions page and station drawer will show trained LightGBM forecasts, quantile intervals, deterioration probability and SHAP only when the model service returns them. Without this, the app keeps the labelled persistence baseline.
+The 80% quantile interval coverage is 0.82 at every horizon. The 3h >60 µg/m³
+classifier has ROC-AUC 0.959, PR-AUC 0.745 and Brier 0.042. Full metrics,
+per-station errors, SHAP values and limitations are in
+`ml/artifacts/model_card.json` and `ml/artifacts/metrics.json`.
+
+Register the model once per database, set `ML_SERVICE_URL=http://localhost:8000`
+in `.env.local`, and restart the API. The app keeps the labelled persistence
+baseline whenever the service is absent, incomplete or reports a rejected model.
 
 Docker profile:
 
