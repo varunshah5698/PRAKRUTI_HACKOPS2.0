@@ -166,17 +166,21 @@ function StationDrawer({
   const [pollutant, setPollutant] = useState('pm25');
   const [aiType, setAiType] = useState<'observation' | 'predictive' | 'compliance' | null>(null);
   const [ai, setAi] = useState<AiAnswer | null>(null);
-  const [aiEvidenceOpen, setAiEvidenceOpen] = useState(true);
+  const [evidenceOpenByStation, setEvidenceOpenByStation] = useState<Record<string, boolean>>({});
   const [aiLoading, setAiLoading] = useState(false);
   const live = useLiveStation(stationId);
   const { transport, status } = useLiveFeed();
+  const evidenceOpen = stationId ? (evidenceOpenByStation[stationId] ?? true) : true;
+  const setEvidenceOpen = (open: boolean) => {
+    if (!stationId) return;
+    setEvidenceOpenByStation((prev) => ({ ...prev, [stationId]: open }));
+  };
 
   useEffect(() => {
     if (!stationId) return;
     setLoading(true);
     setDetail(null);
     setAi(null);
-    setAiEvidenceOpen(true);
     setTab('overview');
     api
       .get<StationDetail>(`/map/stations/${stationId}`)
@@ -203,7 +207,7 @@ function StationDrawer({
   const loadAi = async (type: 'observation' | 'predictive' | 'compliance') => {
     if (!stationId) return;
     setAiType(type);
-    setAiEvidenceOpen(true);
+    setEvidenceOpen(true);
     setAiLoading(true);
     try {
       const result = await api.post<AiAnswer>('/ai/analyse', { stationId, type });
@@ -465,8 +469,8 @@ function StationDrawer({
                   </div>
                   <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[11px] leading-relaxed text-[#405246]">{ai.narrative}</p>
                   <details
-                    open={aiEvidenceOpen}
-                    onToggle={(event) => setAiEvidenceOpen(event.currentTarget.open)}
+                    open={evidenceOpen}
+                    onToggle={(event) => setEvidenceOpen(event.currentTarget.open)}
                     className="group space-y-3"
                   >
                     <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-[10px] font-semibold text-[#3f7d2a] hover:text-[#142016] [&::-webkit-details-marker]:hidden">
@@ -747,7 +751,7 @@ export function MapPage() {
           <div className="border-t border-[#e7ece3] px-3 py-2">
             <div className="flex items-center justify-between text-[9px] text-[#66766b]">
               <span>{current.label} · {data?.stations.length ?? 0} stations · {data?.reports.length ?? 0} reports · {data?.incidents.length ?? 0} incidents</span>
-              <span>{data?.mode === 'FUTURE' ? 'Forecast values are not confirmed future conditions.' : data?.mode === 'PAST' ? 'Archived observations · ±90 minute match' : 'Latest valid observations · stale values flagged'}</span>
+              <span>{data?.mode === 'FUTURE' ? 'Forecast values are not confirmed future conditions.' : data?.mode === 'PAST' ? 'Archived observations · ±90 minute match' : 'Latest valid observations · stale stations excluded after 6h'}</span>
             </div>
             <input
               type="range"
