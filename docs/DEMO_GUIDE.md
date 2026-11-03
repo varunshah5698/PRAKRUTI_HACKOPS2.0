@@ -27,7 +27,7 @@ Password `Demo@1234` for all:
 - **Simulated:** 15 demo stations, all air/water/industrial observations, all seeded reports, alerts, incidents, notifications, risk assessments.
 - **Live:** Open-Meteo weather observations/forecasts.
 - **Modelled:** CAMS PM2.5/PM10 via Open-Meteo.
-- **Configured when keys are set:** River AI and Gemini vision. **Not configured by default:** CPCB, MPCB, email provider, trained ML.
+- **Configured when keys are set:** River AI and Groq vision. **Not configured by default:** CPCB, MPCB, email provider, trained ML.
 - **Real in the app:** the incident workflow, audit trail, report verification, compliance comparison logic, map boundary, source registry.
 
 ## Demo A — Live Mumbai air quality

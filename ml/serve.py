@@ -150,12 +150,19 @@ def build_features(request: PredictRequest) -> pd.DataFrame:
     row["hour"] = latest.hour
     row["day_of_week"] = latest.dayofweek
     row["month"] = latest.month
-    row["wind_dir_sin"] = math.sin(math.radians(row["wind_dir"] if row["wind_dir"] is not None else 0))
-    row["wind_dir_cos"] = math.cos(math.radians(row["wind_dir"] if row["wind_dir"] is not None else 0))
     weather = request.weather.model_dump()
     for key, value in weather.items():
         if value is not None:
             row[key] = value
+    # Compute the circular wind features after applying current weather, so the
+    # served row matches the training row. Missing direction stays NaN.
+    wind_dir = row.get("wind_dir")
+    if wind_dir is None or pd.isna(wind_dir):
+        row["wind_dir_sin"] = np.nan
+        row["wind_dir_cos"] = np.nan
+    else:
+        row["wind_dir_sin"] = math.sin(math.radians(float(wind_dir)))
+        row["wind_dir_cos"] = math.cos(math.radians(float(wind_dir)))
     return pd.DataFrame([row])
 
 

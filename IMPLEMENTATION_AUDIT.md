@@ -64,7 +64,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 - No S3/object-storage implementation; local private storage with a documented extension point.
 - No trained LightGBM/quantile/classifier/anomaly artifacts; the models are explicitly NOT_TRAINED.
 - River AI adapter was verified against a locally supplied key (`zai-org/GLM-5.3-Flash`, chat-completions, reasoning_effort low). The key is only in the gitignored `.env.local`; `.env.example` remains empty and the rule-based fallback remains for missing keys.
-- Vision AI was verified with Google Gemini `gemini-3.5-flash` (fallback `gemini-3.5-flash-lite`) on a generated test image. The key is only in `.env.local`; no test image or report was retained.
+- Vision AI was verified with River AI open-weight models `moonshotai/Kimi-K3` (fallback `zai-org/GLM-5.3-Flash`) on a test image. The key is only in `.env.local`; no test image or report was retained.
 - No email provider; notifications are SIMULATED records.
 - No ward-level analytics; ward geometries were not verified, so only locality reference points are used.
 - No interpolated risk zones; the network is too sparse and demo data is synthetic.

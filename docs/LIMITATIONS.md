@@ -22,7 +22,7 @@ This deployment is a working demonstration, not an operational regulatory system
 - No SHAP values are shown because no trained model exists.
 - River AI is configured in this workspace through the gitignored `.env.local`; without `RIVER_API_KEY` the AI Analyst returns a rule-based evidence digest instead. The committed templates never contain the key.
 - The River AI adapter uses an OpenAI-compatible chat-completions interface; this is verified against a live `zai-org/GLM-5.3-Flash` key in this workspace. Provider behaviour may differ for other deployments.
-- Vision AI is configured in this workspace through the gitignored `.env.local` (Google Gemini). Without credentials it remains `NOT_CONFIGURED`. A photograph still cannot establish chemical composition, toxicity, concentration or responsibility.
+- Vision AI is configured in this workspace through the gitignored `.env.local` (River AI open-weight models). Without credentials it remains `NOT_CONFIGURED`. A photograph still cannot establish chemical composition, toxicity, concentration or responsibility.
 - The AI can still make mistakes even when grounded; its output is decision support, not a determination.
 
 ## Regulatory and compliance

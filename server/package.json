@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ml:register": "tsx src/db/register-models.ts",
-    "integrations:check": "tsx src/scripts/check-integrations.ts"
+    "integrations:check": "tsx src/scripts/check-integrations.ts",
+    "data:import-openaq": "tsx src/scripts/import-openaq-archive.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

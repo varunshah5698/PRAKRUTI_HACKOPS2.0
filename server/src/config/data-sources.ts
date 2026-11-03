@@ -115,7 +115,7 @@ export const DATA_SOURCE_CATALOGUE = [
     attribution: '',
     configured: visionConfig.configured,
     notes:
-      'The River text model is not assumed to support images. Without a separately configured vision model, image analysis is NOT CONFIGURED.',
+      'Uses a separately configured vision model. River open-weight models and any OpenAI-compatible endpoint are supported. Without one, image analysis is NOT CONFIGURED.',
   },
   {
     id: 'ml-service',

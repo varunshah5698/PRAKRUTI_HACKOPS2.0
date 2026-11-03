@@ -13,6 +13,7 @@ interface AiAnswer {
   generatedAt: string;
   question: string;
   narrative: string;
+  mode?: 'conversational';
   sections: { observed: string[]; predicted: string[]; reported: string[]; estimated: string[]; standards: string[]; limitations: string[]; nextActions: string[] };
   citations: Array<{ title: string; section: string; authority: string; url: string | null }>;
   evidence: unknown;
@@ -28,14 +29,14 @@ interface StationOption {
 }
 
 const SUGGESTIONS = [
-  'Which Mumbai areas show rising PM2.5?',
-  'What could happen at the selected station in three hours?',
-  'Which stations are reporting abnormal trends?',
-  'Is the observed pollution increase consistent with wind conditions?',
-  'What evidence supports the current warning?',
-  'Are there nearby citizen reports?',
-  'What standards may apply, and what evidence is missing?',
-  'What should an authority investigate next?',
+  'What is the air like right now?',
+  'How might pollution change in the next few hours?',
+  'Which stations look unusual today?',
+  'Is the wind helping or hurting air quality?',
+  'What are people reporting nearby?',
+  'Which standards might apply here?',
+  'What evidence is missing?',
+  'What should be checked next?',
 ];
 
 export function AiAnalystPage() {
@@ -115,13 +116,12 @@ export function AiAnalystPage() {
             <Badge tone={status?.river === 'CONFIGURED' ? 'lime' : 'amber'} dot>
               {status?.river === 'CONFIGURED' ? `River AI · ${status.model}` : 'Rule-based evidence digest'}
             </Badge>
-            <Badge tone="neutral">Three analysis systems</Badge>
-            <Badge tone="neutral">Grounded in application records</Badge>
+            <Badge tone="neutral">Looks at the whole picture</Badge>
+            <Badge tone="neutral">Answers from app records</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">AI environmental analyst</h2>
           <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
-            Observation & anomaly, predictive explanation and compliance context are kept separate. The assistant explains supplied evidence;
-            it cannot invent readings, create forecasts or override model output.
+            Ask in plain English. I'll separate what's observed, predicted, reported and estimated — and tell you when the evidence is thin.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -140,18 +140,18 @@ export function AiAnalystPage() {
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <Card className="flex min-h-[620px] flex-col">
           <CardHeader>
-            <div><CardTitle>Grounded analysis</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">Answers are labelled OBSERVED / PREDICTED / REPORTED / ESTIMATED / AI-GENERATED</p></div>
+            <div><CardTitle>Grounded analysis</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">I keep measured facts, forecasts and reports clearly separate.</p></div>
             <Badge tone="teal">Evidence first</Badge>
           </CardHeader>
           <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 ? (
               <div className="rounded-2xl border border-[#dfe6db] bg-[#f5f8f2] p-5">
-                <div className="flex items-center gap-2 text-[#3f7d2a]"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold">Ask about Mumbai evidence</span></div>
+                <div className="flex items-center gap-2 text-[#3f7d2a]"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold">Namaste — I'm Prakriti</span></div>
                 <p className="mt-2 text-[11px] leading-relaxed text-[#5a6a5f]">
-                  The analyst retrieves observations, forecasts, reports, alerts and reference standards from this application. If River AI is not configured,
-                  the server returns a rule-based digest instead of pretending an LLM answered.
+                  Your Mumbai environment guide. Ask about today's air, a station, a forecast or a nearby report — I'll keep it short and stick to what the data shows.
                 </p>
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <p className="mt-3 text-[10px] font-medium text-[#66766b]">Try one of these:</p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   {SUGGESTIONS.slice(0, 6).map((suggestion) => (
                     <button key={suggestion} onClick={() => ask(suggestion)} className="rounded-xl border border-[#dfe6db] bg-[#ffffff] p-3 text-left text-[10px] leading-relaxed text-[#5a6a5f] hover:border-[#5b9e46]/35 hover:text-[#142016]">
                       {suggestion}
@@ -167,12 +167,18 @@ export function AiAnalystPage() {
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eaf2e4] text-[#5a6a5f]"><UserRound className="h-3.5 w-3.5" /></span>
                 </div>
               ) : message.answer ? (
+                message.answer.mode === 'conversational' ? (
+                  <div key={index} className="flex gap-2">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5b9e46]/15 text-[#3f7d2a]"><Bot className="h-3.5 w-3.5" /></span>
+                    <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-[#dfe6db] bg-[#f5f8f2] px-4 py-3 text-[12px] leading-relaxed text-[#405246]">{message.answer.narrative}</div>
+                  </div>
+                ) : (
                 <div key={index} className="flex gap-2">
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5b9e46]/15 text-[#3f7d2a]"><Bot className="h-3.5 w-3.5" /></span>
                   <div className="min-w-0 flex-1 space-y-2.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={message.answer.provider === 'RIVER_AI' ? 'lime' : 'amber'}>
-                        {message.answer.provider === 'RIVER_AI' ? 'AI-generated explanation' : 'Rule-based evidence digest'}
+                      <Badge tone={message.answer.mode === 'conversational' ? 'teal' : message.answer.provider === 'RIVER_AI' ? 'lime' : 'amber'}>
+                        {message.answer.mode === 'conversational' ? 'Conversational reply' : message.answer.provider === 'RIVER_AI' ? 'AI-generated explanation' : 'Rule-based evidence digest'}
                       </Badge>
                       <Badge tone={message.answer.status === 'COMPLETED' ? 'green' : 'neutral'}>{message.answer.status.replace(/_/g, ' ')}</Badge>
                       <span className="text-[9px] text-[#66766b]">{formatDate(message.answer.generatedAt)}</span>
@@ -207,10 +213,11 @@ export function AiAnalystPage() {
                           </ul>
                         </div>
                       ) : null}
-                      <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{message.answer.disclaimer}</p>
+                      {message.answer.disclaimer ? <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{message.answer.disclaimer}</p> : null}
                     </div>
                   </div>
                 </div>
+                )
               ) : (
                 <div key={index} className="flex gap-2">
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eaf2e4] text-[#5a6a5f]"><Bot className="h-3.5 w-3.5" /></span>
@@ -219,7 +226,7 @@ export function AiAnalystPage() {
               ),
             )}
             {loading ? (
-              <div className="flex items-center gap-2 text-[11px] text-[#6f7f74]"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5b9e46]/10"><BrainCircuit className="h-3.5 w-3.5 animate-pulse text-[#3f7d2a]" /></span> Retrieving application evidence and building the analysis…</div>
+              <div className="flex items-center gap-2 text-[11px] text-[#6f7f74]"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5b9e46]/10"><BrainCircuit className="h-3.5 w-3.5 animate-pulse text-[#3f7d2a]" /></span> Let me look into that…</div>
             ) : null}
             <div ref={bottomRef} />
           </div>
@@ -237,14 +244,14 @@ export function AiAnalystPage() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
                 rows={2}
                 maxLength={1200}
-                placeholder="Ask about observed conditions, forecasts, reports, standards or evidence gaps…"
+                placeholder="Ask about the air, water, a station or a report…"
                 className="min-h-[48px] resize-none"
               />
               <Button variant="lime" size="icon" onClick={() => ask()} disabled={loading || !question.trim()} className="h-[48px] w-[48px] shrink-0" aria-label="Send question">
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="mt-1.5 text-[9px] text-[#66766b]">Enter to send · Shift+Enter for a new line · Prompt injection is treated as untrusted data.</p>
+            <p className="mt-1.5 text-[9px] text-[#66766b]">Enter to send · Shift+Enter for a new line</p>
           </div>
         </Card>
 
@@ -256,7 +263,7 @@ export function AiAnalystPage() {
               <div className="mt-3 space-y-2 border-t border-[#e7ece3] pt-3">
                 <div className="flex items-center justify-between"><span>Vision</span><span className="text-amber-600">{status?.vision ?? 'NOT_CONFIGURED'}</span></div>
                 <div className="flex items-center justify-between"><span>Mode</span><span className="text-[#26362a]">{status?.mode ?? '—'}</span></div>
-                <div className="flex items-center justify-between"><span>Grounded evidence</span><span className="text-emerald-600">Required</span></div>
+                <div className="flex items-center justify-between"><span>Answers from records</span><span className="text-emerald-600">Always</span></div>
               </div>
             </div>
           </Card>
@@ -273,10 +280,10 @@ export function AiAnalystPage() {
           <Card>
             <CardHeader><CardTitle>Response rules</CardTitle><ShieldAlert className="h-4 w-4 text-[#3f7d2a]" /></CardHeader>
             <div className="space-y-2 p-4 text-[10px] leading-relaxed text-[#6f7f74]">
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Every numeric claim must come from supplied evidence.</p>
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Standards require exact document and section references.</p>
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Missing evidence is stated, not filled with assumptions.</p>
-              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> No official violation is declared by the assistant.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Every number comes from the app's records.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> Regulatory references name the exact document and section.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> When the evidence is thin, I say so instead of guessing.</p>
+              <p className="flex gap-2"><Info className="mt-0.5 h-3 w-3 shrink-0 text-[#2f8f84]" /> I can't declare an official violation — only an authorised officer can.</p>
               <Link to="/data-sources" className="mt-2 inline-flex items-center gap-1 font-semibold text-[#3f7d2a]">Source status <ArrowUpRight className="h-3 w-3" /></Link>
             </div>
           </Card>

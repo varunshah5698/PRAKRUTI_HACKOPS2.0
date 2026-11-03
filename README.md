@@ -29,7 +29,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Anomaly detector | **NOT TRAINED** — `ZSCORE_V1` analytical check only |
 | Forecasts shown | **LIGHTGBM_TRAINED when `ML_SERVICE_URL` points at the local service**; otherwise the labelled `PERSISTENCE_BASELINE_V1` with an empirical, non-calibrated band |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
-| Vision AI | **CONFIGURED locally** — Google Gemini (`gemini-3.5-flash`, fallback `gemini-3.5-flash-lite`); key only in `.env.local`. The River text model is still not assumed to inspect images. |
+| Vision AI | **CONFIGURED locally** — Groq (`qwen/qwen3.8-27b`); key only in `.env.local`. |
 | Email | **SIMULATED** — no provider configured; records are stored, not sent |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |

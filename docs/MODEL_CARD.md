@@ -42,7 +42,9 @@ Reference extract: `ml/data/mumbai_air_quality_archive.csv` (SHA-256
 
 - Air quality: OpenAQ public S3 daily archive, raw CPCB station measurements from
   23 MPCB/BMC/IITM stations inside the Greater Mumbai boundary.
-- Period: 2025-11-01 to 2026-10-27 (360 days), 198,720 station-hours.
+- Period: 2025-11-01 to 2026-10-27 (360 days), 198,720 station-hours. Modelled
+  feature rows end at 2026-10-23 because the +6h target needs six future hours
+  inside the extract.
 - Coverage: PM2.5 72%, PM10 71%, NO2 71%, CO 67%, O3 64%, SO2 62%; weather 100%.
 - Weather: Open-Meteo ERA5 archive reanalysis at station coordinates. This is a
   model/reanalysis product, **not a co-located station measurement**.
