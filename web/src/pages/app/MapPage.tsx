@@ -954,6 +954,7 @@ export function MapPage() {
     setShowSources(true);
     setShowPlumes(true);
     setShowImpactLinks(true);
+    setSourceListExpanded(false);
   };
 
   return (

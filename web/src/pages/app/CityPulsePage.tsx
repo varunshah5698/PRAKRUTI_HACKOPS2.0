@@ -99,6 +99,15 @@ interface CityPoint {
 
 const DEFAULT_POINT: CityPoint = { name: 'Mumbai centre', lat: 19.076, lng: 72.8777 };
 
+const POLLUTANT_LABELS: Record<'pm25' | 'pm10' | 'no2' | 'o3' | 'so2' | 'co', string> = {
+  pm25: 'PM2.5',
+  pm10: 'PM10',
+  no2: 'NO₂',
+  o3: 'O₃',
+  so2: 'SO₂',
+  co: 'CO',
+};
+
 const PRESETS: CityPoint[] = [
   { name: 'Colaba', lat: 18.9067, lng: 72.8147 },
   { name: 'Bandra', lat: 19.0607, lng: 72.8362 },
@@ -562,7 +571,11 @@ export function CityPulsePage() {
                 <Waves className="h-3 w-3" /> Wave {number(marineCurrent?.waveHeightM)} m
               </span>
               <span className="ml-auto text-[9px] text-[#7a8b7e]">
-                <a className="underline decoration-[#b8cbb3] underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>
+                {data.weatherProvider === 'met-no' ? (
+                  <a className="underline decoration-[#b8cbb3] underline-offset-2" href="https://api.met.no/" target="_blank" rel="noreferrer">MET Norway</a>
+                ) : (
+                  <a className="underline decoration-[#b8cbb3] underline-offset-2" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>
+                )}
                 {' '}· CAMS modelled
               </span>
             </div>
@@ -843,7 +856,7 @@ export function CityPulsePage() {
           <div className="p-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <DataLabel>Current modelled {pollutant === 'aqi' ? 'AQI' : pollutant.toUpperCase()}</DataLabel>
+                <DataLabel>Current modelled {pollutant === 'aqi' ? 'AQI' : POLLUTANT_LABELS[pollutant]}</DataLabel>
                 <p className="display mt-1 text-[28px] font-bold leading-none text-[#142016]">
                   {pollutant === 'aqi' ? (air?.aqi.aqi ?? '—') : number(air?.[pollutant] ?? null)}
                   <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#66766b]">
@@ -872,7 +885,7 @@ export function CityPulsePage() {
                     yAxis: { type: 'value', name: pollutant === 'aqi' ? 'index' : 'µg/m³', nameTextStyle: { color: '#6f7f74', fontSize: 10 }, ...chartAxis },
                     series: [
                       {
-                        name: pollutant === 'aqi' ? 'Indicative AQI' : pollutant.toUpperCase(),
+                        name: pollutant === 'aqi' ? 'Indicative AQI' : POLLUTANT_LABELS[pollutant],
                         type: 'line',
                         smooth: 0.35,
                         symbol: 'none',
@@ -1013,7 +1026,7 @@ export function CityPulsePage() {
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Metric label="Burn estimate" value={burn ? `${burn} min` : '—'} note="current UV, selected skin" />
-              <Metric label="Daylight" value={selectedDayData ? `${hhmm(selectedDayData.sunset)} – ${hhmm(selectedDayData.sunrise)}` : '—'} note="local IST" />
+              <Metric label="Daylight" value={selectedDayData ? `${hhmm(selectedDayData.sunrise)} – ${hhmm(selectedDayData.sunset)}` : '—'} note="local IST" />
             </div>
             <div className="mt-3 rounded-xl border border-white/80 bg-white/45 p-3 text-[9px] leading-relaxed text-[#5f7065]">
               <p className="font-semibold text-[#34463a]">{uvInfo.label} UV today</p>

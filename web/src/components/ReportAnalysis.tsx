@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity,
   AlertTriangle,
   ArrowUpRight,
   BrainCircuit,
-  Camera,
   CheckCircle2,
   Compass,
   Copy,
   Gauge,
   Layers3,
-  MapPin,
   Minus,
   Orbit,
   Pause,
@@ -20,7 +17,6 @@ import {
   RotateCcw,
   ScanLine,
   ShieldCheck,
-  Sparkles,
   Target,
   Wind,
 } from 'lucide-react';
