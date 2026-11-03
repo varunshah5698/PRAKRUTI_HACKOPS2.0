@@ -30,7 +30,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Forecasts shown | **LIGHTGBM_TRAINED when `ML_SERVICE_URL` points at the local service**; otherwise the labelled `PERSISTENCE_BASELINE_V1` with an empirical, non-calibrated band |
 | River AI | **CONFIGURED locally** — `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified. Empty by default in `.env.example`. |
 | Vision AI | **CONFIGURED locally** — Groq (`qwen/qwen3.8-27b`) with a River open-weight fallback; keys only in `.env.local`. |
-| Email | **SMTP transport verified; no recipient configured** — adding `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` enables real delivery. Without them, records remain `SIMULATED` and nothing is sent. |
+| Email | **SMTP transport verified; no recipient configured** — adding `SMTP_USER` and `SMTP_PASSWORD` (with `EMAIL_PROVIDER=gmail` for Gmail) enables real delivery. Without them, records remain `SIMULATED` and nothing is sent. Critical alerts are broadcast to every active account. |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |
 | Database | PostgreSQL 18 + PostGIS 3.7 |
@@ -123,6 +123,27 @@ npm start
 ```
 
 The API serves `web/dist` when present.
+
+### Critical email alerts through Gmail
+
+When an air-quality, water, waste or industrial assessment reaches **CRITICAL**, the alert engine creates a notification for **every active account** — not just users who opted into that category — and sends it through the configured transport. Users see the same record in **Notifications** with its delivery status.
+
+`SENT` means the provider accepted the message. `DELIVERED` is only set by a provider webhook (`POST /api/notifications/webhook` with `x-webhook-secret`). If credentials are missing, the record stays `SIMULATED` and nothing is sent.
+
+1. Enable 2-Step Verification on the Google account, then create an **App password** (Google Account → Security → App passwords → Mail).
+2. In `.env.local`:
+
+   ```bash
+   EMAIL_PROVIDER=gmail
+   SMTP_USER=your.name@gmail.com
+   SMTP_PASSWORD=the-16-character-app-password
+   EMAIL_FROM="प्रकृति Alerts <your.name@gmail.com>"   # optional; falls back to SMTP_USER
+   DEMO_MODE=false
+   ```
+
+3. Restart the API, sign in as an authority role, and use **Notifications → Send test email** to verify the transport before relying on it.
+
+Keep `DEMO_MODE=true` when demonstrating: every message is redirected to `DEMO_EMAIL_RECIPIENT` and the subject is prefixed with `[DEMO]`, so a public demo never mails real users. For a non-Gmail SMTP relay, leave `EMAIL_PROVIDER=smtp` and fill `SMTP_HOST`/`SMTP_PORT` instead.
 
 ## Deploy on Render
 
