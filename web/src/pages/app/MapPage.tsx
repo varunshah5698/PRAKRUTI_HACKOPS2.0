@@ -249,7 +249,14 @@ function StationDrawer({
             <Badge tone={detail.station.isSimulated ? 'amber' : 'green'} dot>{detail.station.isSimulated ? 'Simulation data' : 'Source record'}</Badge>
             <Badge tone={detail.station.healthStatus === 'ONLINE' ? 'green' : 'amber'}>{detail.station.healthStatus}</Badge>
             {detail.station.aqi?.aqi !== null && detail.station.aqi?.aqi !== undefined ? <Badge tone="neutral">Indicative AQI {detail.station.aqi.aqi}</Badge> : null}
-            <span className="ml-auto text-[9px] text-[#6f7c89]">Last update {formatDate(detail.station.latestObservedAt)}</span>
+            <span className="ml-auto flex items-center gap-2 text-[9px] text-[#6f7c89]">
+              {refreshing ? (
+                <span className="flex items-center gap-1 text-[#b5e36b]">
+                  <Spinner className="h-3 w-3" /> updating
+                </span>
+              ) : null}
+              Last update {formatDate(detail.station.latestObservedAt)}
+            </span>
           </div>
           <div className="px-5 pt-4">
             <Tabs
