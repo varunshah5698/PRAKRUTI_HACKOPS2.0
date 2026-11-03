@@ -262,9 +262,13 @@ textarea {
   }
   .rail-item {
     height: 2.5rem;
+    width: 2.5rem;
+    margin-left: auto;
+    margin-right: auto;
     justify-content: center;
     gap: 0;
     padding: 0;
+    border-radius: 9999px;
   }
   .rail-item > span:first-child {
     height: 2rem;
