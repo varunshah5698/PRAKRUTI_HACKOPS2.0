@@ -150,17 +150,29 @@ def train_regressors(train: pd.DataFrame, validation: pd.DataFrame, test: pd.Dat
             train[target],
             eval_set=[(validation[features], validation[target])],
             eval_metric="mae",
-            callbacks=[],
+            callbacks=[lgb.early_stopping(50, verbose=False)],
         )
-        prediction = model.predict(test[features])
+        # The inference service clamps at zero, so evaluation must clamp too.
+        prediction = np.maximum(0.0, model.predict(test[features]))
+        truth = test[target].to_numpy()
         persistence = test[TARGET].to_numpy()
+        model_metrics = regression_metrics(truth, prediction)
+        baseline_metrics = regression_metrics(truth, persistence)
+        per_station = {}
+        for station_id, group in test.groupby("station_id"):
+            station_prediction = np.maximum(0.0, model.predict(group[features]))
+            per_station[str(station_id)] = regression_metrics(group[target].to_numpy(), station_prediction)
         metrics[f"pm25_{horizon}h"] = {
-            "model": regression_metrics(test[target].to_numpy(), prediction),
-            "persistence_baseline": regression_metrics(test[target].to_numpy(), persistence),
+            "model": model_metrics,
+            "persistence_baseline": baseline_metrics,
+            "skill_vs_persistence": skill_score(model_metrics["mae"], baseline_metrics["mae"]),
+            "per_station": per_station,
             "horizon_hours": horizon,
+            "best_iteration": int(model.best_iteration_ or model.n_estimators),
         }
         joblib.dump({"model": model, "features": features, "horizon_hours": horizon}, output / f"pm25_{horizon}h.joblib")
 
+        quantile_predictions: dict[float, np.ndarray] = {}
         for quantile in (0.1, 0.9):
             qmodel = LGBMRegressor(
                 objective="quantile",
@@ -170,26 +182,33 @@ def train_regressors(train: pd.DataFrame, validation: pd.DataFrame, test: pd.Dat
                 num_leaves=31,
                 random_state=42 + int(quantile * 100),
             )
-            qmodel.fit(train[features], train[target])
+            qmodel.fit(
+                train[features],
+                train[target],
+                eval_set=[(validation[features], validation[target])],
+                eval_metric="quantile",
+                callbacks=[lgb.early_stopping(50, verbose=False)],
+            )
             joblib.dump(
                 {"model": qmodel, "features": features, "horizon_hours": horizon, "quantile": quantile},
                 output / f"pm25_quantile_{horizon}h_{int(quantile * 100)}.joblib",
             )
-            if horizon == 3:
-                qpred = qmodel.predict(test[features])
-                if quantile == 0.1:
-                    lower = qpred
-                else:
-                    coverage = float(np.mean((test[target].to_numpy() >= lower) & (test[target].to_numpy() <= qpred)))
-                    metrics["pm25_3h_quantile_80"] = {
-                        "coverage": coverage,
-                        "target_coverage": 0.8,
-                        "note": "Coverage measured on the chronological test partition.",
-                    }
+            quantile_predictions[quantile] = np.maximum(0.0, qmodel.predict(test[features]))
+        lower = np.minimum(quantile_predictions[0.1], quantile_predictions[0.9])
+        upper = np.maximum(quantile_predictions[0.1], quantile_predictions[0.9])
+        metrics[f"pm25_{horizon}h_quantile_80"] = {
+            "coverage": float(np.mean((truth >= lower) & (truth <= upper))),
+            "target_coverage": 0.8,
+            "mean_width": float(np.mean(upper - lower)),
+            "crossing_rate": float(np.mean(quantile_predictions[0.1] > quantile_predictions[0.9])),
+            "note": "Coverage measured on the chronological test partition; bounds clamped at zero.",
+        }
     return metrics
 
 
 def train_classifier(train: pd.DataFrame, validation: pd.DataFrame, test: pd.DataFrame, features: list[str], output: Path) -> dict:
+    if validation["deterioration_3h"].nunique() < 2:
+        raise SystemExit("The validation partition contains only one deterioration class; isotonic calibration is impossible.")
     base = LGBMClassifier(
         n_estimators=600,
         learning_rate=0.03,
@@ -197,19 +216,35 @@ def train_classifier(train: pd.DataFrame, validation: pd.DataFrame, test: pd.Dat
         random_state=42,
         class_weight="balanced",
     )
-    base.fit(train[features], train["deterioration_3h"])
-    calibrated = CalibratedClassifierCV(base, method="isotonic", cv="prefit")
+    base.fit(
+        train[features],
+        train["deterioration_3h"],
+        eval_set=[(validation[features], validation["deterioration_3h"])],
+        eval_metric="binary_logloss",
+        callbacks=[lgb.early_stopping(50, verbose=False)],
+    )
+    try:
+        from sklearn.frozen import FrozenEstimator
+
+        calibrated = CalibratedClassifierCV(FrozenEstimator(base), method="isotonic")
+    except ImportError:  # scikit-learn < 1.6
+        calibrated = CalibratedClassifierCV(base, method="isotonic", cv="prefit")
     calibrated.fit(validation[features], validation["deterioration_3h"])
     probabilities = calibrated.predict_proba(test[features])[:, 1]
     labels = test["deterioration_3h"].to_numpy()
     predictions = (probabilities >= 0.5).astype(int)
     metrics = {
+        "label": "target_3h > 60 ug/m3 (CPCB 24-hour PM2.5 standard used as an hourly exceedance indicator)",
         "precision": float(precision_score(labels, predictions, zero_division=0)),
         "recall": float(recall_score(labels, predictions, zero_division=0)),
         "pr_auc": float(average_precision_score(labels, probabilities)) if labels.sum() else None,
         "roc_auc": float(roc_auc_score(labels, probabilities)) if 0 < labels.sum() < len(labels) else None,
         "brier": float(brier_score_loss(labels, probabilities)),
+        "positive_rate_train": float(train["deterioration_3h"].mean()),
+        "positive_rate_validation": float(validation["deterioration_3h"].mean()),
         "positive_rate_test": float(labels.mean()),
+        "calibration": "isotonic on the chronological validation partition",
+        "n": int(len(labels)),
     }
     joblib.dump({"model": calibrated, "features": features, "threshold": 0.5}, output / "deterioration_classifier.joblib")
     return metrics
@@ -240,10 +275,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=Path("data/mumbai_air_quality.csv"))
     parser.add_argument("--output", type=Path, default=Path("artifacts"))
+    parser.add_argument("--metadata", type=Path, default=None, help="Sidecar metadata JSON written by fetch_real_data.py.")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    frame = build_features(load_data(args.input))
+    raw = load_data(args.input)
+    frame = build_features(raw)
     train, validation, test = time_split(frame)
     features = feature_list(frame)
     metrics = train_regressors(train, validation, test, features, args.output)
@@ -251,22 +288,80 @@ def main() -> None:
     bundle = joblib.load(args.output / "pm25_3h.joblib")
     shap = shap_summary(bundle, test, args.output)
 
+    metadata_path = args.metadata or args.input.with_suffix(".meta.json")
+    metadata = None
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text())
+
+    digest = hashlib.sha256(args.input.read_bytes()).hexdigest()
+    horizons_beating_persistence = [
+        horizon
+        for horizon in HORIZONS
+        if (metrics[f"pm25_{horizon}h"]["skill_vs_persistence"] or 0) > 0
+    ]
+    approved = 3 in horizons_beating_persistence and 6 in horizons_beating_persistence
+    generated_at = datetime.now(timezone.utc)
+
+    def split_summary(partition: pd.DataFrame) -> dict:
+        return {
+            "rows": int(len(partition)),
+            "stations": int(partition["station_id"].nunique()),
+            "start": partition["timestamp"].min().isoformat(),
+            "end": partition["timestamp"].max().isoformat(),
+        }
+
     model_card = {
-        "model_version": f"lightgbm-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}",
-        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "model_version": f"lightgbm-{generated_at.strftime('%Y%m%d%H%M')}-{digest[:8]}",
+        "trained_at": generated_at.isoformat(),
         "dataset": str(args.input),
+        "dataset_sha256": digest,
+        "dataset_metadata": str(metadata_path) if metadata_path.exists() else None,
+        "rows_raw": int(len(raw)),
         "rows": int(len(frame)),
         "stations": int(frame["station_id"].nunique()),
+        "date_range": {
+            "start": frame["timestamp"].min().isoformat(),
+            "end": frame["timestamp"].max().isoformat(),
+        },
+        "rows_per_station": {str(key): int(value) for key, value in raw.groupby("station_id").size().items()},
+        "missing_fraction_raw": {
+            column: round(float(raw[column].isna().mean()), 4) for column in FEATURE_COLUMNS
+        },
         "train_rows": int(len(train)),
         "validation_rows": int(len(validation)),
         "test_rows": int(len(test)),
-        "split": "chronological 70/15/15 by global timestamp; no random shuffle",
+        "split": {
+            "method": "chronological 70/15/15 by global timestamp; no random shuffle",
+            "train": split_summary(train),
+            "validation": split_summary(validation),
+            "test": split_summary(test),
+        },
         "features": features,
+        "targets": {
+            "regression": [f"pm25 at +{horizon}h" for horizon in HORIZONS],
+            "classifier": metrics["deterioration_classifier_3h"]["label"],
+        },
         "metrics": metrics,
+        "skill_vs_persistence": {
+            f"{horizon}h": metrics[f"pm25_{horizon}h"]["skill_vs_persistence"] for horizon in HORIZONS
+        },
+        "horizons_beating_persistence": horizons_beating_persistence,
+        "deployment_recommendation": "APPROVED" if approved else "REJECTED",
+        "deployment_reason": (
+            "The 3h and 6h regressors beat persistence on the chronological test partition."
+            if approved
+            else "At least one of the 3h/6h regressors does not beat persistence on the chronological test partition."
+        ),
+        "data_sources": metadata.get("sources") if metadata else None,
+        "data_qc": metadata.get("qc") if metadata else None,
+        "unit_conversions": metadata.get("unit_conversions") if metadata else None,
         "shap": shap,
         "caveat": (
-            "Metrics are only valid for the supplied extract. Do not copy them into the application "
-            "unless the exact data version, feature pipeline and model artifact are registered and reproducible."
+            "Metrics are chronological hold-out estimates for this exact extract (SHA-256 above), not a "
+            "guarantee of future skill. Air-quality data are OpenAQ v3 station records (CPCB/MPCB/BMC/IITM); "
+            "weather is Open-Meteo ERA5 reanalysis, not a co-located measurement. Missing observations were "
+            "not imputed. The classifier label is target_3h > 60 ug/m3, an exceedance indicator, not a "
+            "relative deterioration label."
         ),
     }
     (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2))

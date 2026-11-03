@@ -88,7 +88,7 @@ const categories = [
     stat: 'Investigation led',
     icon: Factory,
     art: 'industrial',
-    className: 'bg-[#111310] text-white lg:col-span-2',
+    className: 'bg-[#e7efe2] text-ink lg:col-span-2',
   },
 ];
 
@@ -130,11 +130,11 @@ function CategoryArt({ kind }: { kind: string }) {
   }
   return (
     <svg viewBox="0 0 220 150" className="h-full w-full" aria-hidden>
-      <path d="M40 112V68l30-18v62M70 112V50l28 18v44M98 112V68l30-18v62M128 112V50l28 18v44" fill="none" stroke="#b5e36b" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M30 112h160" stroke="#b5e36b" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
-      <path d="M54 54c8-14 16-20 24-18s8 14 0 22" fill="none" stroke="#b5e36b" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
-      <circle cx="170" cy="40" r="18" fill="none" stroke="#b5e36b" strokeWidth="1.5" strokeDasharray="3 4" />
-      <path d="M162 40h16M170 32v16" stroke="#b5e36b" strokeWidth="2" strokeLinecap="round" />
+      <path d="M40 112V68l30-18v62M70 112V50l28 18v44M98 112V68l30-18v62M128 112V50l28 18v44" fill="none" stroke="#4e9b3f" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M30 112h160" stroke="#4e9b3f" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+      <path d="M54 54c8-14 16-20 24-18s8 14 0 22" fill="none" stroke="#4e9b3f" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+      <circle cx="170" cy="40" r="18" fill="none" stroke="#4e9b3f" strokeWidth="1.5" strokeDasharray="3 4" />
+      <path d="M162 40h16M170 32v16" stroke="#4e9b3f" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -284,15 +284,15 @@ export function LandingPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${category.id === 'industrial' ? 'bg-white/10' : 'bg-ink text-lime'}`}>
+                        <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${category.id === 'industrial' ? 'bg-white/70 text-[#3f7d2a]' : 'bg-ink text-lime'}`}>
                           <Icon className="h-4 w-4" />
                         </span>
-                        <span className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${category.id === 'industrial' ? 'text-white/45' : 'text-ink/45'}`}>
+                        <span className={`text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/45`}>
                           {category.stat}
                         </span>
                       </div>
                       <h3 className="display mt-4 text-[26px] font-bold tracking-[-0.04em]">{category.title}</h3>
-                      <p className={`mt-2 max-w-[340px] text-[13px] leading-relaxed ${category.id === 'industrial' ? 'text-white/55' : 'text-ink/55'}`}>
+                      <p className={`mt-2 max-w-[340px] text-[13px] leading-relaxed text-ink/55`}>
                         {category.copy}
                       </p>
                     </div>
@@ -300,11 +300,11 @@ export function LandingPage() {
                       <CategoryArt kind={category.art} />
                     </div>
                   </div>
-                  <div className={`mt-6 flex items-center justify-between border-t pt-4 ${category.id === 'industrial' ? 'border-white/15' : 'border-ink/15'}`}>
-                    <span className={`text-[11px] ${category.id === 'industrial' ? 'text-white/50' : 'text-ink/50'}`}>
+                  <div className={`mt-6 flex items-center justify-between border-t pt-4 border-ink/15`}>
+                    <span className={`text-[11px] text-ink/50`}>
                       {count} active alert{count === 1 ? '' : 's'} · simulation-labelled
                     </span>
-                    <Link to="/dashboard" className={`inline-flex items-center gap-1 text-[11px] font-semibold ${category.id === 'industrial' ? 'text-[#b5e36b]' : 'text-ink'}`}>
+                    <Link to="/dashboard" className={`inline-flex items-center gap-1 text-[11px] font-semibold text-ink`}>
                       Open view <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
@@ -364,20 +364,20 @@ export function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-[1440px] px-5 py-16 lg:px-10 lg:py-24">
-        <div className="overflow-hidden rounded-[32px] border border-ink/15 bg-[#111310] text-white">
+        <div className="overflow-hidden rounded-[32px] border border-ink/15 bg-[#eaf1e5] text-ink">
           <div className="grid gap-10 p-6 sm:p-10 lg:grid-cols-[1.05fr_0.95fr] lg:p-12">
             <Reveal>
               <PublicBadge tone="lime">Predictive intelligence</PublicBadge>
               <h2 className="display mt-4 text-[36px] font-bold leading-[1.02] sm:text-[46px]">
                 Forecasts with the receipts attached.
               </h2>
-              <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55">
+              <p className="mt-5 max-w-lg text-sm leading-relaxed text-ink/55">
                 The platform is designed for 1-hour, 3-hour and 6-hour PM2.5 forecasts, quantile intervals, a calibrated
-                deterioration classifier and anomaly detection. Those models are <strong className="text-white">NOT TRAINED</strong> in
+                deterioration classifier and anomaly detection. Those models are <strong className="text-ink">NOT TRAINED</strong> in
                 this deployment because no verified Mumbai historical extract has been supplied.
               </p>
-              <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-xs leading-relaxed text-amber-100/80">
-                <strong className="text-amber-200">What you see instead:</strong> a clearly labelled persistence baseline with an
+              <div className="mt-6 rounded-2xl border border-amber-500/25 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
+                <strong className="text-amber-700">What you see instead:</strong> a clearly labelled persistence baseline with an
                 empirical 80% band. It is not a trained LightGBM model, not calibrated, and not presented as official skill.
               </div>
               <div className="mt-6 grid grid-cols-3 gap-3">
@@ -386,19 +386,19 @@ export function LandingPage() {
                   ['3 hours', 'baseline'],
                   ['6 hours', 'baseline'],
                 ].map(([horizon, status]) => (
-                  <div key={horizon} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-white/40">Horizon</p>
+                  <div key={horizon} className="rounded-xl border border-ink/10 bg-white/45 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.1em] text-ink/45">Horizon</p>
                     <p className="mt-1 text-sm font-semibold">{horizon}</p>
-                    <p className="mt-2 text-[9px] uppercase tracking-[0.08em] text-amber-300/70">{status}</p>
+                    <p className="mt-2 text-[9px] uppercase tracking-[0.08em] text-amber-700">{status}</p>
                   </div>
                 ))}
               </div>
             </Reveal>
             <Reveal delay={0.1}>
-              <div className="rounded-2xl border border-white/10 bg-[#171b1f] p-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="rounded-2xl border border-white/80 bg-white/55 p-4">
+                <div className="flex items-center justify-between border-b border-ink/10 pb-3">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">Chembur demo station</p>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-ink/45">Chembur demo station</p>
                     <p className="mt-1 text-sm font-semibold">PM2.5 forecast context</p>
                   </div>
                   <PublicBadge tone="lime">Baseline</PublicBadge>
@@ -411,21 +411,21 @@ export function LandingPage() {
                     ['+6h', 68, '#6d9144'],
                   ].map(([label, value, color]) => (
                     <div key={String(label)} className="flex flex-col items-center gap-2">
-                      <div className="flex h-[140px] w-full items-end rounded-lg bg-white/[0.03] p-1.5">
+                      <div className="flex h-[140px] w-full items-end rounded-lg bg-white/60 p-1.5">
                         <div
                           className="w-full rounded-md"
                           style={{ height: `${Number(value)}%`, background: String(color), opacity: 0.75 }}
                         />
                       </div>
-                      <span className="text-[10px] text-white/40">{label}</span>
+                      <span className="text-[10px] text-ink/45">{label}</span>
                       <span className="text-[11px] font-semibold">{value} µg/m³</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 space-y-2 text-[10px] leading-relaxed text-white/45">
-                  <p className="flex items-center gap-2"><ShieldAlert className="h-3 w-3 text-amber-300" /> Not a confirmed future condition.</p>
-                  <p className="flex items-center gap-2"><BadgeCheck className="h-3 w-3 text-[#b5e36b]" /> Source timestamp and method always shown.</p>
-                  <p className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-[#b5e36b]" /> AI explains forecasts; it cannot create them.</p>
+                <div className="mt-4 space-y-2 text-[10px] leading-relaxed text-ink/55">
+                  <p className="flex items-center gap-2"><ShieldAlert className="h-3 w-3 text-amber-600" /> Not a confirmed future condition.</p>
+                  <p className="flex items-center gap-2"><BadgeCheck className="h-3 w-3 text-[#3f7d2a]" /> Source timestamp and method always shown.</p>
+                  <p className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-[#3f7d2a]" /> AI explains forecasts; it cannot create them.</p>
                 </div>
               </div>
             </Reveal>
@@ -610,7 +610,7 @@ export function LandingPage() {
               </div>
               <div className="flex flex-col gap-2.5">
                 <Link to="/dashboard"><Button variant="dark" size="lg" className="w-full justify-between">Environmental monitoring dashboard <ArrowUpRight className="h-4 w-4" /></Button></Link>
-                <Link to="/report"><Button variant="default" size="lg" className="w-full justify-between bg-white text-ink hover:bg-white/90">Public reporting <ArrowUpRight className="h-4 w-4" /></Button></Link>
+                <Link to="/report"><Button variant="outline" size="lg" className="w-full justify-between border-white bg-white text-ink hover:bg-white/90">Public reporting <ArrowUpRight className="h-4 w-4" /></Button></Link>
                 <Link to="/login"><Button variant="outline" size="lg" className="w-full justify-between border-ink/25">Authority login <ArrowUpRight className="h-4 w-4" /></Button></Link>
                 <p className="mt-1 text-center text-[10px] text-ink/40">Demo accounts are listed on the login page.</p>
               </div>

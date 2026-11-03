@@ -297,7 +297,7 @@ export function Tabs({
           onClick={() => onChange(tab.id)}
           className={classNames(
             'rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] transition',
-            value === tab.id ? 'bg-[#142016] text-white shadow-sm' : 'text-[#66766b] hover:bg-white/80 hover:text-[#142016]',
+            value === tab.id ? 'bg-[#4e9b3f] text-white shadow-sm' : 'text-[#66766b] hover:bg-white/80 hover:text-[#142016]',
           )}
         >
           {tab.label}

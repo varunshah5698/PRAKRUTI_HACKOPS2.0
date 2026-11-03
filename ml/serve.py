@@ -72,29 +72,60 @@ def model_manifest() -> dict[str, Any]:
     try:
         card = json.loads(card_path.read_text())
     except Exception:
-        card = {}
+        return {"status": "NOT_TRAINED", "artifacts": [], "error": "model_card.json is unreadable"}
+    artifacts = sorted(path.name for path in ARTIFACT_DIR.glob("*.joblib"))
+    required = [
+        "pm25_1h.joblib",
+        "pm25_3h.joblib",
+        "pm25_6h.joblib",
+        "pm25_quantile_1h_10.joblib",
+        "pm25_quantile_1h_90.joblib",
+        "pm25_quantile_3h_10.joblib",
+        "pm25_quantile_3h_90.joblib",
+        "pm25_quantile_6h_10.joblib",
+        "pm25_quantile_6h_90.joblib",
+        "deterioration_classifier.joblib",
+    ]
+    missing = [name for name in required if name not in artifacts]
+    recommendation = card.get("deployment_recommendation", "APPROVED")
+    status = "TRAINED" if not missing and recommendation != "REJECTED" else "INCOMPLETE"
     return {
-        "status": "TRAINED",
+        "status": status,
         "model_version": card.get("model_version", "trained-1"),
         "trained_at": card.get("trained_at"),
-        "metrics": card.get("metrics"),
-        "artifacts": sorted(path.name for path in ARTIFACT_DIR.glob("*.joblib")),
+        "dataset_sha256": card.get("dataset_sha256"),
+        "deployment_recommendation": recommendation,
+        "metrics_available": bool(card.get("metrics")),
+        "artifacts": artifacts,
+        "missing_artifacts": missing,
         "caveat": "Metrics are only valid for the registered training extract.",
     }
 
 
 def build_features(request: PredictRequest) -> pd.DataFrame:
     frame = pd.DataFrame([point.model_dump() for point in request.history])
-    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
-    frame = frame.sort_values("timestamp").drop_duplicates("timestamp")
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True).dt.floor("h")
+    # The API returns raw station observations (often 15-minute or 1-minute).
+    # Training used hourly means, so aggregate before computing lags.
+    numeric = [column for column in frame.columns if column != "timestamp"]
+    frame = frame.groupby("timestamp", as_index=False)[numeric].mean()
+    frame = frame.sort_values("timestamp").tail(25).reset_index(drop=True)
     if len(frame) < 25:
         raise HTTPException(422, "At least 25 hourly PM2.5 observations are required (24 lags plus the current hour).")
+    gaps = frame["timestamp"].diff().dropna()
+    if not (gaps == pd.Timedelta(hours=1)).all():
+        raise HTTPException(
+            422,
+            "PM2.5 history must contain 25 consecutive hourly observations; a gap would misalign the 1-24 hour lag features.",
+        )
     for column in FEATURE_COLUMNS:
         if column not in frame.columns:
             frame[column] = np.nan
     frame = frame.ffill()
+    # `latest` carries current pollutant readings. Never let it overwrite the
+    # PM2.5 history that the lag features are computed from.
     for column, value in request.latest.items():
-        if column in FEATURE_COLUMNS:
+        if column in FEATURE_COLUMNS and column != "pm25":
             frame[column] = value
     pm = frame["pm25"]
     row: dict[str, Any] = {}
