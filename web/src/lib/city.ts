@@ -263,6 +263,16 @@ export function aqiColor(category?: string | null): string {
   return AQI_COLORS[category ?? 'INSUFFICIENT DATA'] ?? '#728176';
 }
 
+export function pm25Category(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'INSUFFICIENT DATA';
+  if (value <= 30) return 'Good';
+  if (value <= 60) return 'Satisfactory';
+  if (value <= 90) return 'Moderate';
+  if (value <= 120) return 'Poor';
+  if (value <= 250) return 'Very Poor';
+  return 'Severe';
+}
+
 export function aqiTone(aqi: number | null | undefined): string {
   if (aqi === null || aqi === undefined) return 'No data';
   if (aqi <= 50) return 'Good';

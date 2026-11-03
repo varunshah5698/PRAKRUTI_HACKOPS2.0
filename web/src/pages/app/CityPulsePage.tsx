@@ -67,6 +67,7 @@ import {
   exposureEstimate,
   healthHeadline,
   hhmm,
+  pm25Category,
   shortDate,
   sunProgress,
   uvBand,
@@ -706,9 +707,9 @@ export function CityPulsePage() {
                   legend: { top: 0, textStyle: { color: '#6f7f74', fontSize: 10 } },
                   xAxis: {
                     type: 'category',
-                    data: hourly.map((hour) => `${shortDate(hour.time)} ${hhmm(hour.time)}`),
+                    data: hourly.map((hour) => hhmm(hour.time)),
                     ...chartAxis,
-                    axisLabel: { ...chartAxis.axisLabel, interval: 5, fontSize: 9 },
+                    axisLabel: { ...chartAxis.axisLabel, interval: 6, fontSize: 9 },
                   },
                   yAxis: [
                     { type: 'value', name: '°C', nameTextStyle: { color: '#6f7f74', fontSize: 10 }, ...chartAxis },
@@ -881,7 +882,7 @@ export function CityPulsePage() {
                   return {
                     grid: { ...chartGrid, top: 28, right: 20 },
                     tooltip: chartTooltip,
-                    xAxis: { type: 'category', data: rows.map((hour) => `${shortDate(hour.time)} ${hhmm(hour.time)}`), ...chartAxis, axisLabel: { ...chartAxis.axisLabel, interval: 5, fontSize: 9 } },
+                    xAxis: { type: 'category', data: rows.map((hour) => hhmm(hour.time)), ...chartAxis, axisLabel: { ...chartAxis.axisLabel, interval: 5, fontSize: 9 } },
                     yAxis: { type: 'value', name: pollutant === 'aqi' ? 'index' : 'µg/m³', nameTextStyle: { color: '#6f7f74', fontSize: 10 }, ...chartAxis },
                     series: [
                       {
@@ -972,7 +973,7 @@ export function CityPulsePage() {
                   onClick={() => chooseDay(index)}
                   className={`flex min-w-[92px] flex-1 flex-col items-center gap-1.5 rounded-2xl border px-2 py-3 transition ${selectedDay === index ? 'border-[#b3df7c] bg-[#effbe2] shadow-[0_12px_30px_-24px_rgba(52,110,41,.6)]' : 'border-white/80 bg-white/45 hover:bg-white/75'}`}
                 >
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#66766b]">{index === 0 ? 'Today' : dateLabel(day.date).split(' ')[0]}</span>
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#66766b]">{index === 0 ? 'Today' : dateLabel(day.date).split(' ')[0].replace(',', '')}</span>
                   <span className="text-[8px] text-[#7a8b7e]">{shortDate(day.date)}</span>
                   <WeatherGlyph code={day.weatherCode} className="h-5 w-5 text-[#5f8f79]" />
                   <span className="display text-[15px] font-bold leading-none text-[#142016]">{number(day.temperatureMaxC, 0)}°</span>
@@ -1044,7 +1045,7 @@ export function CityPulsePage() {
         <Card className="overflow-hidden xl:col-span-7">
           <SectionHeader
             title="The last 30 days"
-            detail="Daily max indicative AQI from CAMS hourly values. Each cell is one day."
+            detail="Daily mean PM2.5 from CAMS hourly values. Colour shows the PM2.5 band; hover for the daily max AQI."
             badge={<span className="text-[9px] text-[#66766b]">{history.length} days</span>}
           />
           <div className="p-4">
@@ -1054,9 +1055,9 @@ export function CityPulsePage() {
                   key={day.date}
                   type="button"
                   onClick={() => setHistoryDay(day.date)}
-                  title={`${day.date} · PM2.5 mean ${day.pm25Mean ?? '—'} µg/m³ · daily max AQI ${day.aqiMax ?? '—'} (${day.category})`}
+                  title={`${day.date} · PM2.5 mean ${day.pm25Mean ?? '—'} µg/m³ (${pm25Category(day.pm25Mean)}) · daily max AQI ${day.aqiMax ?? '—'} (${day.category})`}
                   className={`aspect-square rounded-md border transition ${historySelected?.date === day.date ? 'ring-2 ring-[#142016] ring-offset-1' : 'hover:scale-105'}`}
-                  style={{ background: aqiColor(day.category), borderColor: `${aqiColor(day.category)}aa`, opacity: 0.55 + Math.min(0.45, (day.aqiMax ?? 0) / 500) }}
+                  style={{ background: aqiColor(pm25Category(day.pm25Mean)), borderColor: `${aqiColor(pm25Category(day.pm25Mean))}aa`, opacity: 0.55 + Math.min(0.45, (day.pm25Mean ?? 0) / 100) }}
                 >
                   <span className="sr-only">{day.date}</span>
                 </button>
@@ -1065,7 +1066,7 @@ export function CityPulsePage() {
             </div>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {(['Good', 'Moderate', 'Very Poor'] as const).map((label) => (
+              {(['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor'] as const).map((label) => (
                 <div key={label} className="flex items-center gap-1.5 text-[9px] text-[#66766b]">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ background: aqiColor(label) }} /> {label}
                 </div>
@@ -1076,12 +1077,13 @@ export function CityPulsePage() {
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-[#dbe5d6] bg-white/45 p-3">
                 <div>
                   <DataLabel>{dateLabel(historySelected.date)}</DataLabel>
-                  <p className="display mt-1 text-[20px] font-bold text-[#142016]">{historySelected.aqiMax ?? '—'} <span className="text-[10px] font-normal text-[#66766b]">max AQI</span></p>
+                  <p className="display mt-1 text-[20px] font-bold text-[#142016]">{number(historySelected.pm25Mean)} <span className="text-[10px] font-normal text-[#66766b]">µg/m³ mean PM2.5</span></p>
+                  <p className="mt-1 text-[9px]" style={{ color: aqiColor(pm25Category(historySelected.pm25Mean)) }}>{pm25Category(historySelected.pm25Mean)}</p>
                 </div>
                 <div className="text-right text-[9px] text-[#66766b]">
-                  <p>PM2.5 mean <span className="font-semibold text-[#223328]">{number(historySelected.pm25Mean)} µg/m³</span></p>
+                  <p>Max AQI <span className="font-semibold text-[#223328]">{historySelected.aqiMax ?? '—'}</span></p>
                   <p className="mt-0.5">Mean AQI <span className="font-semibold text-[#223328]">{number(historySelected.aqiMean, 0)}</span></p>
-                  <p className="mt-0.5" style={{ color: aqiColor(historySelected.category) }}>{historySelected.category}</p>
+                  <p className="mt-0.5">Max category <span style={{ color: aqiColor(historySelected.category) }}>{historySelected.category}</span></p>
                 </div>
               </div>
             ) : null}
