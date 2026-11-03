@@ -107,7 +107,7 @@ describe('simulation recommendations', () => {
       conditions,
     });
     expect(items.some((item) => item.title.toLowerCase().includes('firecracker smoke'))).toBe(true);
-    expect(items.some((item) => item.reason.includes('SO2'))).toBe(true);
+    expect(items.some((item) => item.reason.includes('SO₂'))).toBe(true);
     expect(items.some((item) => item.title.toLowerCase().includes('enforcement language'))).toBe(true);
   });
 

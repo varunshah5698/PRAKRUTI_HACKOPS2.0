@@ -340,7 +340,7 @@ export function buildSimulationRecommendations(ctx: RecommendationContext): Simu
         action:
           'Stay indoors with windows closed while the burst is active. Keep children, older adults and anyone with asthma or heart disease away from the smoke; use a well-fitted mask if you must go out.',
         reason:
-          `The episode raises both PM2.5 (${numberText(pm25?.value)} ${pm25?.unit ?? 'µg/m³'}) and SO2 (${numberText(so2?.value)} ${so2?.unit ?? 'µg/m³'}). Firecracker smoke mixes fine particles with irritant gases, so the usual particle-only advice is not enough.`,
+          `The episode raises both PM2.5 (${numberText(pm25?.value)} ${pm25?.unit ?? 'µg/m³'}) and SO₂ (${numberText(so2?.value)} ${so2?.unit ?? 'µg/m³'}). Firecracker smoke mixes fine particles with irritant gases, so the usual particle-only advice is not enough.`,
         evidence: [readingText('pm25') ?? 'PM2.5 elevated', readingText('so2') ?? 'SO2 elevated', `Alert ${ctx.risk.alertState.replace(/_/g, ' ')}`],
         confidence,
       });

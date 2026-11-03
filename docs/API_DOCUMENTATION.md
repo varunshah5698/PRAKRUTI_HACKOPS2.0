@@ -51,7 +51,7 @@ Rate limits: global 400/min; auth 40/15 min; report submission 12/hour; AI 20/mi
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/map/timeline` | user | `at` ISO timestamp, `category`, `pollutant`, `localityId`, `sourceId`, `severity`, `verification`, `includeForecast`. Returns PAST/CURRENT/FUTURE mode, stations, reports, incidents, alerts, warnings, forecast metadata, no estimated zones. |
+| GET | `/map/timeline` | user | `at` ISO timestamp, `category`, `pollutant`, `localityId`, `sourceId`, `severity`, `verification`, `includeForecast`. Returns PAST/CURRENT/FUTURE mode, stations, reports, incidents, alerts, warnings, forecast metadata and `sourceImpact` (simulated industrial plume screen, per-monitor source shares, land footprints). No interpolated pollution surface. |
 | GET | `/map/localities` | user | Locality reference points |
 | GET | `/map/layers` | user | Category/marker legend, model status, source status |
 | GET | `/map/stations` | user | Station snapshots; optional `category` |

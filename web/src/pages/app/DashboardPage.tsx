@@ -265,8 +265,28 @@ const POLLUTANT_LABELS: Record<string, string> = {
 
 const POLLUTANT_ORDER = ['PM25', 'PM10', 'NO2', 'SO2', 'CO', 'O3'];
 
+const POLLUTANT_MODES = [
+  { id: 'mean', label: 'Mean' },
+  { id: 'peak', label: 'Peak' },
+  { id: 'low', label: 'Low' },
+] as const;
+
+type PollutantMode = (typeof POLLUTANT_MODES)[number]['id'];
+type PollutantRow = DashboardData['charts']['pollutantComparison'][number];
+
 function pollutantLabel(code: string): string {
   return POLLUTANT_LABELS[code.toUpperCase()] ?? code;
+}
+
+function pollutantReading(row: PollutantRow, mode: PollutantMode): { value: number; station: string | null } {
+  if (mode === 'peak') return { value: row.peak, station: row.peakStation };
+  if (mode === 'low') return { value: row.lowest, station: row.lowestStation };
+  return { value: row.value, station: null };
+}
+
+function pollutantRatio(row: PollutantRow, value: number): number | null {
+  if (row.threshold === null || row.threshold <= 0 || row.thresholdUnit !== row.unit) return null;
+  return value / row.threshold;
 }
 
 function ratioTone(ratio: number | null): string {
@@ -277,8 +297,8 @@ function ratioTone(ratio: number | null): string {
   return '#c94a50';
 }
 
-function aqiTone(value: number | null): string {
-  return value === null ? '#728176' : AQI_COLORS[aqiCategory(value)] ?? '#728176';
+function aqiTone(category: string | null | undefined): string {
+  return AQI_COLORS[category ?? 'INSUFFICIENT DATA'] ?? '#728176';
 }
 
 function stationComparisonLabel(name: string): string {
