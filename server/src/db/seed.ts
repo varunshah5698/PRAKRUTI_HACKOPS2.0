@@ -887,6 +887,11 @@ async function main() {
   console.log('Seeding प्रकृति demo dataset…');
   const existing = await one<{ count: number }>('SELECT COUNT(*)::int AS count FROM environmental_observations');
   if ((existing?.count ?? 0) > 0 && !process.argv.includes('--force')) {
+    if (process.argv.includes('--if-empty')) {
+      console.log('Database already seeded; skipping.');
+      await closePool();
+      return;
+    }
     console.error('Database already contains observations. Run `npm run db:reset` before seeding again.');
     await closePool();
     process.exit(1);

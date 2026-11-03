@@ -36,9 +36,17 @@ async function ensureDatabase() {
 }
 
 async function main() {
-  await ensureDatabase();
-  const client = new pg.Client({ connectionString: env.DATABASE_URL });
-  await client.connect();
+  let client = new pg.Client({ connectionString: env.DATABASE_URL });
+  try {
+    await client.connect();
+  } catch (error) {
+    // Only fall back to the admin connection when the database is missing;
+    // managed providers may not expose any other database.
+    if ((error as { code?: string }).code !== '3D000') throw error;
+    await ensureDatabase();
+    client = new pg.Client({ connectionString: env.DATABASE_URL });
+    await client.connect();
+  }
   try {
     if (reset) {
       console.log('Dropping application tables…');
@@ -63,7 +71,12 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+await main().catch((error) => {
   console.error(error);
+  if (process.env.RENDER === 'true' && !process.env.DATABASE_URL) {
+    console.error(
+      'DATABASE_URL is not set. Add a Render Postgres database to this service (or set DATABASE_URL to its internal connection string) and redeploy.',
+    );
+  }
   process.exit(1);
 });

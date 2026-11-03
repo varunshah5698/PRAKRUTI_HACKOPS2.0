@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
@@ -195,6 +196,15 @@ const server = app.listen(env.PORT, () => {
   console.log(`प्रकृति API listening on http://localhost:${env.PORT}`);
   console.log(`Demo mode: ${env.DEMO_MODE ? 'ON' : 'OFF'} · storage: ${appConfig.storageRoot}`);
   startSchedulers().catch((error) => console.error('[scheduler-start]', error));
+  // Seed after the server is listening so Render's health check is not blocked
+  // by live weather/CAMS calls. A single instance is assumed.
+  if (env.NODE_ENV === 'production' && env.DEMO_MODE) {
+    const seed = spawn(process.execPath, [path.join(here, 'db', 'seed.js'), '--if-empty'], { stdio: 'inherit' });
+    seed.on('error', (error) => console.error('[seed]', error));
+    seed.on('exit', (code) => {
+      if (code !== 0) console.error(`[seed] exited with code ${code}`);
+    });
+  }
 });
 
 async function shutdown(signal: string) {

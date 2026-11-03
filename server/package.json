@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json && cp src/db/schema.sql dist/db/schema.sql",
-    "start": "node dist/index.js",
+    "start": "node dist/bootstrap.js",
     "db:setup": "tsx src/db/setup.ts",
     "db:seed": "tsx src/db/seed.ts",
     "db:reset": "tsx src/db/setup.ts --reset",

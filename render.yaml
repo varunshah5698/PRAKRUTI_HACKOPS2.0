@@ -5,8 +5,7 @@ services:
     plan: free
     region: singapore
     buildCommand: npm ci --include=dev && npm run build
-    startCommand: node server/dist/db/setup.js && npm start
-    initialDeployHook: node server/dist/db/seed.js
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV

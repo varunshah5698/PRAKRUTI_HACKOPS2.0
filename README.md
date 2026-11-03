@@ -116,15 +116,18 @@ The API serves `web/dist` when present.
 
 ## Deploy on Render
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/varunshah5698/PRAKRUTI_HACKOPS2.0)
+
 `render.yaml` provisions one Node web service (API + built SPA) and a PostGIS-enabled Postgres database.
 
 1. Push this repository to GitHub.
 2. In Render: **New → Blueprint**, select the repository, and click **Apply**.
-3. That is it. On boot the service applies `server/src/db/schema.sql`; after the first successful deploy Render runs `db:seed` once to create the demo dataset.
+3. That is it. On boot the service applies `server/src/db/schema.sql`; if the database is empty and `DEMO_MODE` is on, the demo dataset is seeded in the background so the health check is not blocked.
 
 Notes:
 
 - The free web plan spins down when idle, so the first request after a pause is slow.
+- If `JWT_SECRET` is not set, the server generates a temporary one so it can boot; sessions reset on restart. The blueprint generates a stable value.
 - Evidence photographs are stored on the service's local disk and are lost on redeploy or restart (free plans have no persistent disk).
 - Optional integrations (River AI, email, data.gov.in, OpenAQ) are added as environment variables in the Render dashboard; see `.env.example`.
 - If you attach a custom domain, update `FRONTEND_URL` to `https://your-domain` so CORS and the same-origin check accept it.
