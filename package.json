@@ -17,7 +17,7 @@
     "db:setup": "npm run db:setup -w server",
     "db:seed": "npm run db:seed -w server",
     "db:reset": "npm run db:reset -w server",
-    "test": "npm run test -w server",
+    "test": "npm run test -w server && npm run test -w web",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
     "ml:register": "npm run ml:register -w server",
     "integrations:check": "npm run integrations:check -w server"

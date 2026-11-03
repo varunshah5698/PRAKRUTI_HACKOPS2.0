@@ -252,6 +252,13 @@ export function MumbaiMap({
       ],
     });
     mapRef.current = map;
+    // OpenFreeMap's dark style references a `wood-pattern` sprite it does not
+    // ship. Resolve that one to a transparent pixel so rendering stays quiet.
+    map.setMissingStyleImageResolver((id) => {
+      if (id === 'wood-pattern') {
+        map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) });
+      }
+    });
     if (!compact) {
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
       map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');

@@ -13,15 +13,44 @@ export class ApiError extends Error {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
+const RETRY_DELAYS_MS = [500, 1000, 2000];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Vite's dev proxy answers 500 text/plain while the API watcher restarts. The
+// API's own 500s are JSON and must not be retried blindly.
+function apiRestarting(response: Response): boolean {
+  if ([502, 503, 504].includes(response.status)) return true;
+  return response.status === 500 && !(response.headers.get('content-type') ?? '').includes('application/json');
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
-    ...options,
-    headers: {
-      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...options.headers,
-    },
-  });
+  const retryable = (options.method ?? 'GET').toUpperCase() === 'GET';
+  let response: Response | undefined;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      response = await fetch(`${API_BASE}${path}`, {
+        credentials: 'include',
+        ...options,
+        headers: {
+          ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+          ...options.headers,
+        },
+      });
+    } catch (error) {
+      if (!retryable || attempt === RETRY_DELAYS_MS.length) throw error;
+      await sleep(RETRY_DELAYS_MS[attempt]);
+      continue;
+    }
+    if (retryable && attempt < RETRY_DELAYS_MS.length && apiRestarting(response)) {
+      await sleep(RETRY_DELAYS_MS[attempt]);
+      continue;
+    }
+    break;
+  }
+  if (!response) throw new Error('Request failed');
   if (!response.ok) {
     let payload: { error?: { code?: string; message?: string; details?: unknown } } = {};
     try {
