@@ -369,17 +369,19 @@ def fetch_weather(client_weather, lat: float, lng: float, start: str, end: str) 
     if cache_path.exists():
         payload = json.loads(cache_path.read_text())
     else:
-        query = urllib.parse.urlencode(params)
-        for attempt in range(4):
+        for attempt in range(5):
             try:
-                with urllib.request.urlopen(f"{url}?{query}", timeout=90) as response:
-                    payload = json.load(response)
-                break
-            except urllib.error.HTTPError as error:
-                if error.code == 429:
+                response = requests.get(url, params=params, timeout=120)
+                if response.status_code == 429:
                     time.sleep(20 + attempt * 20)
                     continue
-                raise
+                response.raise_for_status()
+                payload = response.json()
+                break
+            except requests.RequestException:
+                if attempt == 4:
+                    raise
+                time.sleep(5 * (attempt + 1))
         else:
             raise RuntimeError("Open-Meteo archive rate limit persisted")
         cache_path.parent.mkdir(parents=True, exist_ok=True)
