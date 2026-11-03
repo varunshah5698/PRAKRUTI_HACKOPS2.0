@@ -157,6 +157,24 @@ Rate limits: global 400/min; auth 40/15 min; report submission 12/hour; AI 20/mi
 | GET | `/governance/audit` | authority | Audit ledger, optional entityType, pagination |
 | GET | `/events` | user | SSE stream (`text/event-stream`), heartbeat 25s |
 
+## Live city (open data)
+
+All endpoints require a signed-in user and are read-only. They query free, keyless providers and cache responses server-side. The data is contextual, not a CPCB/MPCB station reading.
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/city/overview` | user | `lat`, `lng`. Current weather, CAMS air, 72h merged hourly series, 7-day daily outlook and 30-day PM2.5 history. Falls back to MET Norway if Open-Meteo forecast is unavailable. |
+| GET | `/city/places` | user | `q` (2–80 chars). Mumbai-bounded OpenStreetMap Nominatim search with Open-Meteo geocoding fallback. Cached 1h. |
+| GET | `/city/compare` | user | `points=lat,lng;lat,lng` (max 6). Multi-point Open-Meteo weather + CAMS current values. |
+| GET | `/city/marine` | user | `lat`, `lng`. Open-Meteo Marine wave, swell, sea-surface temperature and currents. |
+| GET | `/city/flood` | user | `lat`, `lng`. Open-Meteo Flood river discharge, past 7 days + next 14 days. Indicative band only. |
+| GET | `/city/nearby` | user | `lat`, `lng`. Parks/gardens via Nominatim, Overpass fallback. Cached 30 min. |
+| GET | `/city/route` | user | `fromLat`, `fromLng`, `toLat`, `toLng`. Valhalla pedestrian route estimate. |
+| GET | `/city/events` | user | `lat`, `lng`. NASA EONET open natural events and USGS M2.5+ earthquakes in the India bounding box, with straight-line distances. |
+| GET | `/city/archive` | user | `lat`, `lng`, `date=YYYY-MM-DD`. Open-Meteo historical reanalysis for a past day. |
+
+Attribution: Open-Meteo (CC BY 4.0), MET Norway (CC BY 4.0 / NLOD), OpenStreetMap contributors (ODbL), NASA EONET, USGS. None of these layers writes to the evidence database.
+
 ## Pagination
 
 Endpoints that list reports, alerts, incidents, notifications and audit accept `page` (1-based) and `pageSize` (max 50–100 depending on endpoint). Responses include `page`, `pageSize` and, where implemented, `total`.
