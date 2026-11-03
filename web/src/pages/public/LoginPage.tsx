@@ -11,6 +11,13 @@ import './login-experience.css';
 const DEMO_AQI = 84;
 const DEMO_STATIONS = 24;
 
+// Documented demo accounts. The server still validates every sign-in.
+const DEMO_PASSWORD = 'Demo@1234';
+const demoAccounts = [
+  { id: 'authority', label: 'Authority', email: 'authority@enviropulse.local' },
+  { id: 'citizen', label: 'Citizen', email: 'citizen@enviropulse.local' },
+] as const;
+
 function StationMark() {
   return (
     <svg className="ep-station-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false">
@@ -71,6 +78,7 @@ export function LoginPage() {
 
   const requestedNext = new URLSearchParams(location.search).get('next') ?? '/dashboard';
   const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/dashboard';
+  const activeDemo = demoAccounts.find((account) => account.email === email)?.id;
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -141,6 +149,14 @@ export function LoginPage() {
   const clearError = (field: 'email' | 'password') => {
     setFormError(null);
     setFieldErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
+  };
+
+  const fillDemo = (account: (typeof demoAccounts)[number]) => {
+    setEmail(account.email);
+    setPassword(DEMO_PASSWORD);
+    setFieldErrors({});
+    setFormError(null);
+    setShowPassword(false);
   };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -403,6 +419,25 @@ export function LoginPage() {
             <div>
               <p className="ep-security-label">::Secure access</p>
               <p className="ep-security-text">Your environmental intelligence workspace is protected.</p>
+            </div>
+          </section>
+
+          <section className="ep-demo" aria-label="Demo access" data-enter="fade" data-delay="1850">
+            <span className="ep-demo-label">::Demo access</span>
+            <div className="ep-demo-actions">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.id}
+                  type="button"
+                  className="ep-demo-option"
+                  aria-label={`Fill ${account.label} demo credentials`}
+                  aria-pressed={activeDemo === account.id}
+                  title={`Fill the documented ${account.label} demo credentials`}
+                  onClick={() => fillDemo(account)}
+                >
+                  {account.label}
+                </button>
+              ))}
             </div>
           </section>
         </div>
