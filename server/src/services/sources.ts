@@ -72,16 +72,24 @@ export async function getSourceStatuses(): Promise<DataSource[]> {
     is_simulated: boolean;
   }>('SELECT * FROM data_sources ORDER BY category, name');
   const now = Date.now();
+  // A live poller is expected to succeed within a few intervals; anything older
+  // is genuinely stale rather than merely slow.
+  const weatherWindow = Math.max(5 * 60_000, env.LIVE_WEATHER_INTERVAL_SECONDS * 4 * 1000);
+  const aqiWindow = Math.max(15 * 60_000, env.LIVE_AQI_INTERVAL_SECONDS * 4 * 1000);
   return rows.map((row) => {
     let status = row.status;
     // Only call a source LIVE when recent successful ingestion is evidenced.
     if (row.id === 'open-meteo-weather' && row.last_success_at) {
       const age = now - new Date(row.last_success_at).getTime();
-      status = age <= 3 * 3_600_000 ? 'CONNECTED' : 'STALE';
+      status = age <= weatherWindow ? 'CONNECTED' : 'STALE';
     }
     if (row.id === 'open-meteo-cams' && row.last_success_at) {
       const age = now - new Date(row.last_success_at).getTime();
-      status = age <= 6 * 3_600_000 ? 'CONNECTED' : 'STALE';
+      status = age <= aqiWindow ? 'CONNECTED' : 'STALE';
+    }
+    if (row.id === 'demo-network' && row.last_success_at) {
+      const age = now - new Date(row.last_success_at).getTime();
+      status = age <= Math.max(5 * 60_000, env.LIVE_SIMULATION_INTERVAL_SECONDS * 4 * 1000) ? 'CONNECTED' : 'STALE';
     }
     if (row.id === 'river-ai' && riverConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';
     if (row.id === 'email' && emailConfigured) status = 'CONNECTED';

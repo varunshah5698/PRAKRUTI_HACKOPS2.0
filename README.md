@@ -171,6 +171,17 @@ Docker profile:
 ML_SERVICE_URL=http://ml:8000 docker compose --profile ml up --build
 ```
 
+## Live polling
+
+The API runs a live polling service:
+
+- Open-Meteo current weather every 60 seconds (upstream values change every 900 seconds; polling only shortens detection delay).
+- CAMS modelled PM2.5/PM10 every 300 seconds.
+- In demo mode, simulation-labelled station readings tick every 60 seconds so the demo behaves like a live network.
+- Risk evaluation runs every 5 minutes.
+
+Configure with `LIVE_ENABLED`, `LIVE_WEATHER_INTERVAL_SECONDS`, `LIVE_AQI_INTERVAL_SECONDS` and `LIVE_SIMULATION_INTERVAL_SECONDS`. Every row keeps `observed_at` (upstream validity) and `retrieved_at` (fetch time).
+
 ## Live CPCB via data.gov.in
 
 The official CPCB real-time AQI resource ID is pre-filled (`3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69`). You still need a free data.gov.in API key:

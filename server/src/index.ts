@@ -25,9 +25,11 @@ import { notificationsRouter, notificationTemplatesRouter } from './routes/notif
 import { simulationsRouter } from './routes/simulations.js';
 import { aiRouter } from './routes/ai.js';
 import { sourcesRouter, governanceRouter } from './routes/sources.js';
+import { liveRouter } from './routes/live.js';
 import { getDashboard } from './services/dashboard.js';
 import { syncSourceCatalogue } from './services/sources.js';
-import { ingestOpenMeteoCams, ingestOpenMeteoWeather } from './services/ingest.js';
+import { ingestOpenMeteoWeather } from './services/ingest.js';
+import { startLiveScheduler, stopLiveScheduler } from './services/live.js';
 import { evaluateAllStations, evaluateWasteLocalities } from './services/risk.js';
 import { syncAlertsFromStationAssessments, syncAlertsFromWasteAssessments } from './services/alerts.js';
 import { addEventClient, clientCount, removeEventClient } from './lib/events.js';
@@ -101,6 +103,7 @@ app.use('/api/v1/notification-templates', notificationTemplatesRouter);
 app.use('/api/v1/simulations', simulationsRouter);
 app.use('/api/v1/ai', aiRouter);
 app.use('/api/v1/sources', sourcesRouter);
+app.use('/api/v1/live', liveRouter);
 app.use('/api/v1/governance', governanceRouter);
 
 app.get('/api/v1/environment/categories', requireAuth, async (_req, res, next) => {
@@ -174,13 +177,13 @@ app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
 async function startSchedulers() {
   if (env.NODE_ENV === 'test') return;
   await syncSourceCatalogue();
+  startLiveScheduler();
+  // Hourly forecast grids: the providers republish them on the hour, so a
+  // 6-hourly refresh is enough between live current-reading polls.
   setInterval(() => {
-    ingestOpenMeteoWeather().catch((error) => console.error('[weather-job]', error));
-  }, 30 * 60_000).unref();
-  setInterval(() => {
-    ingestOpenMeteoCams().catch((error) => console.error('[cams-job]', error));
-  }, 60 * 60_000).unref();
-  setInterval(async () => {
+    ingestOpenMeteoWeather().catch((error) => console.error('[forecast-job]', error));
+  }, 6 * 60 * 60_000).unref();
+  const runRiskCycle = async () => {
     try {
       const stationAssessments = await evaluateAllStations();
       await syncAlertsFromStationAssessments(stationAssessments);
@@ -189,7 +192,9 @@ async function startSchedulers() {
     } catch (error) {
       console.error('[risk-job]', error);
     }
-  }, 15 * 60_000).unref();
+  };
+  setInterval(() => void runRiskCycle(), 5 * 60_000).unref();
+  await runRiskCycle();
 }
 
 const server = app.listen(env.PORT, () => {
@@ -209,6 +214,7 @@ const server = app.listen(env.PORT, () => {
 
 async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
+  stopLiveScheduler();
   server.close(() => {
     pool.end().finally(() => process.exit(0));
   });

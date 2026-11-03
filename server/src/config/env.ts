@@ -26,6 +26,13 @@ const EnvSchema = z.object({
   OPENAQ_API_KEY: z.string().default(''),
   OPEN_METEO_BASE_URL: z.string().default('https://api.open-meteo.com'),
   OPEN_METEO_AIR_QUALITY_BASE_URL: z.string().default('https://air-quality-api.open-meteo.com'),
+  // Live polling cadence. Upstream models publish on their own clocks (Open-Meteo
+  // current weather has a 900 s interval), so polling faster only detects the new
+  // value sooner — it never invents readings.
+  LIVE_ENABLED: z.string().default('true').transform((v) => v.toLowerCase() === 'true'),
+  LIVE_WEATHER_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
+  LIVE_AQI_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(300),
+  LIVE_SIMULATION_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
   ML_SERVICE_URL: z.string().default(''),
   ML_SERVICE_API_KEY: z.string().default(''),
   MAP_STYLE_URL: z.string().default('https://tiles.openfreemap.org/styles/liberty'),
