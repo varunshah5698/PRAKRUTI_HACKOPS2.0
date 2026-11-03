@@ -53,6 +53,16 @@ DERIVED_FEATURES = [
 ]
 MODEL_FEATURES = [*FEATURE_COLUMNS, *DERIVED_FEATURES]
 MIN_ROWS = 24 * 30
+# Geographically spread stations used only for the spatial holdout: south,
+# central, north, east and west Mumbai. They are still used in the main temporal
+# evaluation; this is an additional unseen-station check.
+SPATIAL_HOLDOUT = {
+    "OPENAQ-6927",   # Colaba (south)
+    "OPENAQ-6967",   # Sion (central)
+    "OPENAQ-6965",   # Borivali East MPCB (north)
+    "OPENAQ-3409329",  # Deonar (east)
+    "OPENAQ-12024",  # Chakala-Andheri East (west)
+}
 
 
 def load_data(path: Path) -> pd.DataFrame:
@@ -266,6 +276,69 @@ def shap_summary(model_bundle: dict, sample: pd.DataFrame, output: Path) -> dict
         return {"status": "FAILED", "error": str(error)}
 
 
+def spatial_holdout(train: pd.DataFrame, validation: pd.DataFrame, test: pd.DataFrame, features: list[str]) -> dict:
+    """Train on all but a few stations and score the unseen stations.
+
+    The main split is temporal. This additional check answers a different
+    question: does the pooled model transfer to a station it has never seen?
+    It is not used to select hyperparameters.
+    """
+    stations = sorted(train["station_id"].unique())
+    holdout = {station for station in SPATIAL_HOLDOUT if station in stations}
+    if len(holdout) < 3:
+        holdout = set(stations[::5])
+    if len(holdout) < 3 or len(stations) - len(holdout) < 3:
+        return {"status": "SKIPPED", "reason": "Not enough stations for a spatial holdout."}
+    train_part = train[~train["station_id"].isin(holdout)]
+    validation_part = validation[~validation["station_id"].isin(holdout)]
+    test_part = test[test["station_id"].isin(holdout)]
+    if validation_part.empty or test_part.empty:
+        return {"status": "SKIPPED", "reason": "Spatial holdout partition is empty."}
+    metrics: dict[str, object] = {}
+    for horizon in HORIZONS:
+        target = f"target_{horizon}h"
+        model = LGBMRegressor(
+            objective="regression_l1",
+            n_estimators=800,
+            learning_rate=0.03,
+            num_leaves=31,
+            subsample=0.9,
+            colsample_bytree=0.9,
+            random_state=42,
+        )
+        model.fit(
+            train_part[features],
+            train_part[target],
+            eval_set=[(validation_part[features], validation_part[target])],
+            eval_metric="mae",
+            callbacks=[lgb.early_stopping(50, verbose=False)],
+        )
+        prediction = np.maximum(0.0, model.predict(test_part[features]))
+        truth = test_part[target].to_numpy()
+        persistence = test_part[TARGET].to_numpy()
+        model_metrics = regression_metrics(truth, prediction)
+        baseline_metrics = regression_metrics(truth, persistence)
+        metrics[f"pm25_{horizon}h"] = {
+            "model": model_metrics,
+            "persistence_baseline": baseline_metrics,
+            "skill_vs_persistence": skill_score(model_metrics["mae"], baseline_metrics["mae"]),
+            "horizon_hours": horizon,
+            "best_iteration": int(model.best_iteration_ or model.n_estimators),
+        }
+    return {
+        "status": "COMPLETED",
+        "holdout_stations": sorted(holdout),
+        "train_stations": int(len(stations) - len(holdout)),
+        "test_rows": int(len(test_part)),
+        "metrics": metrics,
+        "note": (
+            "Models were retrained without the holdout stations and scored on the "
+            "holdout stations' chronological test rows. This checks spatial transfer, "
+            "not the deployed model's temporal holdout."
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=Path("data/mumbai_air_quality.csv"))
@@ -282,6 +355,7 @@ def main() -> None:
     metrics["deterioration_classifier_3h"] = train_classifier(train, validation, test, features, args.output)
     bundle = joblib.load(args.output / "pm25_3h.joblib")
     shap = shap_summary(bundle, test, args.output)
+    spatial = spatial_holdout(train, validation, test, features)
 
     metadata_path = args.metadata or args.input.with_suffix(".meta.json")
     metadata = None
@@ -337,6 +411,7 @@ def main() -> None:
             "classifier": metrics["deterioration_classifier_3h"]["label"],
         },
         "metrics": metrics,
+        "spatial_holdout": spatial,
         "skill_vs_persistence": {
             f"{horizon}h": metrics[f"pm25_{horizon}h"]["skill_vs_persistence"] for horizon in HORIZONS
         },
@@ -353,10 +428,12 @@ def main() -> None:
         "shap": shap,
         "caveat": (
             "Metrics are chronological hold-out estimates for this exact extract (SHA-256 above), not a "
-            "guarantee of future skill. Air-quality data are OpenAQ v3 station records (CPCB/MPCB/BMC/IITM); "
-            "weather is Open-Meteo ERA5 reanalysis, not a co-located measurement. Missing observations were "
-            "not imputed. The classifier label is target_3h > 60 ug/m3, an exceedance indicator, not a "
-            "relative deterioration label."
+            "guarantee of future skill. Air-quality data are OpenAQ S3 archive station records "
+            "(CPCB/MPCB/BMC/IITM). Weather uses co-located station measurements where available and "
+            "Open-Meteo ERA5 reanalysis for missing hours; per-station measured fractions are in the "
+            "sidecar metadata. A separate spatial holdout retrains without five stations and scores those "
+            "unseen stations. Missing observations were not imputed. The classifier label is target_3h > "
+            "60 ug/m3, an exceedance indicator, not a relative deterioration label."
         ),
     }
     (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2))

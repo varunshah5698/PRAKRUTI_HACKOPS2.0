@@ -1,6 +1,6 @@
 {
   "dataset": "Mumbai PM2.5 forecasting extract",
-  "built_at": "2026-11-03T08:18:37.001169+00:00",
+  "built_at": "2026-11-03T08:19:27.194279+00:00",
   "period": {
     "start": "2025-03-01T00:00:00Z",
     "end": "2026-10-27T00:00:00Z",
@@ -2800,7 +2800,7 @@
     "co": 232552,
     "o3": 223602,
     "temperature": 333960,
-    "humidity": 333960,
+    "humidity": 333935,
     "wind_speed": 333960,
     "wind_dir": 333960,
     "precipitation": 333960
@@ -2813,7 +2813,7 @@
     "co": 0.3037,
     "o3": 0.3305,
     "temperature": 0.0,
-    "humidity": 0.0,
+    "humidity": 0.0001,
     "wind_speed": 0.0,
     "wind_dir": 0.0,
     "precipitation": 0.0
@@ -2878,6 +2878,6 @@
     "gaps": "left as NaN; no interpolation",
     "provider_filter": "station owner/provider contains MPCB, BMC, IITM or CPCB; location active within 21 days"
   },
-  "sha256": "e5a2aa4d348bc871be3de93238e73e958bf2a607ee252e974ac8b30ca3fcff46",
+  "sha256": "ed07b475c1e4620acca6c8b59fc782fc064d60e8a954a78e57dc1e121255fb21",
   "attribution": "Data from OpenAQ (CPCB/MPCB/BMC/IITM) and Open-Meteo (ERA5). Check upstream licences before redistribution."
 }
