@@ -9,12 +9,13 @@ export function Button({
   size = 'md',
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'default' | 'lime' | 'outline' | 'ghost' | 'dark' | 'danger' | 'subtle';
+  variant?: 'default' | 'lime' | 'teal' | 'outline' | 'ghost' | 'dark' | 'danger' | 'subtle';
   size?: 'sm' | 'md' | 'lg' | 'icon';
 }) {
   const variants: Record<string, string> = {
     default: 'bg-[#4e9b3f] text-white hover:bg-[#448a36] border border-[#3f8432] shadow-[0_10px_24px_-16px_rgba(52,110,41,.7)]',
     lime: 'bg-[#d3f8a1] text-[#142016] hover:bg-[#c7f28b] border border-[#b3df7c]',
+    teal: 'bg-[#2d7c94] text-white hover:bg-[#256b80] border border-[#246a7f] shadow-[0_12px_26px_-16px_rgba(35,110,132,.75)]',
     outline: 'bg-white/70 text-[#223328] border border-[#d5e0d1] hover:bg-white hover:border-[#bfd0b9]',
     ghost: 'bg-transparent text-[#4d5e52] hover:text-[#142016] hover:bg-white/70 border border-transparent',
     dark: 'bg-white/80 text-[#223328] border border-[#d5e0d1] hover:bg-white hover:border-[#bfd0b9]',

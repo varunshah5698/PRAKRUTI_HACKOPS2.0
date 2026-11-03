@@ -61,6 +61,15 @@ simulationsRouter.post('/', async (req, res, next) => {
     }
     const generated = await generateSimulation({ scenario, stationId, seed: body.seed });
     if (!generated.station) throw notFound('Station not found.');
+    const expectedStationType: string | null = ({
+      air: 'AIR_CAAQMS',
+      water: 'WATER_SAMPLING',
+      waste: null,
+      industrial: 'INDUSTRIAL_STACK',
+    } as Record<string, string | null>)[scenario.category];
+    if (expectedStationType && generated.station.station_type !== expectedStationType) {
+      throw badRequest(`${scenario.name} requires a ${expectedStationType.replace(/_/g, ' ').toLowerCase()} station.`);
+    }
     const row = await one<{ id: string }>(
       `INSERT INTO simulation_sessions
          (scenario, category, station_id, locality_id, seed, status, current_step, total_steps, created_by, is_simulated)

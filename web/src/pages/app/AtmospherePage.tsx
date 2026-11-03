@@ -71,8 +71,8 @@ interface DashboardSeed {
 type ScenarioKey = 'clean' | 'baseline' | 'stagnant';
 type LayerKey = 'aqi' | 'pm25' | 'no2';
 
-const HISTORY_HOURS = 24;
-const FORECAST_HOURS = 48;
+export const HISTORY_HOURS = 24;
+export const FORECAST_HOURS = 48;
 
 const SCENARIOS: Record<ScenarioKey, {
   label: string;
@@ -180,7 +180,7 @@ interface Simulation {
   scenario: ScenarioKey;
 }
 
-interface Seed {
+export interface Seed {
   basePm25: number;
   baseAqi: number;
   weather: WeatherSeed;
@@ -195,7 +195,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const mean = (values: number[]) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null);
 
 /** CPCB sub-index breakpoints applied to an indicative PM2.5 value. */
-function aqiFromPm25(value: number | null): number | null {
+export function aqiFromPm25(value: number | null): number | null {
   if (value === null || !Number.isFinite(value) || value < 0) return null;
   const points = [
     { concentration: 0, aqi: 0 },
@@ -216,7 +216,7 @@ function aqiFromPm25(value: number | null): number | null {
   return 500;
 }
 
-function aqiCategory(value: number): string {
+export function aqiCategory(value: number): string {
   if (value <= 50) return 'Good';
   if (value <= 100) return 'Satisfactory';
   if (value <= 200) return 'Moderate';
@@ -251,13 +251,26 @@ function pseudoNoise(index: number, salt: number): number {
   return value - Math.floor(value);
 }
 
-function buildSimulation(seed: Seed, scenario: ScenarioKey, anchor: Date): Simulation {
+export function buildSimulation(seed: Seed, scenario: ScenarioKey, anchor: Date): Simulation {
   const spec = SCENARIOS[scenario];
   const weather = seed.weather;
   const total = HISTORY_HOURS + FORECAST_HOURS + 1;
   const start = new Date(anchor.getTime() - HISTORY_HOURS * 3_600_000);
   const rawPm: number[] = [];
   const rawWeather: Array<{ temperature: number; humidity: number; wind: number; boundaryLayer: number; traffic: number; rain: number }> = [];
+  const baselineSpec = SCENARIOS.baseline;
+  let baselineRawAtNow = 0;
+
+  const concentration = (base: number, traffic: number, boundaryLayer: number, wind: number, humidity: number, temperature: number, rain: number, index: number) =>
+    base *
+      (0.84 + traffic * 0.42) *
+      (1.1 + (1 - boundaryLayer) * 0.22) *
+      (1 - Math.min(0.24, wind / 130)) *
+      (1 + (humidity - 60) * 0.0018) *
+      (1 + (temperature - 28) * 0.004) *
+      (1 - Math.min(0.15, rain * 0.035)) *
+      (0.96 + Math.sin((index + 2) / 5.4) * 0.06) +
+    (pseudoNoise(index, 11) - 0.5) * 5;
 
   for (let i = 0; i < total; i += 1) {
     const time = new Date(start.getTime() + i * 3_600_000);
@@ -269,24 +282,19 @@ function buildSimulation(seed: Seed, scenario: ScenarioKey, anchor: Date): Simul
     const temperature = weather.temperature_c + daytime * 4.2 - (hour < 6 ? 2.6 : 0) + (pseudoNoise(i, 3) - 0.5);
     const humidity = clamp(weather.relative_humidity + (1 - daytime) * 7 - temperature * 0.2 + (pseudoNoise(i, 7) - 0.5) * 3, 30, 98);
     const rain = weather.precipitation_mm > 0.4 ? weather.precipitation_mm * Math.max(0, Math.sin((i / 8) * Math.PI)) : 0;
-    const base = seed.basePm25 * spec.factor;
-    const value =
-      base *
-        (0.84 + traffic * 0.42) *
-        (1.1 + (1 - boundaryLayer) * 0.22) *
-        (1 - Math.min(0.24, wind / 130)) *
-        (1 + (humidity - 60) * 0.0018) *
-        (1 + (temperature - 28) * 0.004) *
-        (1 - Math.min(0.15, rain * 0.035)) *
-        (0.96 + Math.sin((i + 2) / 5.4) * 0.06) +
-      (pseudoNoise(i, 11) - 0.5) * 5;
 
-    rawPm.push(Math.max(4, value));
+    if (i === HISTORY_HOURS) {
+      const baselineBoundary = clamp((0.3 + daytime * 0.95) * baselineSpec.boundaryLayer, 0.2, 1.7);
+      const baselineWind = Math.max(2, (weather.wind_speed_kmh + Math.sin((hour / 24) * Math.PI * 2) * 3.4) * baselineSpec.wind);
+      baselineRawAtNow = concentration(seed.basePm25 * baselineSpec.factor, traffic, baselineBoundary, baselineWind, humidity, temperature, rain, i);
+    }
+
+    rawPm.push(Math.max(4, concentration(seed.basePm25 * spec.factor, traffic, boundaryLayer, wind, humidity, temperature, rain, i)));
     rawWeather.push({ temperature, humidity, wind, boundaryLayer, traffic, rain });
   }
 
   const nowIndex = HISTORY_HOURS;
-  const normalize = seed.basePm25 / Math.max(4, rawPm[nowIndex]);
+  const normalize = seed.basePm25 / Math.max(4, baselineRawAtNow);
   const points: SimPoint[] = rawPm.map((raw, index) => {
     const pm25 = clamp(raw * normalize, 4, 420);
     const horizon = index - nowIndex;

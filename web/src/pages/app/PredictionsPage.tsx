@@ -138,13 +138,6 @@ export function PredictionsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={trained ? 'green' : data.status.trainedModels === 'UNAVAILABLE' ? 'amber' : 'amber'} dot>
-              {trained ? `Trained model · ${detail?.modelVersion ?? data.status.modelVersion ?? 'registered'}` : data.status.trainedModels === 'UNAVAILABLE' ? 'ML service unavailable' : 'ML models not trained'}
-            </Badge>
-            <Badge tone={trained ? 'teal' : 'teal'}>{trained ? 'LightGBM forecasts' : 'Persistence baseline'}</Badge>
-            <Badge tone="neutral">{trained ? 'Quantile 10–90' : 'Intervals not calibrated'}</Badge>
-          </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Predictive environmental intelligence</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -182,7 +175,6 @@ export function PredictionsPage() {
             <Card>
               <CardHeader>
                 <div><CardTitle>Historical observations vs baseline forecast</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">Stored demo observations · dashed median · dotted empirical band · not a calibrated prediction interval</p></div>
-                <Badge tone="amber">Not trained</Badge>
               </CardHeader>
               <div className="px-2 pb-2 pt-3"><Chart height={320} empty={detail.history.length === 0} option={chartOption} /></div>
             </Card>
