@@ -65,7 +65,7 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 - LightGBM/quantile/classifier artifacts are trained locally from the OpenAQ archive; the anomaly detector remains `NOT_TRAINED`. Artifacts are gitignored, so a clean deployment falls back to the baseline.
 - River AI adapter was verified against a locally supplied key (`zai-org/GLM-5.3-Flash`, chat-completions, reasoning_effort low). The key is only in the gitignored `.env.local`; `.env.example` remains empty and the rule-based fallback remains for missing keys.
 - Vision AI was verified with River AI open-weight models `moonshotai/Kimi-K3` (fallback `zai-org/GLM-5.3-Flash`) on a test image. The key is only in `.env.local`; no test image or report was retained.
-- No email provider; notifications are SIMULATED records.
+- No email provider credentials supplied. The SMTP transport was verified against a local sink; notifications remain SIMULATED until `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD` are configured.
 - No ward-level analytics; ward geometries were not verified, so only locality reference points are used.
 - No interpolated risk zones; the network is too sparse and demo data is synthetic.
 - No public OSM tile server; OpenFreeMap is used with attribution.

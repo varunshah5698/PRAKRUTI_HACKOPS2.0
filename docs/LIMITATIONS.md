@@ -36,7 +36,7 @@ This deployment is a working demonstration, not an operational regulatory system
 
 ## Integrations
 
-- No email provider configured; notifications are `SIMULATED` records. `SENT` is not `DELIVERED`; delivery requires a provider webhook.
+- No email provider credentials were supplied. The Nodemailer SMTP path was verified against a local sink, but real delivery requires `SMTP_HOST`, `SMTP_USER` and `SMTP_PASSWORD`. Until then notifications are `SIMULATED` records. `SENT` is not `DELIVERED`; delivery requires a provider webhook.
 - No S3-compatible object storage adapter; evidence uses local private storage.
 - No malware scanning (`NOT_CONFIGURED`).
 - OpenAQ is configured via environment; data.gov.in has no credentials, so its adapter remains disabled.
