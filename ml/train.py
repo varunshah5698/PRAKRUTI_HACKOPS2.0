@@ -42,6 +42,16 @@ FEATURE_COLUMNS = [
     "wind_dir",
     "precipitation",
 ]
+DERIVED_FEATURES = [
+    *(f"pm25_lag_{lag}" for lag in (1, 2, 3, 6, 12, 24)),
+    *(f"pm25_roll_mean_{window}" for window in (3, 6, 24)),
+    "hour",
+    "day_of_week",
+    "month",
+    "wind_dir_sin",
+    "wind_dir_cos",
+]
+MODEL_FEATURES = [*FEATURE_COLUMNS, *DERIVED_FEATURES]
 MIN_ROWS = 24 * 30
 
 
@@ -58,6 +68,8 @@ def load_data(path: Path) -> pd.DataFrame:
         raise SystemExit(f"Training extract is missing required columns: {sorted(missing)}")
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
     frame = frame.sort_values(["station_id", "timestamp"]).drop_duplicates(["station_id", "timestamp"])
+    # Current PM2.5 is needed for the persistence baseline and the lag features.
+    frame = frame.dropna(subset=[TARGET])
     if len(frame) < MIN_ROWS:
         raise SystemExit(
             f"Only {len(frame)} rows available; at least {MIN_ROWS} hourly rows are required. "
@@ -101,13 +113,9 @@ def time_split(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
 
 
 def feature_list(frame: pd.DataFrame) -> list[str]:
-    return [
-        column
-        for column in frame.columns
-        if column
-        not in {"station_id", "timestamp", "target_1h", "target_3h", "target_6h", "deterioration_3h"}
-        and not column.startswith("target_")
-    ]
+    # Explicit allow-list: an unexpected CSV column must not become a feature by
+    # accident (that is how leakage and string-dtype failures reach production).
+    return [column for column in MODEL_FEATURES if column in frame.columns]
 
 
 def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
@@ -116,6 +124,12 @@ def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         "rmse": float(np.sqrt(mean_squared_error(y_true, y_pred))),
         "n": int(len(y_true)),
     }
+
+
+def skill_score(model_mae: float, baseline_mae: float) -> float | None:
+    if baseline_mae <= 0:
+        return None
+    return float(1.0 - model_mae / baseline_mae)
 
 
 def train_regressors(train: pd.DataFrame, validation: pd.DataFrame, test: pd.DataFrame, features: list[str], output: Path) -> dict:
