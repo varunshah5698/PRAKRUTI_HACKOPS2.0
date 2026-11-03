@@ -50,7 +50,7 @@ async function stationPrediction(stationId: string) {
     note:
       bundle.source === 'ML'
         ? 'Warning criteria use the registered LightGBM model and its calibrated deterioration probability. The model is not a regulatory determination.'
-        : 'No calibrated deterioration classifier is trained, so no probability is shown. Warning criteria use the labelled persistence baseline and are analytical, not ML.',
+        : 'Trained model output is unavailable for this station; the labelled persistence baseline is shown. No calibrated probability is reported.',
   };
   const latestRisk = await query<Record<string, unknown>>(
     `SELECT risk_score::float8, risk_level, confidence_score::float8, confidence_level, alert_state, method, calculated_at

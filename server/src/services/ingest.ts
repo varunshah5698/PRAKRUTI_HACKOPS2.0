@@ -455,6 +455,9 @@ export async function ingestOpenAq(): Promise<IngestResult> {
           );
           hoursUrl.searchParams.set('datetime_to', new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
           hoursUrl.searchParams.set('limit', '1000');
+          // OpenAQ allows 60 requests/minute. Keep the historical backfill
+          // below that even when several stations need it in one cycle.
+          await new Promise((resolve) => setTimeout(resolve, 1_100));
           const hoursResponse = await fetch(hoursUrl, {
             headers: { 'X-API-Key': env.OPENAQ_API_KEY },
             signal: AbortSignal.timeout(30_000),

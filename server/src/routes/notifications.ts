@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { query, one } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { badRequest, forbidden, notFound } from '../middleware/errors.js';
-import { env } from '../config/env.js';
+import { emailConfigured, env } from '../config/env.js';
 import { acknowledgeNotification } from '../services/notifications.js';
 import { getAlertForEmail, renderAlertEmail, recordNotificationEvent, markNotificationStatus } from '../services/email.js';
 
@@ -91,8 +91,8 @@ notificationsRouter.get('/preferences', async (req, res, next) => {
     res.json({
       preferences: prefs,
       provider: {
-        configured: env.EMAIL_PROVIDER === 'smtp' && Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD),
-        mode: env.EMAIL_PROVIDER,
+        configured: emailConfigured,
+        mode: emailConfigured ? 'smtp' : env.EMAIL_PROVIDER,
         demoMode: env.DEMO_MODE,
         demoRecipientConfigured: Boolean(env.DEMO_EMAIL_RECIPIENT),
         note:

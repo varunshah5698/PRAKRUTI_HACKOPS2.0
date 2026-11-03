@@ -166,6 +166,7 @@ function StationDrawer({
   const [pollutant, setPollutant] = useState('pm25');
   const [aiType, setAiType] = useState<'observation' | 'predictive' | 'compliance' | null>(null);
   const [ai, setAi] = useState<AiAnswer | null>(null);
+  const [aiRun, setAiRun] = useState(0);
   const [aiLoading, setAiLoading] = useState(false);
   const live = useLiveStation(stationId);
   const { transport, status } = useLiveFeed();
@@ -201,6 +202,7 @@ function StationDrawer({
   const loadAi = async (type: 'observation' | 'predictive' | 'compliance') => {
     if (!stationId) return;
     setAiType(type);
+    setAiRun((run) => run + 1);
     setAiLoading(true);
     try {
       const result = await api.post<AiAnswer>('/ai/analyse', { stationId, type });
@@ -461,7 +463,7 @@ function StationDrawer({
                     <Badge tone={ai.status === 'COMPLETED' ? 'green' : 'neutral'}>{ai.status.replace(/_/g, ' ')}</Badge>
                   </div>
                   <p className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[11px] leading-relaxed text-[#405246]">{ai.narrative}</p>
-                  <details open key={aiType ?? 'ai'} className="group space-y-3">
+                  <details open key={aiRun} className="group space-y-3">
                     <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-[10px] font-semibold text-[#3f7d2a] hover:text-[#142016] [&::-webkit-details-marker]:hidden">
                       <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                       Evidence and references
