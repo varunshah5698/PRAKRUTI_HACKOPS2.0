@@ -4,7 +4,7 @@ This deployment is a working demonstration, not an operational regulatory system
 
 ## Data
 
-- **No live CPCB or MPCB feed.** CPCB/MPCB are `NOT_CONFIGURED`. Demo station records are synthetic and labelled `SIMULATION DATA`. They are not CPCB readings.
+- **No direct live CPCB or MPCB API feed.** CPCB remains `NOT_CONFIGURED` until a data.gov.in API key is added. OpenAQ is connected and currently supplies 12 Mumbai stations (MPCB/IITM operators); those records are labelled as OpenAQ and preserve upstream timestamps. Demo station records remain synthetic and labelled `SIMULATION DATA`.
 - **No real Mumbai historical training extract.** LightGBM/quantile/deterioration/anomaly models are `NOT_TRAINED`.
 - **No trained model metrics.** Do not infer accuracy from the persistence baseline.
 - **Sparse demo network.** 10 air stations across a large city cannot establish area-wide concentration.

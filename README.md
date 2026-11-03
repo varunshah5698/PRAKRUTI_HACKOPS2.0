@@ -19,8 +19,9 @@ This is a working demonstration application, not a static dashboard. It connects
 
 | Area | Status in this deployment |
 |---|---|
-| CPCB CAAQMS | **NOT CONNECTED** — no credentialled, documented machine endpoint is configured |
-| MPCB | **NOT CONNECTED** |
+| CPCB CAAQMS | **NOT CONNECTED** — no data.gov.in API key is configured. The official resource ID is pre-filled. |
+| MPCB | **LIVE SUBSET via OpenAQ** — 12 Mumbai stations (MPCB/IITM operators) ingested with source timestamps; not a direct MPCB API |
+| OpenAQ | **CONNECTED locally** — key in gitignored `.env.local`; 91 observations from 12 Mumbai stations |
 | Demo monitoring stations | **SIMULATION DATA** — 15 synthetic stations, every record `is_simulated=true` |
 | Weather | **LIVE** — Open-Meteo at station coordinates |
 | CAMS regional air quality | **MODELLED** — Copernicus CAMS via Open-Meteo, not a station measurement |

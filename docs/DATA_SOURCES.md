@@ -57,6 +57,8 @@ The internal station code is `DATA_GOV_IN:<station name>` and metadata records t
 
 Uses OpenAQ v3 `locations` with a Mumbai coordinate/radius and `locations/:id/latest`. Only coordinates inside Mumbai are stored. Internal station code is `OPENAQ-<location id>` (OpenAQ's identifier, not CPCB's).
 
+The live pull currently returns 12 Mumbai stations, including MPCB and IITM-operated stations, with 91 sensor observations. Some stations are stale (2021–2022); they are marked `DEGRADED` and their old timestamps are preserved. They are never presented as current CPCB readings. Source attribution is OpenAQ and the upstream operator shown in the station name.
+
 ## Open-Meteo weather
 
 - Endpoint: `OPEN_METEO_BASE_URL` (`https://api.open-meteo.com`).
