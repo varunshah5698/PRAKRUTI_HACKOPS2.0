@@ -59,6 +59,18 @@ export async function authorityRecipients(category: string): Promise<Recipient[]
   );
 }
 
+// Critical alerts are safety broadcasts: every active account is notified,
+// whether or not it opted into category preferences. Placeholder addresses keep
+// their in-app record but are not sent to (see deliverEmail).
+async function criticalRecipients(): Promise<Recipient[]> {
+  return query<Recipient>(
+    `SELECT u.id, u.name, u.email, u.role::text, u.locality_id, NULL::float8 AS radius_km,
+            ARRAY['air','water','waste','industrial']::text[] AS categories
+     FROM users u
+     WHERE u.account_status = 'ACTIVE'`,
+  );
+}
+
 function templateFor(audience: 'PUBLIC' | 'AUTHORITY', level: string): string {
   if (level === 'RECOVERY') return audience === 'PUBLIC' ? 'PUBLIC_RECOVERY' : 'AUTHORITY_RECOVERY';
   if (audience === 'PUBLIC') return level === 'CRITICAL' ? 'PUBLIC_CRITICAL' : 'PUBLIC_EARLY_WARNING';
@@ -128,17 +140,30 @@ export async function createNotificationsForAlert(
   if (!alert) return { publicCreated: 0, authorityCreated: 0 };
 
   const sessionId = options.simulationSessionId ?? alert.simulation_session_id ?? null;
-  const [publicUsers, authorityUsers] = await Promise.all([
-    publicRecipients(alertId, alert.category),
+  const critical = alert.level === 'CRITICAL';
+  const [publicUsers, authorityUsers, broadcastUsers] = await Promise.all([
+    critical ? Promise.resolve<Recipient[]>([]) : publicRecipients(alertId, alert.category),
     authorityRecipients(alert.category),
+    critical ? criticalRecipients() : Promise.resolve<Recipient[]>([]),
   ]);
+
+  const targets = new Map<string, { recipient: Recipient; audience: 'PUBLIC' | 'AUTHORITY' }>();
+  for (const user of publicUsers) targets.set(user.id, { recipient: user, audience: 'PUBLIC' });
+  for (const user of broadcastUsers) {
+    const audience = ['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN', 'SYSTEM_ADMIN'].includes(user.role)
+      ? 'AUTHORITY'
+      : 'PUBLIC';
+    targets.set(user.id, { recipient: user, audience });
+  }
+  for (const user of authorityUsers) targets.set(user.id, { recipient: user, audience: 'AUTHORITY' });
+
   let publicCreated = 0;
   let authorityCreated = 0;
-  for (const user of publicUsers) {
-    if (await createForRecipient(alertId, user, 'PUBLIC', alert.is_simulated, sessionId)) publicCreated += 1;
-  }
-  for (const user of authorityUsers) {
-    if (await createForRecipient(alertId, user, 'AUTHORITY', alert.is_simulated, sessionId)) authorityCreated += 1;
+  for (const { recipient, audience } of targets.values()) {
+    if (await createForRecipient(alertId, recipient, audience, alert.is_simulated, sessionId)) {
+      if (audience === 'AUTHORITY') authorityCreated += 1;
+      else publicCreated += 1;
+    }
   }
   return { publicCreated, authorityCreated };
 }

@@ -215,13 +215,58 @@ export function renderReportStatusEmail(
   };
 }
 
+function isGmailTransport(): boolean {
+  return env.EMAIL_PROVIDER === 'gmail' || env.SMTP_HOST.toLowerCase().endsWith('gmail.com');
+}
+
+export function resolvedFromAddress(): string {
+  const configured = env.EMAIL_FROM.trim();
+  if (env.SMTP_USER && (!configured || configured.includes('enviropulse.local'))) {
+    return `प्रकृति Alerts <${env.SMTP_USER}>`;
+  }
+  return configured;
+}
+
+function createTransport() {
+  if (isGmailTransport()) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+    });
+  }
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_PORT === 465,
+    auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
+  });
+}
+
+export function renderTestEmail(name: string): { subject: string; html: string } {
+  const provider = isGmailTransport() ? 'Gmail' : 'SMTP';
+  return {
+    subject: 'प्रकृति email delivery test',
+    html: shell(
+      'Email delivery test',
+      `Hello ${name}, this message confirms that ${provider} delivery is working for this account.`,
+      detailRows([
+        ['Provider', provider],
+        ['Recipient account', name],
+        ['Sent', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })],
+        ['Trigger', 'Manual test from notification settings'],
+      ]),
+      'If you did not request this test, you can ignore it. Critical environmental alerts will use the same channel.',
+    ),
+  };
+}
+
 export async function deliverEmail(params: {
   notificationId: string;
   to: string;
   subject: string;
   html: string;
   isSimulated: boolean;
-}): Promise<{ status: 'SIMULATED' | 'SENT' | 'FAILED'; messageId?: string; error?: string; event: string }> {
+}): Promise<{ status: 'SIMULATED' | 'SENT' | 'FAILED'; recipient?: string; messageId?: string; error?: string; event: string }> {
   if (params.isSimulated) {
     return { status: 'SIMULATED', event: 'Simulation record: no email was sent.' };
   }
@@ -237,28 +282,27 @@ export async function deliverEmail(params: {
       };
     }
     recipient = env.DEMO_EMAIL_RECIPIENT;
+  } else if (/(\.local|@example\.(com|org))$/i.test(recipient)) {
+    return { status: 'SIMULATED', recipient, event: 'Placeholder address; notification stored, no email sent.' };
   }
   try {
-    const transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
-      auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
-    });
+    const transporter = createTransport();
     const info = await transporter.sendMail({
-      from: env.EMAIL_FROM,
+      from: resolvedFromAddress(),
       to: recipient,
       subject: env.DEMO_MODE ? `[DEMO] ${params.subject}` : params.subject,
       html: params.html,
     });
     return {
       status: 'SENT',
+      recipient,
       messageId: info.messageId,
-      event: `SMTP accepted message for ${recipient}. Delivery is not confirmed until a provider webhook marks it DELIVERED.`,
+      event: `${isGmailTransport() ? 'Gmail' : 'SMTP'} accepted message for ${recipient}. Delivery is not confirmed until a provider webhook marks it DELIVERED.`,
     };
   } catch (error) {
     return {
       status: 'FAILED',
+      recipient,
       error: error instanceof Error ? error.message : 'Unknown email error',
       event: 'Email delivery failed.',
     };

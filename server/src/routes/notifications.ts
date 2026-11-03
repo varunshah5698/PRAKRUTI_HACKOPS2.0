@@ -3,9 +3,17 @@ import { z } from 'zod';
 import { query, one } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { badRequest, forbidden, notFound } from '../middleware/errors.js';
-import { emailConfigured, env } from '../config/env.js';
+import { emailConfigured, emailProviderLabel, env } from '../config/env.js';
 import { acknowledgeNotification } from '../services/notifications.js';
-import { getAlertForEmail, renderAlertEmail, recordNotificationEvent, markNotificationStatus } from '../services/email.js';
+import {
+  deliverEmail,
+  getAlertForEmail,
+  markNotificationStatus,
+  recordNotificationEvent,
+  renderAlertEmail,
+  renderTestEmail,
+  resolvedFromAddress,
+} from '../services/email.js';
 
 export const notificationsRouter = Router();
 
@@ -92,11 +100,14 @@ notificationsRouter.get('/preferences', async (req, res, next) => {
       preferences: prefs,
       provider: {
         configured: emailConfigured,
-        mode: emailConfigured ? 'smtp' : env.EMAIL_PROVIDER,
+        mode: env.EMAIL_PROVIDER,
+        provider: emailProviderLabel,
+        from: resolvedFromAddress(),
         demoMode: env.DEMO_MODE,
         demoRecipientConfigured: Boolean(env.DEMO_EMAIL_RECIPIENT),
+        criticalBroadcast: true,
         note:
-          'In DEMO_MODE, emails are only sent to the configured demonstration recipient. Otherwise notifications are stored as SIMULATED records. DELIVERED is only set by a provider webhook.',
+          'Critical alerts are emailed to every active account. Set EMAIL_PROVIDER=gmail with a Gmail app password to deliver through Gmail. In DEMO_MODE, mail is redirected to the demonstration recipient; DELIVERED is only set by a provider webhook.',
       },
     });
   } catch (error) {
@@ -132,6 +143,55 @@ notificationsRouter.put('/preferences', async (req, res, next) => {
       ],
     );
     res.json({ message: 'Notification preferences updated.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+notificationsRouter.post('/test-email', async (req, res, next) => {
+  try {
+    if (!emailConfigured) {
+      res.status(503).json({
+        error: {
+          code: 'NOT_CONFIGURED',
+          message: 'Email is not configured. Set EMAIL_PROVIDER=gmail, SMTP_USER and SMTP_PASSWORD (Gmail app password), then restart the API.',
+        },
+      });
+      return;
+    }
+    const audience = ['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN', 'SYSTEM_ADMIN'].includes(req.user!.role)
+      ? 'AUTHORITY'
+      : 'PUBLIC';
+    const rendered = renderTestEmail(req.user!.name);
+    const inserted = await one<{ id: string }>(
+      `INSERT INTO notifications (user_id, audience, channel, template, subject, body_html, status, is_simulated)
+       VALUES ($1,$2,'EMAIL','EMAIL_TEST',$3,$4,'SIMULATED',false)
+       RETURNING id`,
+      [req.user!.id, audience, rendered.subject, rendered.html],
+    );
+    if (!inserted) throw new Error('Could not record the test notification.');
+
+    const delivery = await deliverEmail({
+      notificationId: inserted.id,
+      to: req.user!.email,
+      subject: rendered.subject,
+      html: rendered.html,
+      isSimulated: false,
+    });
+    await markNotificationStatus(inserted.id, delivery.status, {
+      providerMessageId: delivery.messageId,
+      error: delivery.error,
+    });
+    await recordNotificationEvent(inserted.id, delivery.event);
+
+    res.status(delivery.status === 'FAILED' ? 502 : 200).json({
+      status: delivery.status,
+      recipient: delivery.recipient ?? req.user!.email,
+      messageId: delivery.messageId,
+      error: delivery.error,
+      demoMode: env.DEMO_MODE,
+      event: delivery.event,
+    });
   } catch (error) {
     next(error);
   }
