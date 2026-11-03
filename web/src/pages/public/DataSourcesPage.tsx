@@ -40,8 +40,9 @@ export function DataSourcesPage() {
     <PublicPage kicker="Data sources & attribution" title="What is connected, what is modelled, what is simulated.">
       <Prose>
         <p>
-          Source status is part of the product, not a footnote. A source is only called CONNECTED when the backend has a
-          recent successful ingestion. A missing key or endpoint shows NOT_CONFIGURED and never crashes the platform.
+          Source status is part of the product, not a footnote. Ingestion sources are called CONNECTED only when the backend has a
+          recent successful crawl. Keyless on-demand connectors (marine, flood, OSM, EONET, USGS) are registered as CONNECTED and
+          report failures in the Live City workspace. A missing key or endpoint shows NOT_CONFIGURED and never crashes the platform.
         </p>
         <Callout title="Important distinction" tone="amber">
           <strong>CPCB and MPCB are not connected in this deployment.</strong> The station markers and readings in the demo

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, CloudRain, Droplets, RefreshCw, Sun, Wind } from 'lucide-react';
+import { ArrowUpRight, Cloud, CloudLightning, CloudRain, CloudSun, RefreshCw, Sun, Wind } from 'lucide-react';
 import { Badge, Card } from './ui';
 import { api } from '../lib/api';
 import { aqiColor, weatherLabel, weatherMood, type CityOverview } from '../lib/city';
@@ -45,13 +45,14 @@ export function CityPulseStrip() {
   const aqi = data.air.aqi;
   const color = aqiColor(aqi.category);
   const mood = weatherMood(current.weatherCode);
+  const WeatherIcon = mood === 'rain' ? CloudRain : mood === 'storm' ? CloudLightning : mood === 'partly' ? CloudSun : mood === 'cloud' || mood === 'fog' ? Cloud : Sun;
 
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 p-3.5">
         <Link to="/city" className="flex items-center gap-2.5">
           <span className={`flex h-10 w-10 items-center justify-center rounded-full ${mood === 'rain' ? 'bg-[#e9f3f6] text-[#4f7f94]' : mood === 'clear' ? 'bg-[#fff5cc] text-[#c49a1c]' : 'bg-[#edf4e9] text-[#4d7d40]'}`}>
-            <Sun className="h-5 w-5" />
+            <WeatherIcon className="h-5 w-5" />
           </span>
           <span>
             <span className="flex items-center gap-1.5">

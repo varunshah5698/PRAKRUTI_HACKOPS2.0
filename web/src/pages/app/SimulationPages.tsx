@@ -309,6 +309,12 @@ function PhaseRail({
                 setPreview(null);
               }
             }}
+            onBlur={() => {
+              if (preview !== null) {
+                onSeek(preview);
+                setPreview(null);
+              }
+            }}
             onKeyUp={(event) => {
               if (preview !== null && ['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
                 onSeek(preview);
@@ -765,6 +771,7 @@ export function SimulationSessionPage() {
   const [preview, setPreview] = useState<{ public: { subject: string; html: string }; authority: { subject: string; html: string } } | null>(null);
   const { isAuthority } = useAuth();
   const loadRef = useRef<(quiet?: boolean) => void>(() => {});
+  const stepInFlight = useRef(false);
 
   const load = (quiet = false) => {
     if (!sessionId) return;
@@ -784,6 +791,7 @@ export function SimulationSessionPage() {
     let timer = 0;
 
     const tick = async () => {
+      stepInFlight.current = true;
       try {
         const result = await api.post<{ status: string; step: number }>(`/simulations/${sessionId}/step`);
         if (!active) return;
@@ -796,12 +804,22 @@ export function SimulationSessionPage() {
         timer = window.setTimeout(tick, 1400 / speed);
       } catch {
         if (active) setPlaying(false);
+      } finally {
+        stepInFlight.current = false;
       }
     };
 
     timer = window.setTimeout(tick, 250);
     return () => { active = false; window.clearTimeout(timer); };
   }, [playing, sessionId, speed]);
+
+  const waitForStep = async () => {
+    let waited = 0;
+    while (stepInFlight.current && waited < 3000) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+      waited += 50;
+    }
+  };
 
   const togglePlay = async () => {
     if (!sessionId) return;
@@ -810,6 +828,7 @@ export function SimulationSessionPage() {
       api.post(`/simulations/${sessionId}/pause`).catch(() => {});
       return;
     }
+    await waitForStep();
     const finished = data ? data.session.current_step >= data.session.total_steps - 1 : false;
     if (finished) {
       setWorking(true);
@@ -835,6 +854,7 @@ export function SimulationSessionPage() {
   const step = async () => {
     setWorking(true);
     try {
+      await waitForStep();
       await api.post(`/simulations/${sessionId}/step`);
       await load(true);
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Step failed'); }
@@ -853,6 +873,7 @@ export function SimulationSessionPage() {
     setSeekPreview(nextStep);
     setWorking(true);
     try {
+      await waitForStep();
       await api.post(`/simulations/${sessionId}/seek`, { step: nextStep });
       await load(true);
     } catch (err) {
@@ -869,6 +890,7 @@ export function SimulationSessionPage() {
     setSeekPreview(null);
     setWorking(true);
     try {
+      await waitForStep();
       await api.post(`/simulations/${sessionId}/reset`);
       toast.success('Replay rewound to step 0. Simulated alerts were rebuilt for this position.');
       await load(true);
@@ -996,7 +1018,7 @@ export function SimulationSessionPage() {
         void togglePlay();
       } else if (event.key === 'ArrowRight') {
         event.preventDefault();
-        if (!working && !atEnd) void step();
+        if (!working && !atEnd && !playing) void step();
       } else if (event.key.toLowerCase() === 'r') {
         event.preventDefault();
         if (!working) void reset();
@@ -1081,7 +1103,7 @@ export function SimulationSessionPage() {
                 {playing ? <Pause className="h-4 w-4" /> : atEnd ? <RotateCcw className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 {playing ? 'Pause replay' : atEnd ? 'Replay from start' : 'Play replay'}
               </Button>
-              <Button variant="dark" size="sm" onClick={step} disabled={working || atEnd}><SkipForward className="h-3.5 w-3.5" /> Step</Button>
+              <Button variant="dark" size="sm" onClick={step} disabled={working || atEnd || playing}><SkipForward className="h-3.5 w-3.5" /> Step</Button>
               <Button variant="dark" size="sm" onClick={reset} disabled={working}><RotateCcw className="h-3.5 w-3.5" /> Reset</Button>
               <div className="col-span-2 flex items-center justify-between rounded-full border border-white/70 bg-white/45 px-2 py-1">
                 <span className="px-1 text-[8px] font-semibold uppercase tracking-[0.1em] text-[#6e8b95]">Speed</span>
@@ -1118,7 +1140,7 @@ export function SimulationSessionPage() {
                 <PhaseRail
                   phases={phases}
                   steps={totalSteps}
-                  current={currentStep}
+                  current={displayedStep}
                   onSeek={(step) => void seekTo(step)}
                   disabled={working}
                 />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Activity,
@@ -160,8 +160,12 @@ function useApi<T>(path: string | null) {
   const [loading, setLoading] = useState(Boolean(path));
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const pathRef = useRef(path);
 
   useEffect(() => {
+    const changed = pathRef.current !== path;
+    pathRef.current = path;
+    if (changed) setData(null);
     if (!path) {
       setLoading(false);
       return;
@@ -387,7 +391,8 @@ export function CityPulsePage() {
   const best = bestWindow(hourly);
   const headline = data ? healthHeadline(data) : null;
   const exposure = exposureEstimate(air?.pm25, activity, duration, mask, indoor);
-  const sunPosition = sunProgress(current?.time, selectedDayData?.sunrise, selectedDayData?.sunset);
+  const todaySun = daily[0];
+  const sunPosition = sunProgress(current?.time, todaySun?.sunrise, todaySun?.sunset);
   const marineCurrent = marine.data?.current;
   const beach = beachBand(marineCurrent?.waveHeightM, current?.windSpeedKmh);
   const uv = current?.uvIndex;
@@ -453,8 +458,15 @@ export function CityPulsePage() {
   const chooseDay = (index: number) => {
     setSelectedDay(index);
     const date = daily[index]?.date;
-    const firstIndex = hourly.findIndex((hour) => hour.time.startsWith(date ?? ''));
-    if (firstIndex >= 0) setSelectedHour(Math.min(firstIndex + 12, hourly.length - 1));
+    if (!date) return;
+    if (index === 0) {
+      setSelectedHour(0);
+      return;
+    }
+    const noonIndex = hourly.findIndex((hour) => hour.time.startsWith(date) && hour.time.includes('T12'));
+    const firstIndex = hourly.findIndex((hour) => hour.time.startsWith(date));
+    if (noonIndex >= 0) setSelectedHour(noonIndex);
+    else if (firstIndex >= 0) setSelectedHour(firstIndex);
   };
 
   if (overview.loading && !data) {
@@ -503,6 +515,13 @@ export function CityPulsePage() {
           </Button>
         </div>
       </div>
+
+      {overview.error ? (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-50/85 px-4 py-2.5 text-[10px] font-medium text-amber-800">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          {overview.error} Showing the last loaded values.
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="relative overflow-hidden">
@@ -1016,8 +1035,8 @@ export function CityPulsePage() {
                     strokeWidth="3"
                   />
                 ) : null}
-                <text x="30" y="140" textAnchor="middle" fontSize="9" fill="#66766b">{selectedDayData ? hhmm(selectedDayData.sunrise) : '—'}</text>
-                <text x="290" y="140" textAnchor="middle" fontSize="9" fill="#66766b">{selectedDayData ? hhmm(selectedDayData.sunset) : '—'}</text>
+                <text x="30" y="140" textAnchor="middle" fontSize="9" fill="#66766b">{todaySun ? hhmm(todaySun.sunrise) : '—'}</text>
+                <text x="290" y="140" textAnchor="middle" fontSize="9" fill="#66766b">{todaySun ? hhmm(todaySun.sunset) : '—'}</text>
               </svg>
               <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 flex-col items-center">
                 <span className="display text-[28px] font-bold leading-none text-[#142016]">{uv !== null && uv !== undefined ? number(uv) : '—'}</span>
@@ -1066,7 +1085,7 @@ export function CityPulsePage() {
             </div>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {(['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor'] as const).map((label) => (
+              {(['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor', 'Severe'] as const).map((label) => (
                 <div key={label} className="flex items-center gap-1.5 text-[9px] text-[#66766b]">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ background: aqiColor(label) }} /> {label}
                 </div>
@@ -1149,7 +1168,9 @@ export function CityPulsePage() {
         <Card className="overflow-hidden xl:col-span-4">
           <SectionHeader title="Coast watch" detail="Nearest sea grid point from Open-Meteo Marine" badge={<Waves className="h-4 w-4 text-[#4f7f94]" />} />
           <div className="p-4">
-            {marine.error ? (
+            {marine.loading && !marine.data ? (
+              <LoadingBlock label="Reading the sea model" />
+            ) : marine.error ? (
               <p className="rounded-xl border border-amber-500/25 bg-amber-500/[0.05] p-3 text-[10px] text-amber-700">{marine.error}</p>
             ) : (
               <>
@@ -1188,7 +1209,9 @@ export function CityPulsePage() {
         <Card className="overflow-hidden xl:col-span-4">
           <SectionHeader title="River watch" detail="Modelled discharge at the nearest global grid cell" badge={<Droplets className="h-4 w-4 text-[#4f7f94]" />} />
           <div className="p-4">
-            {flood.error ? (
+            {flood.loading && !flood.data ? (
+              <LoadingBlock label="Reading the river model" />
+            ) : flood.error ? (
               <p className="rounded-xl border border-amber-500/25 bg-amber-500/[0.05] p-3 text-[10px] text-amber-700">{flood.error}</p>
             ) : (
               <>

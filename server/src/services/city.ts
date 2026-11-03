@@ -82,7 +82,7 @@ async function fetchJson<T>(url: string, init: RequestInit = {}, timeoutMs = 15_
       ...init,
       headers: {
         accept: 'application/json',
-        'user-agent': 'Prakriti/1.0 (Mumbai environmental intelligence; open-data explorer)',
+        'user-agent': 'Prakriti/1.0 (Mumbai environmental intelligence; https://github.com/varunshah5698/PRAKRUTI_HACKOPS2.0)',
         ...(init.headers ?? {}),
       },
       signal: AbortSignal.timeout(timeoutMs),
@@ -543,10 +543,13 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
     if (!weatherCurrent?.time) throw unavailable('Open-Meteo returned no current weather for this point.');
 
     const airHourly = air?.hourly;
-    const airByTime = new Map<string, number>();
+    // Weather and CAMS can sit on :00 or :30 clocks (the MET Norway fallback
+    // uses :30). Merge on the hour key so a half-hour offset does not blank the
+    // air series.
+    const airByHour = new Map<string, number>();
     if (airHourly) {
       const times = timeList(airHourly.time);
-      times.forEach((time, index) => airByTime.set(time, index));
+      times.forEach((time, index) => airByHour.set(time.slice(0, 13), index));
     }
     const airDates = aggregateAirByDate(airHourly);
     const airTimes = airHourly ? timeList(airHourly.time) : [];
@@ -576,7 +579,7 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
     const start = Math.max(0, hourlyTime.findIndex((time) => time >= currentHourKey));
     const hourly = hourlyTime.slice(start, start + 72).map((time, offset) => {
       const index = start + offset;
-      const airIndex = airByTime.get(time);
+      const airIndex = airByHour.get(time.slice(0, 13));
       const summary = aqiFromValues({
         pm25: airIndex === undefined ? null : airPm25[airIndex] ?? null,
         pm10: airIndex === undefined ? null : airPm10[airIndex] ?? null,

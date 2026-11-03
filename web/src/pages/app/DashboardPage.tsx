@@ -27,7 +27,6 @@ import {
 import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Chart';
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { MumbaiWeatherScene } from '../../components/MumbaiWeatherScene';
-import { LiveNews } from '../../components/LiveNews';
 import { CityPulseStrip } from '../../components/CityPulseStrip';
 import { RiskBadge, SourceBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock } from '../../components/ui';
@@ -1018,8 +1017,6 @@ export function DashboardPage() {
         {isAuthority() ? <KpiCell label="Predictive warnings" kpi={data.kpis.predictiveWarnings} icon={BrainCircuit} /> : null}
         {isAuthority() ? <KpiCell label="Critical incidents" kpi={data.kpis.criticalIncidents} icon={Siren} /> : null}
       </Card>
-
-      <LiveNews />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
         <Card className="flex flex-col md:col-span-1 xl:col-span-5">

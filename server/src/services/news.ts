@@ -25,10 +25,10 @@ export interface NewsFeed {
   items: NewsItem[];
 }
 
-const CACHE_TTL_MS = 10 * 60_000;
+const CACHE_TTL_MS = 5 * 60_000;
 const RETRY_AFTER_FAILURE_MS = 60_000;
 const FEED_TIMEOUT_MS = 10_000;
-const MAX_ITEMS = 8;
+const MAX_ITEMS = 12;
 
 const MUMBAI_ENVIRONMENT =
   /\b(air|pollution|pollut\w*|smog|aqi|environment\w*|climate|emission\w*|waste|garbage|sewage|water|flood\w*|rain\w*|drought|heat|dust|tree\w*|mangrove\w*|coastal|firecrack\w*|green|eco|monsoon)\b/i;

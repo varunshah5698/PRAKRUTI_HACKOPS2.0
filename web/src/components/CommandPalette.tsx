@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Map,
   MapPin,
+  Newspaper,
   Search,
   Settings,
   ShieldAlert,
@@ -74,6 +75,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     const pages: Array<{ label: string; to: string; detail: string; icon: typeof Map; roles?: string[]; keywords?: string }> = [
       { label: 'Command centre', to: '/dashboard', detail: 'The daily overview', icon: LayoutDashboard, keywords: 'home dashboard' },
       { label: 'Live city pulse', to: '/city', detail: 'Weather, CAMS air, coast and open data', icon: CloudSun, keywords: 'weather air uv coast marine flood' },
+      { label: 'Environmental newsroom', to: '/news', detail: 'Live headlines from publisher RSS', icon: Newspaper, keywords: 'news media headlines rss environment' },
       { label: 'Mumbai map', to: '/map', detail: 'Stations, reports and incidents', icon: Map, keywords: 'stations geography' },
       { label: 'Atmosphere lab', to: '/atmosphere', detail: '3D air intelligence', icon: CloudSun, roles: AUTHORITY_ROLES, keywords: 'air 3d' },
       { label: 'Predictive intelligence', to: '/intelligence/predictions', detail: 'Forecasts and risk', icon: BrainCircuit, roles: AUTHORITY_ROLES, keywords: 'forecast prediction' },

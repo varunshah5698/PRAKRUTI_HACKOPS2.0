@@ -52,7 +52,7 @@ export function SourcesPage() {
           <div className="flex items-center gap-2"><Badge tone="amber" dot>Source health</Badge><Badge tone="neutral">Missing keys never crash the app</Badge></div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Data sources & ingestion</h2>
           <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
-            A source is only shown CONNECTED after recent successful ingestion. CPCB and MPCB are not configured. The demo network is explicitly simulation-labelled.
+            Ingestion sources are shown CONNECTED only after recent successful ingestion. Keyless on-demand connectors (marine, flood, OSM, EONET, USGS) are registered as CONNECTED and report failures on the Live City page. CPCB and MPCB are not configured. The demo network is explicitly simulation-labelled.
           </p>
         </div>
         {can(['AUTHORITY_ADMIN', 'SYSTEM_ADMIN']) ? <Button variant="lime" size="sm" onClick={refresh} disabled={refreshing}><RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Run ingestion</Button> : null}

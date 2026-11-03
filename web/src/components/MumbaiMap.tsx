@@ -309,6 +309,33 @@ function sourceLinkFeatures(links: MapSourceLink[]): FeatureCollection {
   };
 }
 
+/**
+ * A small comet travelling from the factory to the monitor. The trailing dots
+ * make the direction of the effect readable even when the line itself is thin.
+ */
+function flowFeatures(links: MapSourceLink[], progress: number): FeatureCollection {
+  const features: FeatureCollection['features'] = [];
+  links.forEach((link, index) => {
+    const phase = (progress + index * 0.19) % 1;
+    for (let trail = 0; trail < 3; trail += 1) {
+      const t = (phase - trail * 0.06 + 1) % 1;
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [link.from[0] + (link.to[0] - link.from[0]) * t, link.from[1] + (link.to[1] - link.from[1]) * t],
+        },
+        properties: {
+          color: link.color,
+          radius: trail === 0 ? 4.4 : 3.4 - trail * 0.75,
+          opacity: trail === 0 ? 0.95 : 0.5 - trail * 0.12,
+        },
+      });
+    }
+  });
+  return { type: 'FeatureCollection', features };
+}
+
 function MumbaiMapInner({
   stations = [],
   reports = [],
@@ -345,8 +372,8 @@ function MumbaiMapInner({
   const [error, setError] = useState<string | null>(null);
   const handlersRef = useRef({ onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick });
   handlersRef.current = { onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick };
-  const dataRef = useRef({ stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint });
-  dataRef.current = { stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint };
+  const dataRef = useRef({ stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks });
+  dataRef.current = { stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId, focusPoint, showImpactLinks };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -384,6 +411,8 @@ function MumbaiMapInner({
         setError('Map tiles could not be loaded. Check network access to OpenFreeMap.');
       }
     });
+
+    let flowFrame: number | null = null;
 
     map.on('load', async () => {
       loadedRef.current = true;
@@ -493,6 +522,22 @@ function MumbaiMapInner({
           'line-width': ['interpolate', ['linear'], ['get', 'sharePct'], 8, 0.7, 45, 2.4],
           'line-opacity': 0.5,
           'line-dasharray': [2, 2],
+        },
+      });
+
+      map.addSource('ep-source-flow', {
+        type: 'geojson',
+        data: flowFeatures(dataRef.current.sourceLinks, 0.25),
+      });
+      map.addLayer({
+        id: 'ep-source-flow',
+        type: 'circle',
+        source: 'ep-source-flow',
+        paint: {
+          'circle-radius': ['get', 'radius'],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': ['get', 'opacity'],
+          'circle-blur': 0.35,
         },
       });
 
@@ -760,9 +805,27 @@ function MumbaiMapInner({
         if (event.defaultPrevented) return;
         handlersRef.current.onMapClick?.({ lng: event.lngLat.lng, lat: event.lngLat.lat });
       });
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reducedMotion && !compact) {
+        let lastPaint = 0;
+        const animateFlow = (time: number) => {
+          flowFrame = requestAnimationFrame(animateFlow);
+          if (!dataRef.current.showImpactLinks || !dataRef.current.sourceLinks.length) return;
+          if (time - lastPaint < 60) return;
+          lastPaint = time;
+          const flowSource = map.getSource('ep-source-flow') as maplibregl.GeoJSONSource | undefined;
+          flowSource?.setData(flowFeatures(dataRef.current.sourceLinks, (time / 4_200) % 1));
+          if (map.getLayer('ep-source-plumes-fill')) {
+            map.setPaintProperty('ep-source-plumes-fill', 'fill-opacity', 0.09 + (Math.sin(time / 1_300) + 1) * 0.012);
+          }
+        };
+        flowFrame = requestAnimationFrame(animateFlow);
+      }
     });
 
     return () => {
+      if (flowFrame !== null) cancelAnimationFrame(flowFrame);
       loadedRef.current = false;
       popupRef.current?.remove();
       map.remove();
@@ -787,6 +850,8 @@ function MumbaiMapInner({
     plumesSource?.setData(plumeFeatures(sources));
     const linksSource = map.getSource('ep-source-links') as maplibregl.GeoJSONSource | undefined;
     linksSource?.setData(sourceLinkFeatures(sourceLinks));
+    const flowSource = map.getSource('ep-source-flow') as maplibregl.GeoJSONSource | undefined;
+    flowSource?.setData(flowFeatures(sourceLinks, 0.25));
   }, [stations, reports, incidents, sources, sourceLinks, selectedStationId, selectedSourceId]);
 
   useEffect(() => {
@@ -821,8 +886,10 @@ function MumbaiMapInner({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loadedRef.current) return;
-    if (map.getLayer('ep-source-links')) {
-      map.setLayoutProperty('ep-source-links', 'visibility', showImpactLinks ? 'visible' : 'none');
+    for (const layer of ['ep-source-links', 'ep-source-flow']) {
+      if (map.getLayer(layer)) {
+        map.setLayoutProperty(layer, 'visibility', showImpactLinks ? 'visible' : 'none');
+      }
     }
   }, [showImpactLinks]);
 

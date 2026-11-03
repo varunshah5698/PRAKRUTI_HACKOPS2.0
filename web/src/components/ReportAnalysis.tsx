@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -9,15 +9,12 @@ import {
   Copy,
   Gauge,
   Layers3,
-  Minus,
-  Orbit,
   Pause,
   Play,
-  Plus,
-  RotateCcw,
   ScanLine,
   ShieldCheck,
   Target,
+  Wind,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Card, CardHeader, CardTitle, DataLabel, ProgressBar } from './ui';
@@ -44,18 +41,9 @@ const ACCENTS: Record<ReportCategory, string> = {
   industrial: '#c97445',
 };
 
-const STEP_IDS = ['site', 'context', 'dispersion', 'community', 'dossier'] as const;
-type StepId = (typeof STEP_IDS)[number];
+const SCENE_VIEW = { x: 120, y: 0, width: 320, height: 320 };
 
-const CAMERA_PRESETS = [
-  { yaw: -22, pitch: 58, zoom: 1.14 },
-  { yaw: -48, pitch: 52, zoom: 1.02 },
-  { yaw: 16, pitch: 64, zoom: 1.06 },
-  { yaw: -4, pitch: 56, zoom: 1.22 },
-  { yaw: -30, pitch: 60, zoom: 1.16 },
-];
-
-const STEP_LABELS: Array<{ id: StepId; label: string }> = [
+const STEP_LABELS: Array<{ id: string; label: string }> = [
   { id: 'site', label: 'Incident site' },
   { id: 'context', label: 'Environmental context' },
   { id: 'dispersion', label: 'Dispersion' },
@@ -262,7 +250,7 @@ function StepBody({
         <p className="mt-2 text-[11px] font-semibold leading-tight text-[#1b2a1f]">{report.incident_type.replace(/_/g, ' ')}</p>
         <p className="mt-1 line-clamp-4 text-[10px] leading-relaxed text-[#5a6a5f]">{report.description}</p>
         <p className="mt-3 text-[10px] leading-relaxed text-[#405246]">
-          The site is anchored at the claimed coordinates. The rings are true relative distance, so every column in the scene can be read as a real neighbour.
+          The site is anchored at the claimed coordinates. The rings are true relative distance, so every marker can be read as a real neighbour within 3 km.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 text-[9px]">
           <div className="rounded-xl border border-white/80 bg-white/55 p-2.5">
@@ -277,7 +265,7 @@ function StepBody({
           </div>
         </div>
         <p className="mt-3 text-[9px] leading-relaxed text-[#718277]">
-          Click any column or pulsing pin to inspect what it contributes. Drag the scene to orbit.
+          Select any monitor ring or community pin to inspect what it contributes.
         </p>
       </div>
     );
@@ -323,7 +311,7 @@ function StepBody({
           </div>
         </div>
         <div className="mt-3 rounded-xl border border-dashed border-[#dbe5d6] bg-white/45 p-2.5 text-[9px] leading-relaxed text-[#66766b]">
-          The animated lane shows the reported wind travel direction. It is a visual aid, not a dispersion model or a plume prediction.
+          The dashed lane shows the reported wind travel direction. It is a visual aid, not a dispersion model or a plume prediction.
         </div>
       </div>
     );
@@ -403,17 +391,14 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
     [report, evidence, aiAssessments, enrichment, audit],
   );
   const accent = ACCENTS[analysis.category];
+  const uid = useId().replace(/:/g, '');
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [selected, setSelected] = useState<Selection>({ kind: 'report' });
   const [layers, setLayers] = useState({ stations: true, community: true, wind: true, rings: true });
-  const [pose, setPose] = useState(CAMERA_PRESETS[0]);
-  const [orbit, setOrbit] = useState(() => typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const [dragging, setDragging] = useState(false);
   const [dimensionKey, setDimensionKey] = useState<'evidence' | 'environment' | 'community'>('evidence');
   const [openFactor, setOpenFactor] = useState<string | null>(null);
   const [signalTab, setSignalTab] = useState<'signals' | 'timeline'>('signals');
-  const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
 
   const primaryStation = analysis.primaryStation;
   const firstCommunity = analysis.nearbySameCategory[0] ?? null;
@@ -430,7 +415,6 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
           station,
           x: clamp(point.x, 18, SCENE.width - 18),
           y: clamp(point.y, 18, SCENE.height - 18),
-          height: 24 + Math.pow(clamp(station.severity, 0, 1), 0.82) * 150,
         }];
       }),
     [analysis.stations, report.lat, report.lng],
@@ -460,11 +444,6 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
     [enrichment.nearbyReports, report.lat, report.lng],
   );
 
-  const rings = useMemo(
-    () => [1, 3].map((km) => ({ km, radius: km * SCENE.pxPerKm })),
-    [],
-  );
-
   const focusForStep = (index: number) => {
     if (index === 1 && primaryStation) return { kind: 'station' as const, id: primaryStation.id };
     if (index === 3 && firstCommunity) return { kind: 'community' as const, id: firstCommunity.id };
@@ -474,7 +453,6 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
   const jumpToStep = (index: number) => {
     setStep(index);
     setPlaying(false);
-    setPose(CAMERA_PRESETS[index] ?? CAMERA_PRESETS[0]);
     setSelected(focusForStep(index));
   };
 
@@ -485,7 +463,6 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
     }
     if (step >= STEP_LABELS.length - 1) {
       setStep(0);
-      setPose(CAMERA_PRESETS[0]);
       setSelected({ kind: 'report' });
     }
     setPlaying(true);
@@ -500,63 +477,33 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
     const timer = window.setTimeout(() => {
       const next = step + 1;
       setStep(next);
-      setPose(CAMERA_PRESETS[next] ?? CAMERA_PRESETS[0]);
       setSelected(focusForStep(next));
     }, 5200);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, step, primaryStation?.id, firstCommunity?.id]);
 
-  useEffect(() => {
-    if (!orbit) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const timer = window.setInterval(() => {
-      if (drag.current) return;
-      setPose((current) => ({ ...current, yaw: Number((current.yaw + 0.18).toFixed(2)) }));
-    }, 60);
-    return () => window.clearInterval(timer);
-  }, [orbit]);
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    setOrbit(false);
-    drag.current = { x: event.clientX, y: event.clientY, yaw: pose.yaw, pitch: pose.pitch };
-    setDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const dx = event.clientX - drag.current.x;
-    const dy = event.clientY - drag.current.y;
-    setPose({
-      yaw: drag.current.yaw + dx * 0.38,
-      pitch: clamp(drag.current.pitch + dy * 0.18, 30, 74),
-      zoom: pose.zoom,
-    });
-  };
-
-  const endDrag = () => {
-    drag.current = null;
-    setDragging(false);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-    if (event.key === 'ArrowLeft') setPose((current) => ({ ...current, yaw: current.yaw - 8 }));
-    else if (event.key === 'ArrowRight') setPose((current) => ({ ...current, yaw: current.yaw + 8 }));
-    else if (event.key === 'ArrowUp') setPose((current) => ({ ...current, pitch: clamp(current.pitch - 5, 30, 74) }));
-    else if (event.key === 'ArrowDown') setPose((current) => ({ ...current, pitch: clamp(current.pitch + 5, 30, 74) }));
-    else if (event.key === '+' || event.key === '=') setPose((current) => ({ ...current, zoom: clamp(Number((current.zoom + 0.1).toFixed(2)), 0.7, 1.55) }));
-    else if (event.key === '-') setPose((current) => ({ ...current, zoom: clamp(Number((current.zoom - 0.1).toFixed(2)), 0.7, 1.55) }));
-    else if (event.key === '0') setPose(CAMERA_PRESETS[step] ?? CAMERA_PRESETS[0]);
-    else return;
-    event.preventDefault();
-  };
-
   const weather = analysis.weather;
-  const windAngle = weather ? ((weather.raw.wind_direction_deg + 180) % 360) - 90 : 0;
-  const categoryTone = report.verification_state === 'VERIFIED' ? 'green' : report.verification_state === 'REJECTED' ? 'red' : 'amber';
+  const windTravel = weather ? ((weather.raw.wind_direction_deg + 180) % 360) * (Math.PI / 180) : 0;
+  const windDir = { x: Math.sin(windTravel), y: -Math.cos(windTravel) };
+  const windPerp = { x: Math.cos(windTravel), y: Math.sin(windTravel) };
+  const windStreams = [0, -8, 8].map((offset, index) => {
+    const reach = index === 0 ? 126 : 106;
+    const start = 34;
+    const sx = SCENE.centerX + windDir.x * start + windPerp.x * offset;
+    const sy = SCENE.centerY + windDir.y * start + windPerp.y * offset;
+    const ex = SCENE.centerX + windDir.x * reach + windPerp.x * offset;
+    const ey = SCENE.centerY + windDir.y * reach + windPerp.y * offset;
+    const cx = SCENE.centerX + windDir.x * ((start + reach) / 2) + windPerp.x * (offset + 22);
+    const cy = SCENE.centerY + windDir.y * ((start + reach) / 2) + windPerp.y * (offset + 22);
+    return {
+      d: `M${sx.toFixed(1)} ${sy.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`,
+      opacity: index === 0 ? 0.55 : 0.28,
+      width: index === 0 ? 1.6 : 1.1,
+    };
+  });
+  const rings = [1, 3].map((km) => ({ km, radius: km * SCENE.pxPerKm }));
+
   const categoryNote =
     analysis.category === 'air'
       ? 'Hourly PM2.5 and PM10 are compared with 24h NAAQS screening references for context. This is not a compliance calculation.'
@@ -592,7 +539,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
         <CardHeader className="flex-wrap items-center gap-3">
           <div>
             <CardTitle>Forensic site analysis</CardTitle>
-            <p className="mt-1 text-[10px] text-[#66766b]">A guided, evidence-bound read of this report · 3D positions use real relative coordinates</p>
+            <p className="mt-1 text-[10px] text-[#66766b]">A guided, evidence-bound read of this report · positions are drawn to scale within 3 km</p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone="neutral">{report.public_ref}</Badge>
@@ -624,74 +571,125 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
               {label}
             </button>
           ))}
-          <span className="ml-auto hidden text-[8px] text-[#78919a] sm:block">Click a column or pin to inspect</span>
+          <span className="ml-auto hidden text-[8px] text-[#78919a] sm:block">Select a monitor or pin to inspect</span>
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_320px]">
+                <div className="grid lg:grid-cols-[1fr_320px]">
           <div
-            className="atmo-scene ra-scene h-[440px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8fc47a] sm:h-[520px]"
-            data-step={STEP_IDS[step]}
-            style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={endDrag}
-            onPointerLeave={endDrag}
-            onPointerCancel={endDrag}
-            onKeyDown={handleKeyDown}
-            tabIndex={0}
+            className="ra-map h-[470px] sm:h-[540px]"
             role="group"
-            aria-label="Interactive 3D site analysis. Drag to orbit. Use arrow keys to rotate and plus or minus to zoom."
+            aria-label={`Site proximity map for ${report.public_ref}. Marker positions are drawn to scale within three kilometres. Select a monitor ring or community pin to inspect it.`}
           >
-            <div className="atmo-axis left-4 top-4">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#557480]">Site model · {report.public_ref}</p>
-              <p className="mt-0.5 text-[10px] text-[#78919a]">Real relative positions within 3 km · drag to orbit</p>
-            </div>
-            <div className="atmo-axis right-4 top-4 flex items-center gap-1.5 rounded-full border border-white/80 bg-white/70 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#557480] backdrop-blur">
-              <Compass className="h-3 w-3" /> N
+            <div className="absolute inset-x-4 top-4 z-10 flex items-start justify-between gap-3">
+              <div className="pointer-events-none">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#557480]">Site proximity · {report.public_ref}</p>
+                <p className="mt-0.5 text-[10px] text-[#78919a]">True relative positions within 3 km · select a marker to inspect</p>
+              </div>
+              <span className="ra-map-compass">
+                <Compass className="h-3 w-3" /> North
+              </span>
             </div>
 
-            <div
-              className="atmo-stage"
-              style={{
-                transform: `translate(-50%, -50%) rotateX(${pose.pitch}deg) rotateZ(${pose.yaw}deg) scale(calc(var(--atmo-fit) * ${pose.zoom}))`,
-                transition: dragging ? 'none' : 'transform 650ms cubic-bezier(.22,1,.36,1)',
-              }}
-            >
-              <div className="atmo-floor ra-floor">
-                <div className="ra-sweep" aria-hidden />
-                {layers.rings ? (
-                  <>
-                    {rings.map((ring) => (
-                      <div
-                        key={ring.km}
-                        className="ra-ring"
-                        style={{
-                          width: ring.radius * 2,
-                          height: ring.radius * 2,
-                          left: SCENE.centerX - ring.radius,
-                          top: SCENE.centerY - ring.radius,
-                        }}
+            <div className="absolute inset-0 flex items-center justify-center gap-6 px-4 pb-11 pt-14 sm:px-8">
+              <div className="ra-map-index hidden w-[204px] shrink-0 flex-col lg:flex">
+                <div className="ra-index-head">
+                  <span>Nearby monitors</span>
+                  <span>{analysis.stations.length}</span>
+                </div>
+                <div className="mt-1.5 flex-1 space-y-0.5">
+                  {analysis.stations.map((station) => {
+                    const active = selected.kind === 'station' && selected.id === station.id;
+                    return (
+                      <button
+                        key={station.id}
+                        onClick={() => setSelected({ kind: 'station', id: station.id })}
+                        className={`ra-index-row ${active ? 'is-selected' : ''}`}
+                        aria-pressed={active}
                       >
-                        <span>{ring.km} km</span>
-                      </div>
-                    ))}
-                    <div
-                      className="ra-ring"
-                      style={{ width: 44, height: 44, left: SCENE.centerX - 22, top: SCENE.centerY - 22, borderStyle: 'solid' }}
-                    />
-                  </>
-                ) : null}
-
-                {layers.wind && weather ? (
-                  <div className="ra-wind" style={{ transform: `rotate(${windAngle}deg)` }} aria-hidden>
-                    <span className="ra-wind-line" />
-                    {Array.from({ length: 12 }, (_, index) => (
-                      <span key={index} className="ra-particle" style={{ animationDelay: `${index * 0.38}s` }} />
-                    ))}
+                        <span className="ra-index-dot" style={{ background: station.tone }} />
+                        <span className="min-w-0 flex-1 truncate text-left">{shortName(station.name)}</span>
+                        <span className="ra-index-distance">{Math.round(station.distance_m)} m</span>
+                      </button>
+                    );
+                  })}
+                  {analysis.stations.length === 0 ? (
+                    <p className="px-1 py-2 text-[9px] leading-relaxed text-[#718277]">No monitor sits within 3 km.</p>
+                  ) : null}
+                </div>
+                {weather ? (
+                  <div className="ra-index-wind">
+                    <Wind className="mt-0.5 h-3 w-3 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-[#405246]">Wind from {weather.direction}</p>
+                      <p className="mt-0.5 text-[#78919a]">{number(weather.raw.wind_speed_kmh, 0)} km/h · {weather.dispersion}</p>
+                    </div>
                   </div>
                 ) : null}
+                <p className="mt-2 border-t border-dashed border-[#dbe5d6] pt-2 text-[7px] leading-relaxed text-[#8ba1a9]">
+                  Ring fill follows the strongest nearby reading. Exact values sit in the panel.
+                </p>
+              </div>
 
-                <span className="ra-site-pulse" style={{ left: SCENE.centerX - 32, top: SCENE.centerY - 32, '--dot': accent } as CSSProperties} aria-hidden />
+              <div className="ra-map-field relative aspect-square w-full max-w-[430px]">
+                <div className="ra-map-surface absolute inset-0 overflow-hidden rounded-[26px]">
+                  <svg viewBox={`${SCENE_VIEW.x} ${SCENE_VIEW.y} ${SCENE_VIEW.width} ${SCENE_VIEW.height}`} className="h-full w-full" aria-hidden>
+                    <defs>
+                      <radialGradient id={`${uid}-field`} cx="50%" cy="44%" r="68%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="58%" stopColor="#f5faf8" />
+                        <stop offset="100%" stopColor="#e6f1eb" />
+                      </radialGradient>
+                      <radialGradient id={`${uid}-halo`}>
+                        <stop offset="0%" stopColor={accent} stopOpacity=".16" />
+                        <stop offset="100%" stopColor={accent} stopOpacity="0" />
+                      </radialGradient>
+                      <pattern id={`${uid}-dots`} width="22" height="22" patternUnits="userSpaceOnUse">
+                        <circle cx="1.1" cy="1.1" r="1" fill="#9dbfb2" opacity=".5" />
+                      </pattern>
+                      <marker id={`${uid}-arrow`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                        <path d="M0 0L10 5L0 10z" fill="#2d7c94" opacity=".6" />
+                      </marker>
+                    </defs>
+                    <rect width={SCENE.width} height={SCENE.height} fill={`url(#${uid}-field)`} />
+                    <rect width={SCENE.width} height={SCENE.height} fill={`url(#${uid}-dots)`} opacity=".6" />
+                    <circle cx={SCENE.centerX} cy={SCENE.centerY} r="150" fill={`url(#${uid}-halo)`} />
+                    <g stroke="#7ba79a" strokeOpacity=".16" strokeDasharray="2 8">
+                      <path d={`M${SCENE.centerX} 10v300`} />
+                      <path d={`M120 ${SCENE.centerY}h320`} />
+                    </g>
+                    {layers.rings ? (
+                      <g fill="none">
+                        <circle cx={SCENE.centerX} cy={SCENE.centerY} r={55} fill={accent} fillOpacity=".035" />
+                        <circle cx={SCENE.centerX} cy={SCENE.centerY} r={44} stroke={accent} strokeOpacity=".3" strokeDasharray="3 5" />
+                        <circle cx={SCENE.centerX} cy={SCENE.centerY} r={132} fill={accent} fillOpacity=".02" />
+                        <circle cx={SCENE.centerX} cy={SCENE.centerY} r={132} stroke={accent} strokeOpacity=".24" strokeDasharray="3 6" />
+                      </g>
+                    ) : null}
+                    {layers.wind && weather ? (
+                      <g fill="none" stroke="#2d7c94" strokeLinecap="round">
+                        {windStreams.map((stream, index) => (
+                          <path
+                            key={index}
+                            d={stream.d}
+                            strokeWidth={stream.width}
+                            opacity={stream.opacity}
+                            markerEnd={index === 0 ? `url(#${uid}-arrow)` : undefined}
+                          />
+                        ))}
+                      </g>
+                    ) : null}
+                  </svg>
+                </div>
+
+                {layers.rings ? rings.map((ring) => (
+                  <span
+                    key={ring.km}
+                    className="ra-ring-label"
+                    style={{ left: '50%', top: `${((SCENE.centerY - ring.radius - SCENE_VIEW.y) / SCENE_VIEW.height) * 100}%` }}
+                  >
+                    {ring.km} km
+                  </span>
+                )) : null}
 
                 {layers.community
                   ? sceneCommunity.map(({ report: community, x, y, color }) => {
@@ -700,13 +698,15 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                         <button
                           key={community.id}
                           className={`ra-community ${isSelected ? 'is-selected' : ''}`}
-                          style={{ left: x - 10, top: y - 10, '--dot': color } as CSSProperties}
-                          onPointerDown={(event) => event.stopPropagation()}
-                          onClick={(event) => { event.stopPropagation(); setOrbit(false); setSelected({ kind: 'community', id: community.id }); }}
+                          style={{
+                            left: `${((x - SCENE_VIEW.x) / SCENE_VIEW.width) * 100}%`,
+                            top: `${((y - SCENE_VIEW.y) / SCENE_VIEW.height) * 100}%`,
+                            '--dot': color,
+                          } as CSSProperties}
+                          onClick={() => setSelected({ kind: 'community', id: community.id })}
                           aria-label={`${community.incident_type.replace(/_/g, ' ')} report ${community.public_ref}, ${Math.round(community.distance_m)} metres away`}
                           aria-pressed={isSelected}
                         >
-                          <span className="ra-community-ring" />
                           <span className="ra-community-dot" />
                           <span className="ra-community-label">{community.public_ref} · {Math.round(community.distance_m)} m</span>
                         </button>
@@ -715,52 +715,54 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                   : null}
 
                 {layers.stations
-                  ? sceneStations.map(({ station, x, y, height }) => {
+                  ? sceneStations.map(({ station, x, y }) => {
                       const isSelected = selected.kind === 'station' && selected.id === station.id;
+                      const arc = Math.max(0.08, clamp(station.severity, 0, 1)) * 103.7;
                       return (
                         <button
                           key={station.id}
-                          className={`atmo-bar ra-monitor ${isSelected ? 'is-selected' : ''}`}
+                          className={`ra-monitor ${isSelected ? 'is-selected' : ''}`}
                           style={{
-                            left: x - 11,
-                            top: y - 11,
-                            width: 22,
-                            height: 22,
-                            '--h': `${height}px`,
-                            '--bar': station.tone,
+                            left: `${((x - SCENE_VIEW.x) / SCENE_VIEW.width) * 100}%`,
+                            top: `${((y - SCENE_VIEW.y) / SCENE_VIEW.height) * 100}%`,
+                            '--tone': station.tone,
                           } as CSSProperties}
-                          onPointerDown={(event) => event.stopPropagation()}
-                          onClick={(event) => { event.stopPropagation(); setOrbit(false); setSelected({ kind: 'station', id: station.id }); }}
+                          onClick={() => setSelected({ kind: 'station', id: station.id })}
                           aria-label={`${shortName(station.name)}, ${station.headline}, ${Math.round(station.distance_m)} metres away`}
                           aria-pressed={isSelected}
                         >
-                          <span className="atmo-bar-base" />
-                          <span className="atmo-bar-wall" />
-                          <span className="atmo-bar-top" />
-                          <span className="atmo-bar-label ra-hover-label">{shortName(station.name)} · {station.headline}</span>
+                          <svg viewBox="0 0 44 44" className="ra-monitor-gauge" aria-hidden>
+                            <circle cx="22" cy="22" r="16.5" fill="none" stroke="#e3eee8" strokeWidth="3.5" />
+                            <circle
+                              cx="22"
+                              cy="22"
+                              r="16.5"
+                              fill="none"
+                              stroke={station.tone}
+                              strokeWidth="3.5"
+                              strokeLinecap="round"
+                              strokeDasharray={`${arc} 103.7`}
+                              transform="rotate(-90 22 22)"
+                            />
+                          </svg>
+                          <span className="ra-monitor-core" />
+                          <span className="ra-monitor-label">{shortName(station.name)} · {station.headline}</span>
                         </button>
                       );
                     })
                   : null}
 
                 <button
-                  className={`atmo-bar ra-report ${selected.kind === 'report' ? 'is-selected' : ''}`}
-                  style={{
-                    left: SCENE.centerX - 14,
-                    top: SCENE.centerY - 14,
-                    width: 28,
-                    height: 28,
-                    '--h': '108px',
-                    '--bar': accent,
-                  } as CSSProperties}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => { event.stopPropagation(); setOrbit(false); setSelected({ kind: 'report' }); }}
+                  className={`ra-site ${selected.kind === 'report' ? 'is-selected' : ''}`}
+                  style={{ left: '50%', top: '50%', '--dot': accent } as CSSProperties}
+                  onClick={() => setSelected({ kind: 'report' })}
                   aria-label={`Report site ${report.public_ref}, ${categoryLabel(report.category)}, ${report.locality_name ?? 'Mumbai'}`}
                   aria-pressed={selected.kind === 'report'}
                 >
-                  <span className="atmo-bar-base" />
-                  <span className="atmo-bar-wall" />
-                  <span className="atmo-bar-top" />
+                  <span className="ra-site-halo" />
+                  <span className="ra-site-ring" />
+                  <span className="ra-site-core" />
+                  <span className="ra-site-label">Report site · {report.public_ref}</span>
                 </button>
               </div>
             </div>
@@ -773,22 +775,17 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                 <span className="h-1.5 w-3 rounded-full" style={{ background: 'linear-gradient(90deg,#2f8f66,#b3860f,#c97445)' }} /> Monitor signal
               </span>
               <span className="ra-legend-chip">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#b3860f' }} /> Community pin
+                <span className="h-1.5 w-1.5 rounded-[1px]" style={{ background: '#b3860f', transform: 'rotate(45deg)' }} /> Community pin
               </span>
+              {layers.wind && weather ? (
+                <span className="ra-legend-chip">
+                  <Wind className="h-3 w-3" /> From {weather.direction} · {number(weather.raw.wind_speed_kmh, 0)} km/h
+                </span>
+              ) : null}
             </div>
-
-            <div className="atmo-scene-controls" onPointerDown={(event) => event.stopPropagation()}>
-              <button onClick={() => setPose((current) => ({ ...current, zoom: clamp(Number((current.zoom + 0.1).toFixed(2)), 0.7, 1.55) }))} aria-label="Zoom in"><Plus className="h-3.5 w-3.5" /></button>
-              <button onClick={() => setPose((current) => ({ ...current, zoom: clamp(Number((current.zoom - 0.1).toFixed(2)), 0.7, 1.55) }))} aria-label="Zoom out"><Minus className="h-3.5 w-3.5" /></button>
-              <button onClick={() => setOrbit((value) => !value)} data-active={orbit} aria-label={orbit ? 'Pause automatic orbit' : 'Start automatic orbit'} aria-pressed={orbit}>
-                <Orbit className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => setPose(CAMERA_PRESETS[step] ?? CAMERA_PRESETS[0])} aria-label="Reset view"><RotateCcw className="h-3.5 w-3.5" /></button>
-            </div>
-
           </div>
 
-          <aside className="scrollbar-thin border-t border-dashed border-[#dbe5d6] p-4 lg:max-h-[520px] lg:overflow-y-auto lg:border-l lg:border-t-0">
+<aside className="scrollbar-thin border-t border-dashed border-[#dbe5d6] p-4 lg:max-h-[520px] lg:overflow-y-auto lg:border-l lg:border-t-0">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <DataLabel>Guided analysis</DataLabel>
@@ -860,7 +857,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
             </div>
 
             <p className="mt-3 text-[8px] leading-relaxed text-[#8ba1a9]">
-              Drag to orbit · arrow keys rotate · +/− zoom. Monitor column height is a visual signal, not a measurement of harm; the site beacon is a fixed anchor.
+              Select a monitor or pin to inspect. Monitor ring fill is a visual signal, not a measurement of harm; the site beacon is a fixed anchor.
             </p>
           </aside>
         </div>

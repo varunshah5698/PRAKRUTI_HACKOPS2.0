@@ -34,6 +34,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Email | **SMTP transport verified; no recipient configured** — adding `SMTP_USER` and `SMTP_PASSWORD` (with `EMAIL_PROVIDER=gmail` for Gmail) enables real delivery. Without them, records remain `SIMULATED` and nothing is sent. Critical alerts are broadcast to every active account. |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |
+| Live City open data | **LIVE / MODELLED, LABELLED** — Open-Meteo weather, CAMS air, marine, flood and archive layers; MET Norway weather fallback; OpenStreetMap Nominatim/Overpass; Valhalla walking routes; NASA EONET; USGS. Context only, never station evidence. |
 | Industrial source screen | **SIMULATED CATALOGUE** — 10 synthetic factory sources. Plumes and monitor shares are a distance/wind screening estimate, not measured apportionment or a regulatory finding. |
 | Database | PostgreSQL 18 + PostGIS 3.7 |
 
@@ -268,7 +269,7 @@ Authority registration creates a `PENDING_APPROVAL` account with no authority pe
 
 Public: `/`, `/about`, `/data-sources`, `/privacy`, `/terms`, `/report`, `/login`, `/register`, `/forgot-password`, `/reset-password`.
 
-Application: `/dashboard`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
+Application: `/dashboard`, `/city`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
 
 ## Tests
 
@@ -283,7 +284,6 @@ npm test
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [IMPLEMENTATION_AUDIT.md](IMPLEMENTATION_AUDIT.md)
 - [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md)
-- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)
 - [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md)
 - [docs/ML_METHODOLOGY.md](docs/ML_METHODOLOGY.md)
 - [docs/MODEL_CARD.md](docs/MODEL_CARD.md)
@@ -294,6 +294,7 @@ npm test
 - [docs/TESTING.md](docs/TESTING.md)
 - [docs/SIMULATION_GUIDE.md](docs/SIMULATION_GUIDE.md)
 - [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)
+- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) — includes the `/city/*` open-data endpoints
 - [docs/LIMITATIONS.md](docs/LIMITATIONS.md)
 
 ## Attribution

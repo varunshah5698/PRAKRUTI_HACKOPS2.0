@@ -1178,7 +1178,7 @@ export function MapPage() {
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-[#c2410c]/20" /> Plume screen</span>
                 </div>
                 <p className="mt-2 max-w-[210px] border-t border-dashed border-[#dbe5d6] pt-1.5 text-[8px] leading-relaxed text-[#66766b]">
-                  3D heights are visual context. Plume footprints are a simulated wind screen, not measured pollution.
+                  Moving dots run factory → affected monitor. Plume footprints are a simulated wind screen, not measured pollution.
                 </p>
               </div>
             </div>
