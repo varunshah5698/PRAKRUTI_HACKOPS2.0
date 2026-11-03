@@ -128,7 +128,7 @@ export const DATA_SOURCE_CATALOGUE = [
     attribution: 'प्रकृति ML',
     configured: false,
     notes:
-      'No verified Mumbai historical training extract has been supplied. Models are NOT TRAINED. The app exposes a clearly labelled persistence baseline instead of claiming ML forecasts.',
+      'No verified Mumbai historical training extract has been supplied. Forecasting runs on a clearly labelled persistence baseline instead of claiming ML skill.',
   },
   {
     id: 'email',

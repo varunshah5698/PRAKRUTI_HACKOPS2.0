@@ -151,7 +151,7 @@ mapRouter.get('/stations/:id/forecasts', async (req, res, next) => {
       forecasts,
       predictions: [],
       note:
-        'No trained LightGBM forecast is available. These records are PERSISTENCE_BASELINE_V1 with empirical bands and NOT_CALIBRATED confidence.',
+        'These records are PERSISTENCE_BASELINE_V1 with empirical bands and NOT_CALIBRATED confidence.',
     });
   } catch (error) {
     next(error);

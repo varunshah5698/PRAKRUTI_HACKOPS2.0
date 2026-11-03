@@ -121,7 +121,7 @@ export function SettingsPage() {
             ['Demo mode', 'ON — station data is simulation-labelled'],
             ['CPCB / MPCB', 'NOT_CONFIGURED'],
             ['River AI', aiStatus ? `${aiStatus.river}${aiStatus.model ? ` · ${aiStatus.model}` : ''}` : 'Checking…'],
-            ['ML models', 'NOT_TRAINED — persistence baseline only'],
+            ['ML models', 'Persistence baseline only'],
             ['Vision AI', aiStatus ? `${aiStatus.vision}${aiStatus.visionModel ? ` · ${aiStatus.visionModel}` : ''}` : 'Checking…'],
             ['Email', 'SIMULATED unless provider + demo recipient configured'],
           ].map(([label, value]) => (

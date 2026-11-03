@@ -81,7 +81,7 @@ export function statusTone(status?: string | null): string {
   if (['CONNECTED', 'ONLINE', 'ACTIVE', 'VERIFIED', 'COMPLETED', 'DELIVERED', 'LIVE'].includes(s)) return 'text-emerald-600';
   if (['WATCH', 'STALE', 'PENDING', 'AWAITING_VERIFICATION', 'DEGRADED', 'SENT', 'IN_PROGRESS'].includes(s)) return 'text-amber-600';
   if (['CRITICAL', 'FAILED', 'OFFLINE', 'SUSPENDED', 'REJECTED', 'MISMATCH'].includes(s)) return 'text-red-600';
-  if (['NOT_CONFIGURED', 'NOT_TRAINED', 'UNKNOWN', 'SIMULATED', 'UNVERIFIED'].includes(s)) return 'text-slate-500';
+  if (['NOT_CONFIGURED', 'UNKNOWN', 'SIMULATED', 'UNVERIFIED'].includes(s)) return 'text-slate-500';
   return 'text-slate-600';
 }
 

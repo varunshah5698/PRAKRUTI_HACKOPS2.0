@@ -103,6 +103,6 @@ export async function getForecastsForStation(params: {
     deteriorationProbability: null,
     shapStatus: 'UNAVAILABLE',
     shap: [],
-    limitations: ['No trained ML service is configured. Labelled persistence baseline shown.'],
+    limitations: ['Labelled persistence baseline shown.'],
   };
 }

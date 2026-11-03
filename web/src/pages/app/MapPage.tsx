@@ -390,7 +390,7 @@ function StationDrawer({
                   <span className="text-sm font-semibold">{detail.anomaly.status}</span>
                   <Badge tone={detail.anomaly.status === 'UNUSUAL' ? 'amber' : 'neutral'}>z = {detail.anomaly.zScore ?? '—'}</Badge>
                 </div>
-                <p className="mt-2 text-[10px] leading-relaxed text-[#66766b]">{detail.anomaly.method}. This is an analytical check, not a trained anomaly model.</p>
+                <p className="mt-2 text-[10px] leading-relaxed text-[#66766b]">{detail.anomaly.method}. This is an analytical check.</p>
               </div>
               <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-4">
                 <DataLabel>Pollutant breakdown</DataLabel>
@@ -409,7 +409,7 @@ function StationDrawer({
           {tab === 'forecast' ? (
             <div className="space-y-4 px-5 py-5">
               <div className={`rounded-xl border p-3 text-[10px] leading-relaxed ${detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? 'border-emerald-500/25 bg-emerald-500/[0.06] text-emerald-700/80' : 'border-amber-500/25 bg-amber-500/[0.06] text-amber-700/80'}`}>
-                <strong>{detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? `Trained model active${detail.forecastStatus.modelVersion ? ` · ${detail.forecastStatus.modelVersion}` : ''}.` : 'No trained LightGBM model is active.'}</strong> {detail.forecastStatus.note}
+                <strong>{detail.forecastStatus.availableMethod === 'LIGHTGBM_TRAINED' ? `Trained model active${detail.forecastStatus.modelVersion ? ` · ${detail.forecastStatus.modelVersion}` : ''}.` : 'Persistence baseline active.'}</strong> {detail.forecastStatus.note}
               </div>
               {detail.forecasts.length ? (
                 <div className="grid gap-2 sm:grid-cols-3">

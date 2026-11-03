@@ -625,7 +625,7 @@ export function DashboardPage() {
               })}
               {dailyTrend.length === 0 ? <p className="text-[10px] text-[#66766b]">No daily series available.</p> : null}
             </div>
-            <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#66766b]">Indicative city mean, not a forecast. Forecast output remains labelled until a model is trained.</p>
+            <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#66766b]">Indicative city mean, not a forecast.</p>
             <div className="mt-auto grid grid-cols-3 gap-2 pt-4">
               <div><DataLabel>Days</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{dailyTrend.length}</p></div>
               <div><DataLabel>Samples</DataLabel><p className="mt-1 text-[13px] font-semibold text-[#34463a]">{daySamples}</p></div>

@@ -167,7 +167,7 @@ export async function getMapTimeline(filters: MapFilters) {
         targetTime: at.toISOString(),
         note: trainedForecast
           ? 'Forecasts are from the registered LightGBM model. They are estimates, not confirmed future conditions or regulatory determinations.'
-          : 'Persistence baseline with an empirical 80% band. No trained ML model is active. Forecasts are not confirmed future conditions and are not regulatory determinations.',
+          : 'Persistence baseline with an empirical 80% band. Forecasts are not confirmed future conditions and are not regulatory determinations.',
       };
       if (!stations.some((s) => s.forecast)) warnings.push('FORECAST UNAVAILABLE for the selected time.');
     }
@@ -468,7 +468,7 @@ export async function getStationDetail(stationId: string) {
       note:
         bundle?.source === 'ML'
           ? 'Forecasts are from the registered LightGBM model. They are estimates, not confirmed future conditions or regulatory determinations.'
-          : 'No trained LightGBM model is active for this deployment. Forecasts shown are a labelled persistence baseline, not ML output.',
+          : 'Forecasts shown are a labelled persistence baseline, not ML output.',
       shap: bundle?.shapStatus ?? 'UNAVAILABLE',
       shapValues: bundle?.shap ?? [],
       limitations: bundle?.limitations ?? [],

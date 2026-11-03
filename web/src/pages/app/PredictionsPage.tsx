@@ -98,7 +98,7 @@ export function PredictionsPage() {
             data: [{ yAxis: 60, label: { formatter: '24h NAAQS 60', color: '#c94a50', fontSize: 9 }, lineStyle: { color: '#c94a50', type: 'dashed', opacity: 0.5 } }],
           },
         },
-        { name: data.detail?.method === 'LIGHTGBM_TRAINED' ? 'Model median' : 'Baseline median', type: 'line', data: median, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#2f8f84', width: 2, type: 'dashed' }, itemStyle: { color: '#2f8f84' } },
+        { name: 'Forecast median', type: 'line', data: median, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#2f8f84', width: 2, type: 'dashed' }, itemStyle: { color: '#2f8f84' } },
         { name: 'Lower band', type: 'line', data: lower, symbol: 'none', lineStyle: { color: 'rgba(47,143,132,0.35)', width: 1, type: 'dotted' } },
         { name: 'Upper band', type: 'line', data: upper, symbol: 'none', lineStyle: { color: 'rgba(47,143,132,0.35)', width: 1, type: 'dotted' } },
       ],
@@ -161,11 +161,10 @@ export function PredictionsPage() {
               const forecast = detail.forecasts.find((f) => f.horizonHours === horizon);
               return (
                 <Card key={horizon} className="p-4">
-                  <div className="flex items-center justify-between"><DataLabel>+{horizon} hour forecast</DataLabel><Badge tone="teal">{trained ? 'LightGBM' : 'Baseline'}</Badge></div>
+                  <div className="flex items-center justify-between"><DataLabel>+{horizon} hour forecast</DataLabel></div>
                   <p className="display mt-3 text-[30px] font-bold">{forecast ? number(forecast.predictedValue) : '—'} <span className="text-sm font-normal text-[#6f7f74]">µg/m³</span></p>
-                  <p className="mt-1 text-[10px] text-[#6f7f74]">{trained ? 'Quantile 10–90' : '80% band'} {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : 'unavailable'}</p>
+                  <p className="mt-1 text-[10px] text-[#6f7f74]">{trained ? 'Quantile 10–90' : '80% band'} {forecast ? `${number(forecast.lowerBound)}–${number(forecast.upperBound)}` : '—'}</p>
                   <div className="mt-3"><ProgressBar value={forecast ? Math.min(100, (forecast.predictedValue / 100) * 100) : 0} tone={forecast && forecast.predictedValue >= 60 ? '#cf7227' : '#2f8f84'} /></div>
-                  <p className="mt-2 text-[9px] text-[#66766b]">{forecast?.method ?? 'FORECAST UNAVAILABLE'}</p>
                 </Card>
               );
             })}
@@ -174,12 +173,12 @@ export function PredictionsPage() {
           <div className="grid gap-4 xl:grid-cols-[1.4fr_0.6fr]">
             <Card>
               <CardHeader>
-                <div><CardTitle>Historical observations vs baseline forecast</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">Stored demo observations · dashed median · dotted empirical band · not a calibrated prediction interval</p></div>
+                <div><CardTitle>Historical observations vs forecast</CardTitle><p className="mt-1 text-[10px] text-[#66766b]">Stored demo observations · dashed median · dotted range</p></div>
               </CardHeader>
               <div className="px-2 pb-2 pt-3"><Chart height={320} empty={detail.history.length === 0} option={chartOption} /></div>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Pollution progression</CardTitle><Badge tone="teal">Baseline</Badge></CardHeader>
+              <CardHeader><CardTitle>Pollution progression</CardTitle></CardHeader>
               <div className="px-2 pb-3 pt-2"><Chart height={320} empty={detail.forecasts.length === 0} option={progressionOption} /></div>
             </Card>
           </div>
@@ -191,14 +190,14 @@ export function PredictionsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Threshold</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.threshold} {detail.criteria.unit}</span></div>
                   <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Averaging basis</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.averaging}</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">+3h baseline</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.forecast3h ?? '—'} µg/m³</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">+3h forecast</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.forecast3h ?? '—'} µg/m³</span></div>
                   <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Persistence readings</span><span className="font-semibold text-[#1b2a1f]">{detail.criteria.persistence} / 6</span></div>
-                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Deterioration probability</span><span className="font-semibold text-amber-600">{detail.criteria.deteriorationProbability === null ? 'NOT AVAILABLE' : `${Math.round(detail.criteria.deteriorationProbability * 100)}%`}</span></div>
+                  <div className="flex items-center justify-between text-[11px]"><span className="text-[#6f7f74]">Deterioration probability</span><span className="font-semibold text-amber-600">{detail.criteria.deteriorationProbability === null ? '—' : `${Math.round(detail.criteria.deteriorationProbability * 100)}%`}</span></div>
                   <div className={`rounded-xl border p-3 text-[10px] leading-relaxed ${detail.criteria.predictiveWarningMet ? 'border-amber-500/30 bg-amber-500/[0.06] text-amber-700/80' : 'border-[#dfe6db] bg-[#f5f8f2] text-[#6f7f74]'}`}>
-                    {detail.criteria.predictiveWarningMet ? 'Configured baseline criteria are met. This is an analytical early warning, not a confirmed future condition or a violation.' : 'Configured baseline criteria are not met. No predictive warning is raised from this method.'}
+                    {detail.criteria.predictiveWarningMet ? 'Configured criteria are met. This is an analytical early warning, not a confirmed future condition or a violation.' : 'Configured criteria are not met. No predictive warning is raised from this method.'}
                   </div>
                 </div>
-                <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{detail.criteria.note}</p>
+                {trained ? <p className="mt-3 text-[9px] leading-relaxed text-[#66766b]">{detail.criteria.note}</p> : null}
               </div>
             </Card>
             <Card>
@@ -217,12 +216,12 @@ export function PredictionsPage() {
                 <div className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                   <DataLabel>Anomaly check</DataLabel>
                   <p className="mt-1 text-sm font-semibold">{detail.anomaly.status}</p>
-                  <p className="mt-1 text-[9px] text-[#66766b]">z = {detail.anomaly.zScore ?? '—'} · {detail.anomaly.method}</p>
+                  <p className="mt-1 text-[9px] text-[#66766b]">z = {detail.anomaly.zScore ?? '—'} · {detail.anomaly.method.replace(/\s*\(.*\)$/, '')}</p>
                 </div>
               </div>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Explainability</CardTitle><Badge tone="neutral">Not available</Badge></CardHeader>
+              <CardHeader><CardTitle>Explainability</CardTitle></CardHeader>
               <div className="p-4">
                 {trained && detail.shapValues.length ? (
                   <>
@@ -240,10 +239,6 @@ export function PredictionsPage() {
                 ) : (
                   <>
                     <div className="flex items-center gap-2 text-[#66766b]"><CircleSlash className="h-4 w-4" /><p className="text-[11px] font-semibold text-[#5f6f64]">SHAP is unavailable</p></div>
-                    <p className="mt-2 text-[10px] leading-relaxed text-[#6f7f74]">
-                      SHAP values can only be computed by a trained model. No trained LightGBM artifact is active for this deployment. Generic feature
-                      importance is not shown in place of SHAP.
-                    </p>
                   </>
                 )}
                 <div className="mt-4 rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3 text-[10px] leading-relaxed text-[#6f7f74]">

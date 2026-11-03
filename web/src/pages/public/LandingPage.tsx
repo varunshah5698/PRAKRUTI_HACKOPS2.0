@@ -376,13 +376,9 @@ export function LandingPage() {
               </h2>
               <p className="mt-5 max-w-lg text-sm leading-relaxed text-ink/55">
                 The platform is designed for 1-hour, 3-hour and 6-hour PM2.5 forecasts, quantile intervals, a calibrated
-                deterioration classifier and anomaly detection. Those models are <strong className="text-ink">NOT TRAINED</strong> in
-                this deployment because no verified Mumbai historical extract has been supplied.
+                deterioration classifier and anomaly detection. In this deployment those capabilities run on a persistence
+                baseline because no verified Mumbai historical extract has been supplied.
               </p>
-              <div className="mt-6 rounded-2xl border border-amber-500/25 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
-                <strong className="text-amber-700">What you see instead:</strong> a clearly labelled persistence baseline with an
-                empirical 80% band. It is not a trained LightGBM model, not calibrated, and not presented as official skill.
-              </div>
               <div className="mt-6 grid grid-cols-3 gap-3">
                 {[
                   ['1 hour', 'baseline'],
@@ -543,10 +539,6 @@ export function LandingPage() {
                   <p className="text-[9px] uppercase tracking-[0.1em] text-amber-700/60">Averaging</p>
                   <p className="mt-1 text-[11px] font-semibold text-amber-800">Not comparable</p>
                 </div>
-              </div>
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-relaxed text-amber-900">
-                <strong>NO COMPLIANCE CONCLUSION.</strong> A single hourly reading cannot be compared with a 24-hour standard.
-                A valid 24-hour average and authorised review are required.
               </div>
               <div className="mt-3 flex items-center justify-between text-[10px] text-ink/40">
                 <span>NAAQS 2009 · 24-hour limit</span>
