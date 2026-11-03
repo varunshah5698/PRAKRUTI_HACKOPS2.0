@@ -65,14 +65,22 @@ DATABASE_URL=postgresql://varunnitinshah@localhost:5433/enviropulse
 
 If your PostgreSQL runs on 5432 or uses a password, change this value. Never commit real credentials.
 
-Optional Docker database (PostGIS 16):
+Optional full portable stack (PostGIS + API + built web, no local PostgreSQL needed):
 
 ```bash
-docker compose up -d
+docker compose up --build
+```
+
+Then open http://localhost:4000. The app container waits for PostGIS, applies the schema, seeds the demo dataset and starts the API. Set `JWT_SECRET` in your shell or a `.env` file before using it outside local development. The database is exposed on port 5433 for debugging.
+
+If you only want the database:
+
+```bash
+docker compose up -d db
 cp .env.docker.example .env.local
 ```
 
-The compose service exposes port 5433 and creates the `enviropulse` database. Then run the schema and seed steps below.
+Then run the schema and seed steps below.
 
 This workspace was set up with Homebrew PostgreSQL 18 + PostGIS on port 5433. If that server is not running after a reboot:
 
@@ -118,7 +126,7 @@ The API serves `web/dist` when present.
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/varunshah5698/PRAKRUTI_HACKOPS2.0)
 
-`render.yaml` provisions one Node web service (API + built SPA) and a PostGIS-enabled Postgres database.
+`render.yaml` provisions the Node web service (API + built SPA), an optional ML inference web service, and a PostGIS-enabled Postgres database. The app is wired to the ML service automatically with a generated API key.
 
 1. Push this repository to GitHub.
 2. In Render: **New → Blueprint**, select the repository, and click **Apply**.
@@ -127,11 +135,49 @@ The API serves `web/dist` when present.
 Notes:
 
 - The free web plan spins down when idle, so the first request after a pause is slow.
+- The ML service starts as `NOT_TRAINED` until trained artifacts are present in its image. The app then shows the labelled persistence baseline; it does not invent forecasts. Trained artifacts are gitignored by default, so add them to the image explicitly before expecting `TRAINED` output.
 - If `JWT_SECRET` is not set, the server generates a temporary one so it can boot; sessions reset on restart. The blueprint generates a stable value.
 - Evidence photographs are stored on the service's local disk and are lost on redeploy or restart (free plans have no persistent disk).
 - Optional integrations (River AI, email, data.gov.in, OpenAQ) are added as environment variables in the Render dashboard; see `.env.example`.
 - If you attach a custom domain, update `FRONTEND_URL` to `https://your-domain` so CORS and the same-origin check accept it.
 - The database is private-network only (`ipAllowList: []`); use Render's dashboard shell to inspect it.
+
+## Optional trained ML service
+
+The training pipeline is in `ml/train.py`. It refuses to run without a verified historical CSV. When the CSV is in place:
+
+```bash
+cd ml
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-serve.txt
+python train.py --input data/mumbai_air_quality.csv --output artifacts
+uvicorn serve:app --host 0.0.0.0 --port 8000
+```
+
+Then set `ML_SERVICE_URL=http://localhost:8000` in `.env.local`, register the model metrics:
+
+```bash
+npm run ml:register
+```
+
+Restart the API. The predictions page and station drawer will show trained LightGBM forecasts, quantile intervals, deterioration probability and SHAP only when the model service returns them. Without this, the app keeps the labelled persistence baseline.
+
+Docker profile:
+
+```bash
+ML_SERVICE_URL=http://ml:8000 docker compose --profile ml up --build
+```
+
+## Integration checks
+
+After adding credentials to `.env.local`, run:
+
+```bash
+npm run integrations:check
+```
+
+It checks the database, data.gov.in, OpenAQ, River AI, vision configuration, SMTP and the ML service without printing secrets. A missing key remains `NOT_CONFIGURED`; it never crashes the app.
 
 ## Demo accounts
 

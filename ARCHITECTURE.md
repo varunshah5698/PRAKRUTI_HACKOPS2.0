@@ -109,4 +109,4 @@ For production, move these to a durable job queue with idempotency keys and dist
 - Object storage (S3-compatible) adapter is a documented extension point; local private storage is used.
 - No external malware scanning service.
 - No MFA, CSRF token, formal retention/deletion worker, load testing or disaster-recovery plan.
-- No trained ML artifact or model server is deployed.
+- No trained ML artifact is present. The optional inference service runs in `NOT_TRAINED` mode and the app falls back to the labelled persistence baseline.

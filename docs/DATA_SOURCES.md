@@ -31,6 +31,16 @@ The brief requires official CPCB/MPCB data where available. This deployment does
 
 The `data.gov.in` and OpenAQ adapters are implemented and will run only when configured. They normalise records into the same observation table with source identifiers and timestamps.
 
+### Configuring data.gov.in
+
+1. Create a free data.gov.in account and API key.
+2. Add `DATA_GOV_IN_API_KEY` and a verified CPCB air-quality resource ID to `.env.local`.
+3. Restart the API and run `npm run integrations:check`.
+4. Open `/data-sources` and trigger ingestion, or wait for the scheduled job.
+5. Verify Mumbai station names, coordinates, source timestamps and units before trusting a record.
+
+The commonly referenced CPCB real-time AQI resource must be verified for current availability and field schema; the adapter does not assume an unverified resource ID.
+
 ### data.gov.in adapter expectations
 
 The adapter uses the commonly published CPCB city air-quality resource fields: `station`, `pollutant_id`, `pollutant_avg`, `pollutant_unit`, `last_update`, `latitude`, `longitude`. It validates:

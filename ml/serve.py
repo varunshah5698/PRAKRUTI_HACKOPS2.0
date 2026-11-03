@@ -6,8 +6,10 @@ invents forecasts.
 """
 from __future__ import annotations
 
+import hmac
 import json
 import math
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -15,14 +17,22 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-ARTIFACT_DIR = Path(__file__).resolve().parent / "artifacts"
+ARTIFACT_DIR = Path(os.getenv("ML_ARTIFACT_DIR", Path(__file__).resolve().parent / "artifacts"))
 HORIZONS = (1, 3, 6)
 FEATURE_COLUMNS = ["pm25", "pm10", "no2", "so2", "co", "o3", "temperature", "humidity", "wind_speed", "wind_dir", "precipitation"]
+API_KEY = os.environ.get("ML_SERVICE_API_KEY", "")
 
 app = FastAPI(title="Mumbai EnviroPulse ML inference", version="1.0.0")
+
+
+def require_api_key(authorization: str | None) -> None:
+    if not API_KEY:
+        return
+    if not authorization or not hmac.compare_digest(authorization, f"Bearer {API_KEY}"):
+        raise HTTPException(401, "UNAUTHORIZED")
 
 
 class HistoryPoint(BaseModel):
@@ -45,7 +55,7 @@ class WeatherInput(BaseModel):
 
 class PredictRequest(BaseModel):
     station_id: str
-    history: list[HistoryPoint] = Field(min_length=24)
+    history: list[HistoryPoint] = Field(min_length=25)
     weather: WeatherInput = Field(default_factory=WeatherInput)
     latest: dict[str, float] = Field(default_factory=dict)
 
@@ -79,8 +89,8 @@ def build_features(request: PredictRequest) -> pd.DataFrame:
     frame = pd.DataFrame([point.model_dump() for point in request.history])
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
     frame = frame.sort_values("timestamp").drop_duplicates("timestamp")
-    if len(frame) < 24:
-        raise HTTPException(422, "At least 24 hourly PM2.5 observations are required.")
+    if len(frame) < 25:
+        raise HTTPException(422, "At least 25 hourly PM2.5 observations are required (24 lags plus the current hour).")
     for column in FEATURE_COLUMNS:
         if column not in frame.columns:
             frame[column] = np.nan
@@ -116,7 +126,8 @@ def health() -> dict[str, Any]:
 
 
 @app.post("/predict")
-def predict(request: PredictRequest) -> dict[str, Any]:
+def predict(request: PredictRequest, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+    require_api_key(authorization)
     manifest = model_manifest()
     if manifest["status"] != "TRAINED":
         raise HTTPException(503, "MODEL_NOT_TRAINED: train and register a verified model first.")

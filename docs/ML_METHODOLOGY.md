@@ -83,12 +83,31 @@ If SHAP fails, the pipeline records a failure rather than inventing values.
 
 The test partition is also scored with persistence (`prediction = current PM2.5`). A complex model should beat this baseline; otherwise it should not be deployed.
 
-## Inference contract (future)
+## Inference service
 
-A model-serving adapter must:
+`ml/serve.py` is the optional FastAPI inference service:
+
+```bash
+cd ml
+pip install -r requirements-serve.txt
+python train.py --input data/mumbai_air_quality.csv --output artifacts
+uvicorn serve:app --host 0.0.0.0 --port 8000
+```
+
+It returns `503 MODEL_NOT_TRAINED` until artifacts and `model_card.json` exist. The Node adapter (`server/src/services/ml.ts`) calls `/health` and `/predict`; if the service is not configured, not trained or unreachable, the app falls back to `PERSISTENCE_BASELINE_V1` and says so.
+
+After training, register the model metrics:
+
+```bash
+npm run ml:register
+```
+
+Set `ML_SERVICE_URL=http://localhost:8000` in `.env.local` and restart the API. The predictions page, station drawer and future map timeline then use trained forecasts; SHAP and quantile intervals are shown only when the service returns them.
+
+The adapter must:
 
 - load a versioned artifact,
-- validate all required features and record missing inputs,
+- validate required features and record missing inputs,
 - return median, lower/upper quantile, horizon, model version and target time,
 - register the model version in `model_registry` with evaluation metrics,
 - keep `status=TRAINED` only after evaluation and review,

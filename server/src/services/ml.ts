@@ -20,14 +20,24 @@ export interface MlPredictionResult {
   error?: string;
 }
 
+export interface MlHealth {
+  status: string;
+  modelVersion: string | null;
+  error?: string;
+}
+
 export const mlConfigured = Boolean(env.ML_SERVICE_URL);
 
-export async function mlHealth(): Promise<{ status: string; modelVersion: string | null; error?: string }> {
-  if (!mlConfigured) return { status: 'NOT_CONFIGURED', modelVersion: null };
+// Render free services sleep. Cache health so a cold ML service falls back to
+// the baseline quickly instead of adding seconds to every predictions request.
+let cachedHealth: { at: number; value: MlHealth } | null = null;
+const HEALTH_TTL_MS = 60_000;
+
+async function fetchMlHealth(): Promise<MlHealth> {
   try {
     const response = await fetch(`${env.ML_SERVICE_URL.replace(/\/$/, '')}/health`, {
       headers: env.ML_SERVICE_API_KEY ? { Authorization: `Bearer ${env.ML_SERVICE_API_KEY}` } : {},
-      signal: AbortSignal.timeout(5_000),
+      signal: AbortSignal.timeout(3_000),
     });
     if (!response.ok) return { status: 'UNAVAILABLE', modelVersion: null, error: `HTTP ${response.status}` };
     const data = (await response.json()) as { status?: string; model_version?: string };
@@ -35,6 +45,14 @@ export async function mlHealth(): Promise<{ status: string; modelVersion: string
   } catch (error) {
     return { status: 'UNAVAILABLE', modelVersion: null, error: error instanceof Error ? error.message : 'ML service unreachable' };
   }
+}
+
+export async function mlHealth(): Promise<MlHealth> {
+  if (!mlConfigured) return { status: 'NOT_CONFIGURED', modelVersion: null };
+  if (cachedHealth && Date.now() - cachedHealth.at < HEALTH_TTL_MS) return cachedHealth.value;
+  const value = await fetchMlHealth();
+  cachedHealth = { at: Date.now(), value };
+  return value;
 }
 
 export async function getMlPrediction(params: {
@@ -53,6 +71,19 @@ export async function getMlPrediction(params: {
   if (!mlConfigured) {
     return { status: 'NOT_CONFIGURED', modelVersion: null, forecasts: [], deteriorationProbability: null, shapStatus: 'UNAVAILABLE', shap: [], limitations: [] };
   }
+  const health = await mlHealth();
+  if (health.status !== 'TRAINED') {
+    return {
+      status: health.status === 'NOT_TRAINED' ? 'NOT_TRAINED' : 'UNAVAILABLE',
+      modelVersion: health.modelVersion,
+      forecasts: [],
+      deteriorationProbability: null,
+      shapStatus: 'UNAVAILABLE',
+      shap: [],
+      limitations: [],
+      error: health.error,
+    };
+  }
   try {
     const now = params.now ?? new Date();
     const response = await fetch(`${env.ML_SERVICE_URL.replace(/\/$/, '')}/predict`, {
@@ -67,7 +98,7 @@ export async function getMlPrediction(params: {
         weather: params.weather ?? {},
         latest: params.latest ?? {},
       }),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');

@@ -27,6 +27,28 @@ services:
           name: prakruti
           type: web
           envVarKey: RENDER_EXTERNAL_URL
+      - key: ML_SERVICE_URL
+        fromService:
+          name: prakruti-ml
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: ML_SERVICE_API_KEY
+        fromService:
+          name: prakruti-ml
+          type: web
+          envVarKey: ML_SERVICE_API_KEY
+
+  - type: web
+    name: prakruti-ml
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./ml/Dockerfile
+    dockerContext: ./ml
+    healthCheckPath: /health
+    envVars:
+      - key: ML_SERVICE_API_KEY
+        generateValue: true
 
 databases:
   - name: prakruti-db

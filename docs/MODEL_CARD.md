@@ -46,6 +46,16 @@ No metrics exist. Do not display MAE/RMSE/coverage/PR-AUC/ROC-AUC/calibration fo
 - Model outputs must be explainable (SHAP) only when computed by the actual trained model.
 - Human authority must review before any official determination.
 
+## How to activate a trained model
+
+1. Supply a verified Mumbai CSV in `ml/data/`.
+2. Run `python ml/train.py --input ml/data/<file>.csv --output ml/artifacts`.
+3. Review `ml/artifacts/model_card.json` and `metrics.json`.
+4. Run `npm run ml:register` to update `model_registry`.
+5. Start `ml/serve.py` and set `ML_SERVICE_URL` in `.env.local`.
+6. Restart the API and verify `/predictions` shows the registered model version, quantile intervals and SHAP.
+7. Keep the persistence baseline available as a fallback if the service fails.
+
 ## Deployment checklist (before switching status to TRAINED)
 
 1. Verified data provenance and licence.

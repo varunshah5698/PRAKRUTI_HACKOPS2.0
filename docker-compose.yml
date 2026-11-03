@@ -67,6 +67,8 @@ services:
       context: ./ml
       dockerfile: Dockerfile
     restart: unless-stopped
+    environment:
+      ML_SERVICE_API_KEY: ${ML_SERVICE_API_KEY:-}
     volumes:
       - ./ml/artifacts:/app/artifacts:ro
     ports:

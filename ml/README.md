@@ -53,10 +53,23 @@ Outputs:
 - `artifacts/shap_summary.json`
 - `artifacts/model_card.json`
 
-The Node backend does not automatically import these artifacts. A model-serving
-adapter must be configured and its version recorded in `model_registry` before
-the UI may show trained forecasts. Until then, the UI must keep showing
-`NOT_TRAINED`.
+`serve.py` exposes the artifacts as a FastAPI inference service. It reports
+`NOT_TRAINED` and returns `503` until `artifacts/model_card.json` and the model
+files exist. The API keeps showing the labelled persistence baseline in that
+case; it never invents trained output.
+
+```bash
+pip install -r requirements-serve.txt
+uvicorn serve:app --host 0.0.0.0 --port 8000
+```
+
+Set `ML_SERVICE_URL=http://localhost:8000` in `.env.local`. If
+`ML_SERVICE_API_KEY` is set on the service, `POST /predict` requires
+`Authorization: Bearer <key>`; `/health` stays open for platform health checks.
+
+The served model version still has to be recorded in `model_registry` with
+`npm run ml:register` before the UI treats it as validated. Until then, the
+service is wired but the UI must keep the honesty labels.
 
 ## Time-aware evaluation
 

@@ -12,7 +12,8 @@
     "db:reset": "tsx src/db/setup.ts --reset",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "ml:register": "tsx src/db/register-models.ts"
+    "ml:register": "tsx src/db/register-models.ts",
+    "integrations:check": "tsx src/scripts/check-integrations.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
