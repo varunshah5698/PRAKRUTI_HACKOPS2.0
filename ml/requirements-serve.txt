@@ -1,4 +1,10 @@
--r requirements.txt
+# Inference-only: shap is omitted because serve.py imports it lazily and
+# reports shap_status=FAILED when absent. Training deps stay in requirements.txt.
 fastapi>=0.115
-uvicorn[standard]>=0.30
+uvicorn>=0.30
 pydantic>=2.7
+joblib>=1.3
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.4
+lightgbm>=4.3
