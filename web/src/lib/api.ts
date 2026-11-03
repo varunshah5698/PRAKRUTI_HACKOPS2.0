@@ -21,7 +21,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 // A tsx watcher restart can take a few seconds. GETs are idempotent, so wait
 // through the gap instead of turning a brief restart into an error screen.
 const RETRY_DELAYS = [600, 1500, 3000];
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

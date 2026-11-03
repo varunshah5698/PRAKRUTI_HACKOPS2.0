@@ -23,18 +23,20 @@ export function ReportsPage() {
   const [verification, setVerification] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [retrying, setRetrying] = useState(false);
   const { isAuthority } = useAuth();
 
   const load = () => {
     setLoading(true);
+    setRetrying(false);
     const query = new URLSearchParams({ page: String(page), pageSize: '20' });
     if (category) query.set('category', category);
     if (status) query.set('status', status);
     if (verification) query.set('verification', verification);
-    api.get<{ reports: ReportRow[]; total: number }>(`/reports?${query.toString()}`)
+    api.get<{ reports: ReportRow[]; total: number }>(`/reports?${query.toString()}`, { onRetry: () => setRetrying(true) })
       .then((result) => { setReports(result.reports); setTotal(result.total); setError(null); })
       .catch((err) => setError(err instanceof Error ? err.message : 'Could not load reports'))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setRetrying(false); });
   };
 
   useEffect(load, [page, category, status, verification]);
@@ -70,7 +72,9 @@ export function ReportsPage() {
         </Select>
       </div>
 
-      {loading ? <LoadingBlock label="Loading reports" /> : error ? (
+      {loading ? (
+        <LoadingBlock label={retrying ? 'Server restarting · retrying reports' : 'Loading reports'} />
+      ) : error ? (
         <EmptyState title="Reports unavailable" description={error} icon={<FileWarning className="h-5 w-5" />} action={<Button variant="lime" onClick={load}>Retry</Button>} />
       ) : reports.length === 0 ? (
         <EmptyState title="No reports match this view" description="Try clearing filters. New citizen reports will appear here with their verification state intact." icon={<FileWarning className="h-5 w-5" />} />

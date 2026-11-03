@@ -299,7 +299,7 @@ def archive_series(frame: pd.DataFrame, sensor_id: int, code: str, unit: str) ->
 WEATHER_MAP = {
     # output column: (OpenAQ parameter, accepted units, conversion, plausible bounds)
     "temperature": ("temperature", ("c", "°c"), 1.0, (10.0, 48.0)),
-    "humidity": ("relativehumidity", ("%",), 1.0, (5.0, 100.0)),
+    "humidity": ("relativehumidity", ("%",), 1.0, (10.0, 100.0)),
     "wind_speed": ("wind_speed", ("m/s", "km/h"), None, (0.0, 80.0)),
     "wind_dir": ("wind_direction", ("deg", "°"), 1.0, (0.0, 360.0)),
 }
@@ -624,7 +624,7 @@ def main() -> None:
     # Cross-station plausibility check for station weather. A temperature sensor
     # 10 C off the city median is a fault, not a microclimate.
     if args.source == "archive" and keep:
-        thresholds = {"temperature": 6.0, "humidity": 25.0, "wind_speed": 25.0}
+        thresholds = {"temperature": 6.0, "humidity": 20.0, "wind_speed": 25.0}
         city_weather = {}
         for column in thresholds:
             series_list = [

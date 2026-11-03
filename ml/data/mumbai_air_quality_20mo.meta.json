@@ -1,0 +1,2883 @@
+{
+  "dataset": "Mumbai PM2.5 forecasting extract",
+  "built_at": "2026-11-03T08:17:10.823368+00:00",
+  "period": {
+    "start": "2025-03-01T00:00:00Z",
+    "end": "2026-10-27T00:00:00Z",
+    "timezone": "UTC"
+  },
+  "sources": {
+    "air_quality": "OpenAQ S3 daily archive, raw station measurements aggregated to hourly means (provider CPCB; owners MPCB/BMC/IITM)",
+    "weather": "Co-located OpenAQ station weather measurements where available; Open-Meteo ERA5 reanalysis fills missing hours. Per-station measured fractions are recorded in stations[].weather."
+  },
+  "stations": [
+    {
+      "station_id": "OPENAQ-6927",
+      "openaq_id": 6927,
+      "name": "Colaba, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 18.91,
+      "longitude": 72.82,
+      "sensors": {
+        "co": {
+          "id": 12235921,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12235923,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12235924,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12235925,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12235926,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12235928,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.4235,
+        "no2": 0.4601,
+        "o3": 0.2078,
+        "pm10": 0.5977,
+        "pm25": 0.6317,
+        "so2": 0.1254
+      },
+      "quality": {
+        "co": {
+          "rows": 14702,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1921,
+          "method_ppb_labelled_ppm": 14702
+        },
+        "no2": {
+          "rows": 18803,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1040,
+          "method_ppb_converted": 18803
+        },
+        "o3": {
+          "rows": 7944,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1832,
+          "method_mass": 7944
+        },
+        "pm10": {
+          "rows": 28231,
+          "out_of_bounds": 41,
+          "bad_unit": 0,
+          "low_coverage": 656,
+          "method_mass": 28190
+        },
+        "pm25": {
+          "rows": 34159,
+          "out_of_bounds": 9,
+          "bad_unit": 0,
+          "low_coverage": 221,
+          "method_mass": 34150
+        },
+        "so2": {
+          "rows": 6012,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1639,
+          "method_ppb_converted": 6012
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235929,
+          "source_unit": "c",
+          "coverage": 0.003,
+          "outliers_removed": 4
+        },
+        "humidity": {
+          "sensor_id": 12235927,
+          "source_unit": "%",
+          "coverage": 0.003,
+          "outliers_removed": 44
+        },
+        "wind_speed": {
+          "sensor_id": 14341962,
+          "source_unit": "m/s",
+          "coverage": 0.0007
+        },
+        "wind_dir": {
+          "sensor_id": 14341961,
+          "source_unit": "deg",
+          "coverage": 0.0007
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-6945",
+      "openaq_id": 6945,
+      "name": "Kurla, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.0863,
+      "longitude": 72.8888,
+      "sensors": {
+        "co": {
+          "id": 12235829,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12235831,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12235832,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12235833,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12235834,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12289836,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.7751,
+        "no2": 0.786,
+        "o3": 0.7743,
+        "pm10": 0.7454,
+        "pm25": 0.7532,
+        "so2": 0.7423
+      },
+      "quality": {
+        "co": {
+          "rows": 40138,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 331,
+          "method_ppb_labelled_ppm": 40138
+        },
+        "no2": {
+          "rows": 41725,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 261,
+          "method_ppb_converted": 41725
+        },
+        "o3": {
+          "rows": 39820,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 339,
+          "method_mass": 39820
+        },
+        "pm10": {
+          "rows": 38976,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 303,
+          "method_mass": 38976
+        },
+        "pm25": {
+          "rows": 40546,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 221,
+          "method_mass": 40546
+        },
+        "so2": {
+          "rows": 38669,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 302,
+          "method_ppb_converted": 38669
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235836,
+          "source_unit": "c",
+          "coverage": 0.7829,
+          "outliers_removed": 10056
+        },
+        "humidity": {
+          "sensor_id": 12235835,
+          "source_unit": "%",
+          "coverage": 0.7829,
+          "outliers_removed": 691
+        },
+        "wind_speed": {
+          "sensor_id": 14340924,
+          "source_unit": "m/s",
+          "coverage": 0.0413,
+          "outliers_removed": 29
+        },
+        "wind_dir": {
+          "sensor_id": 14340923,
+          "source_unit": "deg",
+          "coverage": 0.4808
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-6956",
+      "openaq_id": 6956,
+      "name": "Powai, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.1375,
+      "longitude": 72.915056,
+      "sensors": {
+        "co": {
+          "id": 12235891,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12235893,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12235894,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12235895,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12235896,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12235898,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.3368,
+        "no2": 0.6992,
+        "o3": 0.4742,
+        "pm10": 0.6773,
+        "pm25": 0.6702,
+        "so2": 0.6773
+      },
+      "quality": {
+        "co": {
+          "rows": 17423,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 237,
+          "method_ppb_labelled_ppm": 17423
+        },
+        "no2": {
+          "rows": 37343,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 355,
+          "method_ppb_converted": 37343
+        },
+        "o3": {
+          "rows": 24367,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 365,
+          "method_mass": 24367
+        },
+        "pm10": {
+          "rows": 35721,
+          "out_of_bounds": 104,
+          "bad_unit": 0,
+          "low_coverage": 287,
+          "method_mass": 35617
+        },
+        "pm25": {
+          "rows": 36406,
+          "out_of_bounds": 106,
+          "bad_unit": 0,
+          "low_coverage": 193,
+          "method_mass": 36300
+        },
+        "so2": {
+          "rows": 36775,
+          "out_of_bounds": 1129,
+          "bad_unit": 0,
+          "low_coverage": 396,
+          "method_ppb_converted": 35646
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235899,
+          "source_unit": "c",
+          "coverage": 0.6798,
+          "outliers_removed": 4278
+        },
+        "humidity": {
+          "sensor_id": 12235897,
+          "source_unit": "%",
+          "coverage": 0.6253,
+          "outliers_removed": 781
+        },
+        "wind_speed": {
+          "sensor_id": 14340936,
+          "source_unit": "m/s",
+          "coverage": 0.4034
+        },
+        "wind_dir": {
+          "sensor_id": 14340935,
+          "source_unit": "deg",
+          "coverage": 0.4034
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-6959",
+      "openaq_id": 6959,
+      "name": "Siddharth Nagar-Worli, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.000083,
+      "longitude": 72.813993,
+      "sensors": {
+        "co": {
+          "id": 12236430,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236432,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12236433,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12236434,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12236435,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        }
+      },
+      "coverage": {
+        "co": 0.7978,
+        "no2": 0.7877,
+        "o3": 0.7971,
+        "pm10": 0.7957,
+        "pm25": 0.7975
+      },
+      "quality": {
+        "co": {
+          "rows": 43683,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 637,
+          "method_ppb_labelled_ppm": 43683
+        },
+        "no2": {
+          "rows": 43202,
+          "out_of_bounds": 27,
+          "bad_unit": 0,
+          "low_coverage": 642,
+          "method_ppb_converted": 43175
+        },
+        "o3": {
+          "rows": 43662,
+          "out_of_bounds": 3,
+          "bad_unit": 0,
+          "low_coverage": 630,
+          "method_mass": 43659
+        },
+        "pm10": {
+          "rows": 43653,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 631,
+          "method_mass": 43653
+        },
+        "pm25": {
+          "rows": 43742,
+          "out_of_bounds": 4,
+          "bad_unit": 0,
+          "low_coverage": 637,
+          "method_mass": 43738
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236437,
+          "source_unit": "c",
+          "coverage": 0.0855,
+          "outliers_removed": 1
+        },
+        "humidity": {
+          "sensor_id": 12236436,
+          "source_unit": "%",
+          "coverage": 0.361,
+          "outliers_removed": 5017
+        },
+        "wind_speed": {
+          "sensor_id": 14342067,
+          "source_unit": "m/s",
+          "coverage": 0.2815
+        },
+        "wind_dir": {
+          "sensor_id": 14342066,
+          "source_unit": "deg",
+          "coverage": 0.2815
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-6965",
+      "openaq_id": 6965,
+      "name": "Borivali East, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.227474,
+      "longitude": 72.864394,
+      "sensors": {
+        "co": {
+          "id": 12252653,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12252655,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12252656,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12252657,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12252658,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12252660,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.5946,
+        "no2": 0.621,
+        "o3": 0.3277,
+        "pm10": 0.6082,
+        "pm25": 0.6293,
+        "so2": 0.6062
+      },
+      "quality": {
+        "co": {
+          "rows": 31333,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 479,
+          "method_ppb_labelled_ppm": 31333
+        },
+        "no2": {
+          "rows": 33025,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 336,
+          "method_ppb_converted": 33025
+        },
+        "o3": {
+          "rows": 17156,
+          "out_of_bounds": 7,
+          "bad_unit": 0,
+          "low_coverage": 310,
+          "method_mass": 17149
+        },
+        "pm10": {
+          "rows": 32261,
+          "out_of_bounds": 7,
+          "bad_unit": 0,
+          "low_coverage": 382,
+          "method_mass": 32254
+        },
+        "pm25": {
+          "rows": 34024,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 241,
+          "method_mass": 34024
+        },
+        "so2": {
+          "rows": 32053,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 406,
+          "method_ppb_converted": 32053
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12252661,
+          "source_unit": "c",
+          "coverage": 0.2471,
+          "outliers_removed": 362
+        },
+        "humidity": {
+          "sensor_id": 12252659,
+          "source_unit": "%",
+          "coverage": 0.1183,
+          "outliers_removed": 494
+        },
+        "wind_speed": {
+          "sensor_id": 14341951,
+          "source_unit": "m/s",
+          "coverage": 0.2357,
+          "outliers_removed": 1043
+        },
+        "wind_dir": {
+          "sensor_id": 14341950,
+          "source_unit": "deg",
+          "coverage": 0.0176
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-6967",
+      "openaq_id": 6967,
+      "name": "Sion, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.047,
+      "longitude": 72.8746,
+      "sensors": {
+        "co": {
+          "id": 12243925,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12243927,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12243928,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12243929,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12243930,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12243932,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.7061,
+        "no2": 0.6798,
+        "o3": 0.455,
+        "pm10": 0.6899,
+        "pm25": 0.6995,
+        "so2": 0.6327
+      },
+      "quality": {
+        "co": {
+          "rows": 37282,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 358,
+          "method_ppb_labelled_ppm": 37282
+        },
+        "no2": {
+          "rows": 36857,
+          "out_of_bounds": 512,
+          "bad_unit": 0,
+          "low_coverage": 271,
+          "method_ppb_converted": 36345
+        },
+        "o3": {
+          "rows": 23605,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 275,
+          "method_mass": 23605
+        },
+        "pm10": {
+          "rows": 36478,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 311,
+          "method_mass": 36478
+        },
+        "pm25": {
+          "rows": 37869,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 249,
+          "method_mass": 37869
+        },
+        "so2": {
+          "rows": 33590,
+          "out_of_bounds": 14,
+          "bad_unit": 0,
+          "low_coverage": 470,
+          "method_ppb_converted": 33576
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12243933,
+          "source_unit": "c",
+          "coverage": 0.622,
+          "outliers_removed": 661
+        },
+        "humidity": {
+          "sensor_id": 12243931,
+          "source_unit": "%",
+          "coverage": 0.6724,
+          "outliers_removed": 31
+        },
+        "wind_speed": {
+          "sensor_id": 14340940,
+          "source_unit": "m/s",
+          "coverage": 0.4866
+        },
+        "wind_dir": {
+          "sensor_id": 14340939,
+          "source_unit": "deg",
+          "coverage": 0.4865
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-11606",
+      "openaq_id": 11606,
+      "name": "Borivali East, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.23241,
+      "longitude": 72.86895,
+      "sensors": {
+        "co": {
+          "id": 12236413,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236415,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12236416,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12236417,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12236418,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        }
+      },
+      "coverage": {
+        "co": 0.8809,
+        "no2": 0.8595,
+        "o3": 0.8671,
+        "pm10": 0.8774,
+        "pm25": 0.88
+      },
+      "quality": {
+        "co": {
+          "rows": 47298,
+          "out_of_bounds": 7,
+          "bad_unit": 0,
+          "low_coverage": 247,
+          "method_ppb_labelled_ppm": 47291
+        },
+        "no2": {
+          "rows": 46223,
+          "out_of_bounds": 13,
+          "bad_unit": 0,
+          "low_coverage": 230,
+          "method_ppb_converted": 46210
+        },
+        "o3": {
+          "rows": 46517,
+          "out_of_bounds": 2,
+          "bad_unit": 0,
+          "low_coverage": 257,
+          "method_mass": 46515
+        },
+        "pm10": {
+          "rows": 47241,
+          "out_of_bounds": 20,
+          "bad_unit": 0,
+          "low_coverage": 245,
+          "method_mass": 47221
+        },
+        "pm25": {
+          "rows": 47380,
+          "out_of_bounds": 7,
+          "bad_unit": 0,
+          "low_coverage": 248,
+          "method_mass": 47373
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236420,
+          "coverage": 0.0
+        },
+        "humidity": {
+          "sensor_id": 12236419,
+          "coverage": 0.0
+        },
+        "wind_speed": {
+          "sensor_id": 14342060,
+          "source_unit": "m/s",
+          "coverage": 0.0037
+        },
+        "wind_dir": {
+          "sensor_id": 14342059,
+          "source_unit": "deg",
+          "coverage": 0.0037
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-11611",
+      "openaq_id": 11611,
+      "name": "Malad West, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.19709,
+      "longitude": 72.82204,
+      "sensors": {
+        "co": {
+          "id": 12236421,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236423,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12236424,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12236425,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12236426,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12236428,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8356,
+        "no2": 0.8664,
+        "o3": 0.8894,
+        "pm10": 0.8822,
+        "pm25": 0.888,
+        "so2": 0.8803
+      },
+      "quality": {
+        "co": {
+          "rows": 44736,
+          "out_of_bounds": 24,
+          "bad_unit": 0,
+          "low_coverage": 220,
+          "method_ppb_labelled_ppm": 44712
+        },
+        "no2": {
+          "rows": 46423,
+          "out_of_bounds": 6,
+          "bad_unit": 0,
+          "low_coverage": 225,
+          "method_ppb_converted": 46417
+        },
+        "o3": {
+          "rows": 47520,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 222,
+          "method_mass": 47520
+        },
+        "pm10": {
+          "rows": 47515,
+          "out_of_bounds": 12,
+          "bad_unit": 0,
+          "low_coverage": 221,
+          "method_mass": 47503
+        },
+        "pm25": {
+          "rows": 47793,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 222,
+          "method_mass": 47793
+        },
+        "so2": {
+          "rows": 47171,
+          "out_of_bounds": 111,
+          "bad_unit": 0,
+          "low_coverage": 238,
+          "method_ppb_converted": 47060
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236429,
+          "coverage": 0.0
+        },
+        "humidity": {
+          "sensor_id": 12236427,
+          "coverage": 0.0
+        },
+        "wind_speed": {
+          "sensor_id": 14342064,
+          "source_unit": "m/s",
+          "coverage": 0.0012
+        },
+        "wind_dir": {
+          "sensor_id": 14342063,
+          "source_unit": "deg",
+          "coverage": 0.0012
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-12024",
+      "openaq_id": 12024,
+      "name": "Chakala-Andheri East, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.11074,
+      "longitude": 72.86084,
+      "sensors": {
+        "co": {
+          "id": 12236406,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236408,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12236409,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12442195,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12442196,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12236411,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8616,
+        "no2": 0.8428,
+        "o3": 0.862,
+        "pm10": 0.8441,
+        "pm25": 0.8431,
+        "so2": 0.842
+      },
+      "quality": {
+        "co": {
+          "rows": 46276,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 229,
+          "method_ppb_labelled_ppm": 46276
+        },
+        "no2": {
+          "rows": 45252,
+          "out_of_bounds": 2,
+          "bad_unit": 0,
+          "low_coverage": 227,
+          "method_ppb_converted": 45250
+        },
+        "o3": {
+          "rows": 46277,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 233,
+          "method_mass": 46277
+        },
+        "pm10": {
+          "rows": 45423,
+          "out_of_bounds": 33,
+          "bad_unit": 0,
+          "low_coverage": 229,
+          "method_mass": 45390
+        },
+        "pm25": {
+          "rows": 45327,
+          "out_of_bounds": 10,
+          "bad_unit": 0,
+          "low_coverage": 227,
+          "method_mass": 45317
+        },
+        "so2": {
+          "rows": 45035,
+          "out_of_bounds": 70,
+          "bad_unit": 0,
+          "low_coverage": 317,
+          "method_ppb_converted": 44965
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236412,
+          "source_unit": "c",
+          "coverage": 0.5664,
+          "outliers_removed": 2493
+        },
+        "humidity": {
+          "sensor_id": 12236410,
+          "source_unit": "%",
+          "coverage": 0.5784,
+          "outliers_removed": 3001
+        },
+        "wind_speed": {
+          "sensor_id": 14341019,
+          "source_unit": "m/s",
+          "coverage": 0.2675
+        },
+        "wind_dir": {
+          "sensor_id": 14341018,
+          "source_unit": "deg",
+          "coverage": 0.2675
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-12039",
+      "openaq_id": 12039,
+      "name": "Khindipada-Bhandup West, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.164394,
+      "longitude": 72.928297,
+      "sensors": {
+        "co": {
+          "id": 12236389,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236391,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12236392,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12236393,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12236394,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12236396,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8076,
+        "no2": 0.7904,
+        "o3": 0.8021,
+        "pm10": 0.8039,
+        "pm25": 0.4474,
+        "so2": 0.8001
+      },
+      "quality": {
+        "co": {
+          "rows": 43658,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 592,
+          "method_ppb_labelled_ppm": 43658
+        },
+        "no2": {
+          "rows": 42738,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 602,
+          "method_ppb_converted": 42738
+        },
+        "o3": {
+          "rows": 43481,
+          "out_of_bounds": 1,
+          "bad_unit": 0,
+          "low_coverage": 616,
+          "method_mass": 43480
+        },
+        "pm10": {
+          "rows": 43398,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 620,
+          "method_mass": 43398
+        },
+        "pm25": {
+          "rows": 23631,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 295,
+          "method_mass": 23631
+        },
+        "so2": {
+          "rows": 43324,
+          "out_of_bounds": 92,
+          "bad_unit": 0,
+          "low_coverage": 631,
+          "method_ppb_converted": 43232
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236397,
+          "source_unit": "c",
+          "coverage": 0.6837,
+          "outliers_removed": 661
+        },
+        "humidity": {
+          "sensor_id": 12236395,
+          "source_unit": "%",
+          "coverage": 0.6835,
+          "outliers_removed": 6926
+        },
+        "wind_speed": {
+          "sensor_id": 14342058,
+          "source_unit": "m/s",
+          "coverage": 0.0037
+        },
+        "wind_dir": {
+          "sensor_id": 14342057,
+          "source_unit": "deg",
+          "coverage": 0.0037
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-12040",
+      "openaq_id": 12040,
+      "name": "Mulund West, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.175,
+      "longitude": 72.9419,
+      "sensors": {
+        "co": {
+          "id": 12236476,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236478,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "pm10": {
+          "id": 12236480,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12236481,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12236483,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.0201,
+        "no2": 0.6612,
+        "pm10": 0.2985,
+        "pm25": 0.764,
+        "so2": 0.2087
+      },
+      "quality": {
+        "co": {
+          "rows": 496,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 0,
+          "method_ppb_labelled_ppm": 496
+        },
+        "no2": {
+          "rows": 25862,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1488,
+          "method_ppb_converted": 25862
+        },
+        "pm10": {
+          "rows": 11554,
+          "out_of_bounds": 289,
+          "bad_unit": 0,
+          "low_coverage": 2434,
+          "method_mass": 11265
+        },
+        "pm25": {
+          "rows": 41380,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 299,
+          "method_mass": 41380
+        },
+        "so2": {
+          "rows": 4536,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 0,
+          "method_ppb_converted": 4536
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236484,
+          "source_unit": "c",
+          "coverage": 0.5236,
+          "outliers_removed": 2
+        },
+        "humidity": {
+          "sensor_id": 12236482,
+          "source_unit": "%",
+          "coverage": 0.5236,
+          "outliers_removed": 21
+        },
+        "wind_speed": {
+          "sensor_id": 14342084,
+          "source_unit": "m/s",
+          "coverage": 0.3018
+        },
+        "wind_dir": {
+          "sensor_id": 14342083,
+          "source_unit": "deg",
+          "coverage": 0.3018
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409323",
+      "openaq_id": 3409323,
+      "name": "Worli, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 18.9936162,
+      "longitude": 72.8128113,
+      "sensors": {
+        "co": {
+          "id": 12235909,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12235911,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12235912,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12235913,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12235914,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12235916,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.6848,
+        "no2": 0.7086,
+        "o3": 0.6306,
+        "pm10": 0.6757,
+        "pm25": 0.6787,
+        "so2": 0.6704
+      },
+      "quality": {
+        "co": {
+          "rows": 36536,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 314,
+          "method_ppb_labelled_ppm": 36536
+        },
+        "no2": {
+          "rows": 37925,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 295,
+          "method_ppb_converted": 37925
+        },
+        "o3": {
+          "rows": 33902,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 437,
+          "method_mass": 33902
+        },
+        "pm10": {
+          "rows": 36177,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 320,
+          "method_mass": 36177
+        },
+        "pm25": {
+          "rows": 36955,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 310,
+          "method_mass": 36955
+        },
+        "so2": {
+          "rows": 35693,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 344,
+          "method_ppb_converted": 35693
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12235917,
+          "source_unit": "c",
+          "coverage": 0.6917,
+          "outliers_removed": 18
+        },
+        "humidity": {
+          "sensor_id": 12235915,
+          "source_unit": "%",
+          "coverage": 0.6428,
+          "outliers_removed": 390
+        },
+        "wind_speed": {
+          "sensor_id": 14341956,
+          "source_unit": "m/s",
+          "coverage": 0.4726
+        },
+        "wind_dir": {
+          "sensor_id": 14341955,
+          "source_unit": "deg",
+          "coverage": 0.4726
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409328",
+      "openaq_id": 3409328,
+      "name": "Bandra Kurla Complex, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.0627,
+      "longitude": 72.84614,
+      "sensors": {
+        "co": {
+          "id": 12708241,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12708243,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12708244,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12708245,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12708246,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12708248,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.5981,
+        "no2": 0.584,
+        "o3": 0.5997,
+        "pm10": 0.5934,
+        "pm25": 0.5882,
+        "so2": 0.5955
+      },
+      "quality": {
+        "co": {
+          "rows": 31837,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 772,
+          "method_ppb_labelled_ppm": 31837
+        },
+        "no2": {
+          "rows": 31097,
+          "out_of_bounds": 1,
+          "bad_unit": 0,
+          "low_coverage": 756,
+          "method_ppb_converted": 31096
+        },
+        "o3": {
+          "rows": 31969,
+          "out_of_bounds": 2,
+          "bad_unit": 0,
+          "low_coverage": 774,
+          "method_mass": 31967
+        },
+        "pm10": {
+          "rows": 31636,
+          "out_of_bounds": 3,
+          "bad_unit": 0,
+          "low_coverage": 772,
+          "method_mass": 31633
+        },
+        "pm25": {
+          "rows": 31346,
+          "out_of_bounds": 6,
+          "bad_unit": 0,
+          "low_coverage": 769,
+          "method_mass": 31340
+        },
+        "so2": {
+          "rows": 31725,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 788,
+          "method_ppb_converted": 31725
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12708249,
+          "source_unit": "c",
+          "coverage": 0.0015,
+          "outliers_removed": 19
+        },
+        "humidity": {
+          "sensor_id": 12708247,
+          "source_unit": "%",
+          "coverage": 0.0021,
+          "outliers_removed": 16
+        },
+        "wind_speed": {
+          "sensor_id": 14342049,
+          "source_unit": "m/s",
+          "coverage": 0.0167
+        },
+        "wind_dir": {
+          "sensor_id": 14342048,
+          "source_unit": "deg",
+          "coverage": 0.0189
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409329",
+      "openaq_id": 3409329,
+      "name": "Deonar, Mumbai - IITM",
+      "provider": "CPCB",
+      "owner": "Indian Institute of Tropical Meteorology",
+      "latitude": 19.04946,
+      "longitude": 72.923,
+      "sensors": {
+        "co": {
+          "id": 12236380,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12236382,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12236383,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12236384,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12236385,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12236387,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.753,
+        "no2": 0.7707,
+        "o3": 0.7497,
+        "pm10": 0.7738,
+        "pm25": 0.7687,
+        "so2": 0.7522
+      },
+      "quality": {
+        "co": {
+          "rows": 40388,
+          "out_of_bounds": 151,
+          "bad_unit": 0,
+          "low_coverage": 239,
+          "method_ppb_labelled_ppm": 40237
+        },
+        "no2": {
+          "rows": 41010,
+          "out_of_bounds": 16,
+          "bad_unit": 0,
+          "low_coverage": 248,
+          "method_ppb_converted": 40994
+        },
+        "o3": {
+          "rows": 39977,
+          "out_of_bounds": 2,
+          "bad_unit": 0,
+          "low_coverage": 251,
+          "method_mass": 39975
+        },
+        "pm10": {
+          "rows": 41609,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 253,
+          "method_mass": 41609
+        },
+        "pm25": {
+          "rows": 41282,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 261,
+          "method_mass": 41282
+        },
+        "so2": {
+          "rows": 40232,
+          "out_of_bounds": 21,
+          "bad_unit": 0,
+          "low_coverage": 256,
+          "method_ppb_converted": 40211
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12236388,
+          "coverage": 0.0
+        },
+        "humidity": {
+          "sensor_id": 12236386,
+          "coverage": 0.0
+        },
+        "wind_speed": {
+          "sensor_id": 14341013,
+          "source_unit": "m/s",
+          "coverage": 0.2
+        },
+        "wind_dir": {
+          "sensor_id": 14341012,
+          "source_unit": "deg",
+          "coverage": 0.1999
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409479",
+      "openaq_id": 3409479,
+      "name": "Mindspace-Malad West, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.1878657,
+      "longitude": 72.8304069,
+      "sensors": {
+        "co": {
+          "id": 12238343,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238345,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238346,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238347,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238348,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238350,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8256,
+        "no2": 0.8245,
+        "o3": 0.826,
+        "pm10": 0.8236,
+        "pm25": 0.823,
+        "so2": 0.8196
+      },
+      "quality": {
+        "co": {
+          "rows": 44617,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 362,
+          "method_ppb_labelled_ppm": 44617
+        },
+        "no2": {
+          "rows": 44613,
+          "out_of_bounds": 4,
+          "bad_unit": 0,
+          "low_coverage": 364,
+          "method_ppb_converted": 44609
+        },
+        "o3": {
+          "rows": 44624,
+          "out_of_bounds": 9,
+          "bad_unit": 0,
+          "low_coverage": 362,
+          "method_mass": 44615
+        },
+        "pm10": {
+          "rows": 44771,
+          "out_of_bounds": 95,
+          "bad_unit": 0,
+          "low_coverage": 374,
+          "method_mass": 44676
+        },
+        "pm25": {
+          "rows": 44754,
+          "out_of_bounds": 128,
+          "bad_unit": 0,
+          "low_coverage": 373,
+          "method_mass": 44626
+        },
+        "so2": {
+          "rows": 44314,
+          "out_of_bounds": 1,
+          "bad_unit": 0,
+          "low_coverage": 365,
+          "method_ppb_converted": 44313
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238351,
+          "source_unit": "c",
+          "coverage": 0.8263,
+          "outliers_removed": 438
+        },
+        "humidity": {
+          "sensor_id": 12238349,
+          "source_unit": "%",
+          "coverage": 0.8039,
+          "outliers_removed": 2071
+        },
+        "wind_speed": {
+          "sensor_id": 14341566,
+          "source_unit": "m/s",
+          "coverage": 0.4956
+        },
+        "wind_dir": {
+          "sensor_id": 14341565,
+          "source_unit": "deg",
+          "coverage": 0.4933
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409482",
+      "openaq_id": 3409482,
+      "name": "Bandra Kurla Complex, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.065931,
+      "longitude": 72.862131,
+      "sensors": {
+        "co": {
+          "id": 12238370,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238372,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238373,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238374,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238375,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238377,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8224,
+        "no2": 0.82,
+        "o3": 0.8282,
+        "pm10": 0.8234,
+        "pm25": 0.8202,
+        "so2": 0.8271
+      },
+      "quality": {
+        "co": {
+          "rows": 43915,
+          "out_of_bounds": 7,
+          "bad_unit": 0,
+          "low_coverage": 412,
+          "method_ppb_labelled_ppm": 43908
+        },
+        "no2": {
+          "rows": 43771,
+          "out_of_bounds": 45,
+          "bad_unit": 0,
+          "low_coverage": 427,
+          "method_ppb_converted": 43726
+        },
+        "o3": {
+          "rows": 44215,
+          "out_of_bounds": 2,
+          "bad_unit": 0,
+          "low_coverage": 425,
+          "method_mass": 44213
+        },
+        "pm10": {
+          "rows": 44511,
+          "out_of_bounds": 269,
+          "bad_unit": 0,
+          "low_coverage": 418,
+          "method_mass": 44242
+        },
+        "pm25": {
+          "rows": 44482,
+          "out_of_bounds": 431,
+          "bad_unit": 0,
+          "low_coverage": 424,
+          "method_mass": 44051
+        },
+        "so2": {
+          "rows": 44297,
+          "out_of_bounds": 137,
+          "bad_unit": 0,
+          "low_coverage": 426,
+          "method_ppb_converted": 44160
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238378,
+          "source_unit": "c",
+          "coverage": 0.7632,
+          "outliers_removed": 601
+        },
+        "humidity": {
+          "sensor_id": 12238376,
+          "source_unit": "%",
+          "coverage": 0.828,
+          "outliers_removed": 3328
+        },
+        "wind_speed": {
+          "sensor_id": 14341575,
+          "source_unit": "m/s",
+          "coverage": 0.5149
+        },
+        "wind_dir": {
+          "sensor_id": 14341574,
+          "source_unit": "deg",
+          "coverage": 0.5145
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409483",
+      "openaq_id": 3409483,
+      "name": "Chembur, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.0364585,
+      "longitude": 72.8954371,
+      "sensors": {
+        "co": {
+          "id": 12238379,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238381,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238382,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238383,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238384,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238386,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8058,
+        "no2": 0.811,
+        "o3": 0.7774,
+        "pm10": 0.8111,
+        "pm25": 0.809,
+        "so2": 0.807
+      },
+      "quality": {
+        "co": {
+          "rows": 43082,
+          "out_of_bounds": 70,
+          "bad_unit": 0,
+          "low_coverage": 302,
+          "method_ppb_labelled_ppm": 43012
+        },
+        "no2": {
+          "rows": 43444,
+          "out_of_bounds": 3,
+          "bad_unit": 0,
+          "low_coverage": 280,
+          "method_ppb_converted": 43441
+        },
+        "o3": {
+          "rows": 41543,
+          "out_of_bounds": 27,
+          "bad_unit": 0,
+          "low_coverage": 291,
+          "method_mass": 41516
+        },
+        "pm10": {
+          "rows": 43606,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 280,
+          "method_mass": 43606
+        },
+        "pm25": {
+          "rows": 43580,
+          "out_of_bounds": 111,
+          "bad_unit": 0,
+          "low_coverage": 283,
+          "method_mass": 43469
+        },
+        "so2": {
+          "rows": 43294,
+          "out_of_bounds": 129,
+          "bad_unit": 0,
+          "low_coverage": 318,
+          "method_ppb_converted": 43165
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238387,
+          "source_unit": "c",
+          "coverage": 0.7729,
+          "outliers_removed": 486
+        },
+        "humidity": {
+          "sensor_id": 12238385,
+          "source_unit": "%",
+          "coverage": 0.804,
+          "outliers_removed": 468
+        },
+        "wind_speed": {
+          "sensor_id": 14341578,
+          "source_unit": "m/s",
+          "coverage": 0.5022
+        },
+        "wind_dir": {
+          "sensor_id": 14341577,
+          "source_unit": "deg",
+          "coverage": 0.5021
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409486",
+      "openaq_id": 3409486,
+      "name": "Kherwadi_Bandra East, Mumbai - MPCB",
+      "provider": "CPCB",
+      "owner": "Maharashtra Pollution Control Board",
+      "latitude": 19.0632143,
+      "longitude": 72.8456324,
+      "sensors": {
+        "co": {
+          "id": 12238406,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238408,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238409,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238410,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238411,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238413,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8443,
+        "no2": 0.8493,
+        "o3": 0.8466,
+        "pm10": 0.8497,
+        "pm25": 0.8488,
+        "so2": 0.8449
+      },
+      "quality": {
+        "co": {
+          "rows": 44692,
+          "out_of_bounds": 34,
+          "bad_unit": 0,
+          "low_coverage": 413,
+          "method_ppb_labelled_ppm": 44658
+        },
+        "no2": {
+          "rows": 45052,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 383,
+          "method_ppb_converted": 45052
+        },
+        "o3": {
+          "rows": 44875,
+          "out_of_bounds": 19,
+          "bad_unit": 0,
+          "low_coverage": 389,
+          "method_mass": 44856
+        },
+        "pm10": {
+          "rows": 45214,
+          "out_of_bounds": 1,
+          "bad_unit": 0,
+          "low_coverage": 377,
+          "method_mass": 45213
+        },
+        "pm25": {
+          "rows": 45164,
+          "out_of_bounds": 31,
+          "bad_unit": 0,
+          "low_coverage": 382,
+          "method_mass": 45133
+        },
+        "so2": {
+          "rows": 44840,
+          "out_of_bounds": 20,
+          "bad_unit": 0,
+          "low_coverage": 405,
+          "method_ppb_converted": 44820
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238414,
+          "source_unit": "c",
+          "coverage": 0.8503,
+          "outliers_removed": 6
+        },
+        "humidity": {
+          "sensor_id": 12238412,
+          "source_unit": "%",
+          "coverage": 0.8499,
+          "outliers_removed": 125
+        },
+        "wind_speed": {
+          "sensor_id": 14341587,
+          "source_unit": "m/s",
+          "coverage": 0.5213,
+          "outliers_removed": 18
+        },
+        "wind_dir": {
+          "sensor_id": 14341586,
+          "source_unit": "deg",
+          "coverage": 0.524
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409510",
+      "openaq_id": 3409510,
+      "name": "Byculla, Mumbai - BMC",
+      "provider": "CPCB",
+      "owner": "Brihanmumbai Municipal Corporation",
+      "latitude": 18.9767,
+      "longitude": 72.838,
+      "sensors": {
+        "co": {
+          "id": 12238562,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238564,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238565,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238566,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238567,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238569,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8176,
+        "no2": 0.821,
+        "o3": 0.8282,
+        "pm10": 0.8384,
+        "pm25": 0.8365,
+        "so2": 0.8112
+      },
+      "quality": {
+        "co": {
+          "rows": 44317,
+          "out_of_bounds": 125,
+          "bad_unit": 0,
+          "low_coverage": 305,
+          "method_ppb_labelled_ppm": 44192
+        },
+        "no2": {
+          "rows": 44432,
+          "out_of_bounds": 39,
+          "bad_unit": 0,
+          "low_coverage": 336,
+          "method_ppb_converted": 44393
+        },
+        "o3": {
+          "rows": 44749,
+          "out_of_bounds": 4,
+          "bad_unit": 0,
+          "low_coverage": 305,
+          "method_mass": 44745
+        },
+        "pm10": {
+          "rows": 45526,
+          "out_of_bounds": 46,
+          "bad_unit": 0,
+          "low_coverage": 294,
+          "method_mass": 45480
+        },
+        "pm25": {
+          "rows": 45378,
+          "out_of_bounds": 7,
+          "bad_unit": 0,
+          "low_coverage": 287,
+          "method_mass": 45371
+        },
+        "so2": {
+          "rows": 44105,
+          "out_of_bounds": 448,
+          "bad_unit": 0,
+          "low_coverage": 331,
+          "method_ppb_converted": 43657
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238570,
+          "source_unit": "c",
+          "coverage": 0.8379
+        },
+        "humidity": {
+          "sensor_id": 12238568,
+          "source_unit": "%",
+          "coverage": 0.8373,
+          "outliers_removed": 3
+        },
+        "wind_speed": {
+          "sensor_id": 14341641,
+          "source_unit": "m/s",
+          "coverage": 0.5209
+        },
+        "wind_dir": {
+          "sensor_id": 14341640,
+          "source_unit": "deg",
+          "coverage": 0.5197
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409511",
+      "openaq_id": 3409511,
+      "name": "Shivaji Nagar, Mumbai - BMC",
+      "provider": "CPCB",
+      "owner": "Brihanmumbai Municipal Corporation",
+      "latitude": 19.060498,
+      "longitude": 72.923356,
+      "sensors": {
+        "co": {
+          "id": 12238571,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238573,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238574,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238575,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238576,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238578,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.8329,
+        "no2": 0.8419,
+        "o3": 0.8565,
+        "pm10": 0.8589,
+        "pm25": 0.8616,
+        "so2": 0.8293
+      },
+      "quality": {
+        "co": {
+          "rows": 46398,
+          "out_of_bounds": 1594,
+          "bad_unit": 0,
+          "low_coverage": 289,
+          "method_ppb_labelled_ppm": 44804
+        },
+        "no2": {
+          "rows": 45138,
+          "out_of_bounds": 1,
+          "bad_unit": 0,
+          "low_coverage": 363,
+          "method_ppb_converted": 45137
+        },
+        "o3": {
+          "rows": 46133,
+          "out_of_bounds": 53,
+          "bad_unit": 0,
+          "low_coverage": 261,
+          "method_mass": 46080
+        },
+        "pm10": {
+          "rows": 46762,
+          "out_of_bounds": 158,
+          "bad_unit": 0,
+          "low_coverage": 201,
+          "method_mass": 46604
+        },
+        "pm25": {
+          "rows": 47081,
+          "out_of_bounds": 281,
+          "bad_unit": 0,
+          "low_coverage": 199,
+          "method_mass": 46800
+        },
+        "so2": {
+          "rows": 44388,
+          "out_of_bounds": 22,
+          "bad_unit": 0,
+          "low_coverage": 446,
+          "method_ppb_converted": 44366
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238579,
+          "source_unit": "c",
+          "coverage": 0.8475,
+          "outliers_removed": 843
+        },
+        "humidity": {
+          "sensor_id": 12238577,
+          "source_unit": "%",
+          "coverage": 0.8505,
+          "outliers_removed": 411
+        },
+        "wind_speed": {
+          "sensor_id": 14341644,
+          "source_unit": "m/s",
+          "coverage": 0.5254,
+          "outliers_removed": 81
+        },
+        "wind_dir": {
+          "sensor_id": 14341643,
+          "source_unit": "deg",
+          "coverage": 0.5249
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409512",
+      "openaq_id": 3409512,
+      "name": "Kandivali West, Mumbai - BMC",
+      "provider": "CPCB",
+      "owner": "Brihanmumbai Municipal Corporation",
+      "latitude": 19.215859,
+      "longitude": 72.831718,
+      "sensors": {
+        "co": {
+          "id": 12238580,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238582,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238583,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238584,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238585,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238587,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.6535,
+        "no2": 0.6109,
+        "o3": 0.6413,
+        "pm10": 0.7222,
+        "pm25": 0.7173,
+        "so2": 0.6535
+      },
+      "quality": {
+        "co": {
+          "rows": 33462,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1389,
+          "method_ppb_labelled_ppm": 33462
+        },
+        "no2": {
+          "rows": 31362,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1442,
+          "method_ppb_converted": 31362
+        },
+        "o3": {
+          "rows": 33144,
+          "out_of_bounds": 242,
+          "bad_unit": 0,
+          "low_coverage": 1425,
+          "method_mass": 32902
+        },
+        "pm10": {
+          "rows": 36407,
+          "out_of_bounds": 8,
+          "bad_unit": 0,
+          "low_coverage": 1048,
+          "method_mass": 36399
+        },
+        "pm25": {
+          "rows": 36258,
+          "out_of_bounds": 13,
+          "bad_unit": 0,
+          "low_coverage": 1126,
+          "method_mass": 36245
+        },
+        "so2": {
+          "rows": 33327,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1384,
+          "method_ppb_converted": 33327
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238588,
+          "source_unit": "c",
+          "coverage": 0.6894,
+          "outliers_removed": 4
+        },
+        "humidity": {
+          "sensor_id": 12238586,
+          "source_unit": "%",
+          "coverage": 0.6806,
+          "outliers_removed": 232
+        },
+        "wind_speed": {
+          "sensor_id": 14342263,
+          "source_unit": "m/s",
+          "coverage": 0.4,
+          "outliers_removed": 39
+        },
+        "wind_dir": {
+          "sensor_id": 14342262,
+          "source_unit": "deg",
+          "coverage": 0.391
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409513",
+      "openaq_id": 3409513,
+      "name": "Sewri, Mumbai - BMC",
+      "provider": "CPCB",
+      "owner": "Brihanmumbai Municipal Corporation",
+      "latitude": 19.000084,
+      "longitude": 72.85673,
+      "sensors": {
+        "co": {
+          "id": 12238589,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238591,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238592,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238593,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238594,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238596,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.5091,
+        "no2": 0.5028,
+        "o3": 0.5187,
+        "pm10": 0.5515,
+        "pm25": 0.5461,
+        "so2": 0.5123
+      },
+      "quality": {
+        "co": {
+          "rows": 26235,
+          "out_of_bounds": 21,
+          "bad_unit": 0,
+          "low_coverage": 1534,
+          "method_ppb_labelled_ppm": 26214
+        },
+        "no2": {
+          "rows": 26095,
+          "out_of_bounds": 12,
+          "bad_unit": 0,
+          "low_coverage": 1561,
+          "method_ppb_converted": 26083
+        },
+        "o3": {
+          "rows": 26710,
+          "out_of_bounds": 1,
+          "bad_unit": 0,
+          "low_coverage": 1601,
+          "method_mass": 26709
+        },
+        "pm10": {
+          "rows": 28433,
+          "out_of_bounds": 6,
+          "bad_unit": 0,
+          "low_coverage": 1588,
+          "method_mass": 28427
+        },
+        "pm25": {
+          "rows": 28127,
+          "out_of_bounds": 5,
+          "bad_unit": 0,
+          "low_coverage": 1545,
+          "method_mass": 28122
+        },
+        "so2": {
+          "rows": 26238,
+          "out_of_bounds": 0,
+          "bad_unit": 0,
+          "low_coverage": 1529,
+          "method_ppb_converted": 26238
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238597,
+          "source_unit": "c",
+          "coverage": 0.4486,
+          "outliers_removed": 1759
+        },
+        "humidity": {
+          "sensor_id": 12238595,
+          "source_unit": "%",
+          "coverage": 0.5206,
+          "outliers_removed": 1901
+        },
+        "wind_speed": {
+          "sensor_id": 14342266,
+          "source_unit": "m/s",
+          "coverage": 0.4008
+        },
+        "wind_dir": {
+          "sensor_id": 14342265,
+          "source_unit": "deg",
+          "coverage": 0.3937
+        }
+      }
+    },
+    {
+      "station_id": "OPENAQ-3409514",
+      "openaq_id": 3409514,
+      "name": "Ghatkopar, Mumbai - BMC",
+      "provider": "CPCB",
+      "owner": "Brihanmumbai Municipal Corporation",
+      "latitude": 19.083694,
+      "longitude": 72.920967,
+      "sensors": {
+        "co": {
+          "id": 12238598,
+          "parameter": "co",
+          "unit": "ppb",
+          "conversion": "ppb_labelled_ppm"
+        },
+        "no2": {
+          "id": 12238600,
+          "parameter": "no2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        },
+        "o3": {
+          "id": 12238601,
+          "parameter": "o3",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm10": {
+          "id": 12238602,
+          "parameter": "pm10",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "pm25": {
+          "id": 12238603,
+          "parameter": "pm25",
+          "unit": "\u00b5g/m\u00b3",
+          "conversion": "mass"
+        },
+        "so2": {
+          "id": 12238605,
+          "parameter": "so2",
+          "unit": "ppb",
+          "conversion": "ppb_converted"
+        }
+      },
+      "coverage": {
+        "co": 0.836,
+        "no2": 0.8353,
+        "o3": 0.8464,
+        "pm10": 0.8377,
+        "pm25": 0.843,
+        "so2": 0.8358
+      },
+      "quality": {
+        "co": {
+          "rows": 45476,
+          "out_of_bounds": 266,
+          "bad_unit": 0,
+          "low_coverage": 182,
+          "method_ppb_labelled_ppm": 45210
+        },
+        "no2": {
+          "rows": 44965,
+          "out_of_bounds": 6,
+          "bad_unit": 0,
+          "low_coverage": 210,
+          "method_ppb_converted": 44959
+        },
+        "o3": {
+          "rows": 45511,
+          "out_of_bounds": 16,
+          "bad_unit": 0,
+          "low_coverage": 185,
+          "method_mass": 45495
+        },
+        "pm10": {
+          "rows": 45679,
+          "out_of_bounds": 54,
+          "bad_unit": 0,
+          "low_coverage": 170,
+          "method_mass": 45625
+        },
+        "pm25": {
+          "rows": 45880,
+          "out_of_bounds": 4,
+          "bad_unit": 0,
+          "low_coverage": 165,
+          "method_mass": 45876
+        },
+        "so2": {
+          "rows": 45041,
+          "out_of_bounds": 17,
+          "bad_unit": 0,
+          "low_coverage": 216,
+          "method_ppb_converted": 45024
+        }
+      },
+      "weather": {
+        "temperature": {
+          "sensor_id": 12238606,
+          "source_unit": "c",
+          "coverage": 0.8283,
+          "outliers_removed": 2154
+        },
+        "humidity": {
+          "sensor_id": 12238604,
+          "source_unit": "%",
+          "coverage": 0.841,
+          "outliers_removed": 897
+        },
+        "wind_speed": {
+          "sensor_id": 14341647,
+          "source_unit": "m/s",
+          "coverage": 0.5357
+        },
+        "wind_dir": {
+          "sensor_id": 14341646,
+          "source_unit": "deg",
+          "coverage": 0.5356
+        }
+      }
+    }
+  ],
+  "rows": 333960,
+  "non_null": {
+    "pm25": 248855,
+    "pm10": 246452,
+    "no2": 247241,
+    "so2": 210070,
+    "co": 232552,
+    "o3": 223602,
+    "temperature": 333960,
+    "humidity": 333960,
+    "wind_speed": 333960,
+    "wind_dir": 333960,
+    "precipitation": 333960
+  },
+  "missing_fraction": {
+    "pm25": 0.2548,
+    "pm10": 0.262,
+    "no2": 0.2597,
+    "so2": 0.371,
+    "co": 0.3037,
+    "o3": 0.3305,
+    "temperature": 0.0,
+    "humidity": 0.0,
+    "wind_speed": 0.0,
+    "wind_dir": 0.0,
+    "precipitation": 0.0
+  },
+  "unit_conversions": {
+    "no2_ppb_to_ugm3": 1.8816,
+    "so2_ppb_to_ugm3": 2.6203,
+    "o3_ppb_to_ugm3": 1.9631,
+    "co_ppb_label_to_mgm3": 1.145,
+    "co_note": "CPCB CO feed is mg/m3; OpenAQ labels it ppb but values are ppm (legacy co-located sensor cross-check)."
+  },
+  "qc": {
+    "coverage_gate_per_hour": "archived hours need >= 2 raw readings when the sensor cadence is sub-hourly",
+    "pm25_station_gate": ">= 30% hourly coverage and >= 2000 rows",
+    "bounds": {
+      "pm25": [
+        0.0,
+        1000.0
+      ],
+      "pm10": [
+        0.0,
+        2000.0
+      ],
+      "no2": [
+        0.0,
+        2000.0
+      ],
+      "so2": [
+        0.0,
+        2000.0
+      ],
+      "co": [
+        0.0,
+        50.0
+      ],
+      "o3": [
+        0.0,
+        1000.0
+      ],
+      "temperature": [
+        -5.0,
+        50.0
+      ],
+      "humidity": [
+        0.0,
+        100.0
+      ],
+      "wind_speed": [
+        0.0,
+        150.0
+      ],
+      "wind_dir": [
+        0.0,
+        360.0
+      ],
+      "precipitation": [
+        0.0,
+        500.0
+      ]
+    },
+    "mostly_zero_pollutant_dropped": "> 50% zero values",
+    "gaps": "left as NaN; no interpolation",
+    "provider_filter": "station owner/provider contains MPCB, BMC, IITM or CPCB; location active within 21 days"
+  },
+  "sha256": "dc1f3ae69292232e88b7cabca9556b82a0c35292ddd9c1ae4e50a98a0f16d5a5",
+  "attribution": "Data from OpenAQ (CPCB/MPCB/BMC/IITM) and Open-Meteo (ERA5). Check upstream licences before redistribution."
+}

@@ -278,14 +278,16 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('air');
   const [refreshing, setRefreshing] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const load = (quiet = false) => {
     if (!quiet) setLoading(true);
     else setRefreshing(true);
+    setRetrying(false);
     api
-      .get<DashboardData>('/dashboard/summary')
+      .get<DashboardData>('/dashboard/summary', { onRetry: () => setRetrying(true) })
       .then((result) => {
         setData(result);
         setError(null);
@@ -294,6 +296,7 @@ export function DashboardPage() {
       .finally(() => {
         setLoading(false);
         setRefreshing(false);
+        setRetrying(false);
       });
   };
 
@@ -331,7 +334,14 @@ export function DashboardPage() {
     [data],
   );
 
-  if (loading) return <LoadingBlock className="min-h-[70vh]" label="Loading environmental command centre" />;
+  if (loading) {
+    return (
+      <LoadingBlock
+        className="min-h-[70vh]"
+        label={retrying ? 'Server restarting · retrying connection' : 'Loading environmental command centre'}
+      />
+    );
+  }
   if (error || !data) {
     return (
       <EmptyState
@@ -372,6 +382,12 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      {retrying ? (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-500/25 bg-amber-50/85 px-4 py-2.5 text-[10px] font-medium text-amber-800">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          Server is restarting. Retrying your request — the last loaded data remains visible.
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="glass-pill flex items-center gap-2 rounded-full px-3.5 py-2 text-[11px] font-semibold text-[#3f5045]">
