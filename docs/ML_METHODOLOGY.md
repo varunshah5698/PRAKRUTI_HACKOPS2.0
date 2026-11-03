@@ -2,6 +2,12 @@
 
 ## Current deployment status
 
+In this workspace the artifacts are present, the model registry reports
+`TRAINED`, and `ML_SERVICE_URL` points at the local FastAPI service. Live OpenAQ
+stations with at least 25 consecutive hourly PM2.5 values return
+`LIGHTGBM_TRAINED`; demo stations and stations outside the training set return
+the labelled persistence baseline with an explicit reason.
+
 Model artifacts are gitignored and are **not shipped by default**. If
 `ml/artifacts/model_card.json`, the model files and a `model_registry` entry are
 absent, the application shows `NOT_TRAINED` for:
