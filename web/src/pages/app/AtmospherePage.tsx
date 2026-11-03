@@ -182,12 +182,10 @@ interface Simulation {
 
 export interface Seed {
   basePm25: number;
-  baseAqi: number;
   weather: WeatherSeed;
   stations: StationSeed[];
   generatedAt: string | null;
   source: 'live' | 'sandbox';
-  summary: DashboardSeed | null;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -745,12 +743,10 @@ export function AtmospherePage() {
     const basePm25 = clamp(latestSeries ?? mean(stationPm) ?? 62, 14, 220);
     return {
       basePm25,
-      baseAqi: aqiFromPm25(basePm25) ?? 100,
       weather,
       stations,
       generatedAt: summary?.generatedAt ?? null,
       source: summary ? 'live' : 'sandbox',
-      summary,
     };
   }, [summary]);
 

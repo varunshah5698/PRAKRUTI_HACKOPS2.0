@@ -10,7 +10,6 @@ import {
 
 const seed: Seed = {
   basePm25: 62,
-  baseAqi: 103,
   weather: {
     observed_at: '2026-11-03T08:00:00.000Z',
     temperature_c: 30,
@@ -23,7 +22,6 @@ const seed: Seed = {
   stations: [],
   generatedAt: null,
   source: 'sandbox',
-  summary: null,
 };
 
 const anchor = new Date('2026-11-03T08:00:00.000Z');
