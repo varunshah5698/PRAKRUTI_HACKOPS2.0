@@ -102,11 +102,12 @@ export async function createOrUpdateAlert(
     const nextState = (rank[assessment.alertState] ?? 0) < (rank[existing.state] ?? 0) ? existing.state : assessment.alertState;
     if (existing.state !== nextState) {
       await query(
-        `UPDATE environmental_alerts SET state=$2, level=$2, summary=$3, evidence=$4::jsonb,
-           updated_at=now(), forecast_horizon_hours=$5, model_id=$6 WHERE id=$1`,
+        `UPDATE environmental_alerts SET state=$2, level=$2, title=$3, summary=$4, evidence=$5::jsonb,
+           updated_at=now(), forecast_horizon_hours=$6, model_id=$7 WHERE id=$1`,
         [
           existing.id,
           nextState,
+          copy.title,
           copy.summary,
           JSON.stringify(assessment.supportingEvidence),
           triggerType === 'PREDICTIVE' ? 3 : null,

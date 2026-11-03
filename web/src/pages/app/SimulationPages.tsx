@@ -505,7 +505,10 @@ export function SimulationSessionPage() {
       return;
     }
     setPlaying(true);
-    api.post(`/simulations/${sessionId}/play`).catch(() => {});
+    api.post(`/simulations/${sessionId}/play`).catch((err) => {
+      setPlaying(false);
+      toast.error(err instanceof Error ? err.message : 'Could not start the replay');
+    });
   };
 
   const step = async () => {
@@ -659,7 +662,7 @@ export function SimulationSessionPage() {
               <span className="mt-1 text-[8px] text-[#8ba1a9]">of {Math.max(0, totalSteps - 1)}</span>
             </GaugeRing>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="teal" size="md" onClick={togglePlay} disabled={atEnd && !playing} className="col-span-2 min-w-[152px]">
+              <Button variant="teal" size="md" onClick={togglePlay} disabled={(atEnd && !playing) || working} className="col-span-2 min-w-[152px]">
                 {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 {playing ? 'Pause replay' : atEnd ? 'Replay complete' : 'Play replay'}
               </Button>
@@ -703,9 +706,13 @@ export function SimulationSessionPage() {
                 <p className="display text-[30px] font-bold leading-none tracking-[-0.05em]" style={{ color: meta.color }}>
                   {number(metric?.value)}<span className="ml-1 align-middle text-[10px] font-medium tracking-normal text-[#8ba1a9]">{metric?.unit ?? ''}</span>
                 </p>
-                <p className="mt-1 flex items-center justify-end gap-1 text-[9px] font-semibold" style={{ color: delta !== null && delta > 0 ? '#cf7227' : '#3f9a83' }}>
-                  <TrendingUp className={classNames('h-3 w-3', delta !== null && delta < 0 && 'rotate-180')} />
-                  {delta === null ? 'first revealed step' : `${delta > 0 ? '+' : ''}${number(delta)} ${metric?.unit ?? ''} vs previous step`}
+                <p className="mt-1 flex items-center justify-end gap-1 text-[9px] font-semibold" style={{ color: delta !== null && delta > 0.004 ? '#cf7227' : '#3f9a83' }}>
+                  <TrendingUp className={classNames('h-3 w-3', delta !== null && delta < -0.004 && 'rotate-180')} />
+                  {delta === null
+                    ? 'first revealed step'
+                    : Math.abs(delta) < 0.005
+                      ? 'unchanged vs previous step'
+                      : `${delta > 0 ? '+' : ''}${number(delta)} ${metric?.unit ?? ''} vs previous step`}
                 </p>
               </div>
             </CardHeader>
@@ -899,6 +906,7 @@ export function SimulationSessionPage() {
                 </div>
               ))}
               {data.notifications.length === 0 ? <p className="px-4 py-5 text-[10px] text-[#66766b]">No simulated notifications yet.</p> : null}
+              {data.notifications.length > 6 ? <p className="px-3.5 py-2 text-[8px] text-[#8ba1a9]">Showing the latest 6 of {data.notifications.length} simulated notifications.</p> : null}
             </div>
           </Card>
 
@@ -928,27 +936,27 @@ export function SimulationSessionPage() {
       </div>
 
       <Dialog open={Boolean(preview)} onOpenChange={(open) => !open && setPreview(null)}>
-        <DialogContent title="Replay email preview" description="Simulation-generated email. Not sent to a real mailing list." className="max-w-5xl">
+        <DialogContent title="Replay email preview" description="Simulation-generated email. Not sent to a real mailing list." className="!max-w-4xl">
           {preview ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="amber" dot>Simulated</Badge>
                 <span className="text-[9px] text-[#8ba1a9]">Public and authority variants of the latest generated alert.</span>
               </div>
-              <div className="grid gap-3 lg:grid-cols-2">
+              <div className="space-y-3">
                 <div className="overflow-hidden rounded-2xl border border-[#dfe6db] bg-white">
                   <div className="border-b border-[#e7ece3] bg-[#f7fbfb] px-3.5 py-2.5">
                     <DataLabel>Public email</DataLabel>
                     <p className="mt-1 truncate text-[10px] font-medium text-[#173d4a]">{preview.public.subject}</p>
                   </div>
-                  <iframe title="Public email preview" srcDoc={preview.public.html} sandbox="" className="h-[52vh] w-full bg-white" />
+                  <iframe title="Public email preview" srcDoc={preview.public.html} sandbox="" className="h-[44vh] w-full bg-white" />
                 </div>
                 <div className="overflow-hidden rounded-2xl border border-[#dfe6db] bg-white">
                   <div className="border-b border-[#e7ece3] bg-[#f7fbfb] px-3.5 py-2.5">
                     <DataLabel>Authority email</DataLabel>
                     <p className="mt-1 truncate text-[10px] font-medium text-[#173d4a]">{preview.authority.subject}</p>
                   </div>
-                  <iframe title="Authority email preview" srcDoc={preview.authority.html} sandbox="" className="h-[52vh] w-full bg-white" />
+                  <iframe title="Authority email preview" srcDoc={preview.authority.html} sandbox="" className="h-[44vh] w-full bg-white" />
                 </div>
               </div>
             </div>

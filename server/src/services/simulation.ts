@@ -169,7 +169,7 @@ export async function generateSimulation(params: {
   if (!station) throw new Error('Station not found');
   const start = await startingValues(params.stationId);
   const random = mulberry32(params.seed);
-  const baseTime = new Date();
+  const baseTime = new Date(Date.now() - (params.scenario.steps - 1) * 10 * 60_000);
   baseTime.setSeconds(0, 0);
   const steps: SimulationStep[] = [];
   const pmHistory: Array<{ observedAt: string; value: number }> = [];

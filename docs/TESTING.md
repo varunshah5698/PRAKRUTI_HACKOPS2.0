@@ -6,7 +6,7 @@
 npm test
 ```
 
-The test suite uses Vitest and currently has **35 passing tests** across seven files (five server, two web):
+The test suite uses Vitest and currently has **49 passing tests** across ten files (six server, four web):
 
 | File | Coverage |
 |---|---|
@@ -15,7 +15,10 @@ The test suite uses Vitest and currently has **35 passing tests** across seven f
 | `server/src/services/risk-engine.test.ts` | Air critical after persistence, no critical from a single spike, confidence separation/missing inputs, water mild vs severe, waste unverified vs repeat hotspot, industrial no legal threshold |
 | `server/src/services/compliance.test.ts` | Averaging mismatch, unit mismatch, stack vs effluent, comparable water reference |
 | `server/src/services/ai/analyst.test.ts` | AI evidence prompt shape, provider 5xx retry, fallback behaviour and output boundaries |
+| `server/src/services/ingest.test.ts` | data.gov.in CPCB record shape, IST timestamp, OZONE/CO mapping, missing values and Mumbai boundary rejection |
 | `web/src/lib/api.test.ts` | API error envelope, credential handling, JSON/form request paths, GET retry and POST no-retry |
+| `web/src/pages/app/AtmospherePage.test.ts` | Atmosphere view formatting and data-mode labels |
+| `web/src/lib/weather.test.ts` | Weather condition labels, apparent temperature and Mumbai night detection |
 | `web/src/store/auth.test.ts` | Session bootstrap, login state, logout cleanup |
 
 Run type checks and build:

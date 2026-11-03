@@ -275,7 +275,7 @@ Application: `/dashboard`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelli
 npm test
 ```
 
-26 server unit tests cover indicative AQI, the persistence baseline, anomaly edge cases, category-specific risk rules, confidence separation, compliance comparability and AI evidence boundaries. 9 web tests cover API error handling, retry behaviour and auth-store session behaviour. See `docs/TESTING.md`.
+30 server unit tests cover indicative AQI, the persistence baseline, anomaly edge cases, category-specific risk rules, confidence separation, compliance comparability, AI evidence boundaries and data.gov.in CPCB record parsing. 19 web tests cover API error handling, retry behaviour, atmosphere formatting, weather condition/apparent-temperature helpers, Mumbai night detection and auth-store session behaviour. See `docs/TESTING.md`.
 
 ## Documentation
 
