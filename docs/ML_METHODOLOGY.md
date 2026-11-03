@@ -2,14 +2,32 @@
 
 ## Current deployment status
 
-**No model is trained.** The application shows `NOT_TRAINED` for:
+Model artifacts are gitignored and are **not shipped by default**. If
+`ml/artifacts/model_card.json`, the model files and a `model_registry` entry are
+absent, the application shows `NOT_TRAINED` for:
 
 - LightGBM PM2.5 1h / 3h / 6h regressors
 - quantile 10th/90th percentile models
 - calibrated deterioration classifier
 - anomaly detector
 
-No verified Mumbai historical training extract has been supplied. The UI therefore does not display model accuracy, calibrated intervals, deterioration probability or SHAP values.
+The UI then uses the labelled persistence baseline and does not display model
+accuracy, calibrated intervals, deterioration probability or SHAP values.
+
+A real-data run is reproducible with `ml/fetch_real_data.py`. The reference run
+uses the public OpenAQ S3 daily archive for 23 CPCB/MPCB/BMC/IITM stations inside
+the Greater Mumbai boundary from 2025-11-01 to 2026-10-27, plus Open-Meteo ERA5
+reanalysis weather. The extract has 198,720 station-hours (72% PM2.5 coverage,
+100% weather coverage). Raw sub-hourly readings are aggregated to hourly means;
+gaps are left as NaN and are not imputed. See
+`ml/data/mumbai_air_quality_archive.meta.json` for station/sensor IDs, coverage,
+QC rules, unit conversions and the CSV SHA-256.
+
+The reference chronological split is 70/15/15 by global timestamp. The model card
+and `ml/artifacts/metrics.json` record the exact metrics, per-station errors,
+quantile coverage and classifier calibration for that extract. A model is marked
+`REJECTED` when its +3h or +6h MAE does not beat persistence; the inference
+service then returns `503` and the app keeps the baseline.
 
 ## What is shown instead
 
@@ -60,8 +78,9 @@ It never creates a critical observed alert or an official violation.
 ### Targets
 
 - PM2.5 at +1h, +3h, +6h
-- deterioration at +3h: target PM2.5 > 60 µg/m³
-- quantile 0.1 / 0.9 at each horizon (3h coverage reported)
+- 3h exceedance indicator: target PM2.5 > 60 µg/m³ (the CPCB 24-hour standard
+  used as a screening threshold; it is not a relative deterioration label)
+- quantile 0.1 / 0.9 at each horizon (coverage reported for all horizons)
 
 ### Split
 
@@ -115,8 +134,17 @@ The adapter must:
 
 ## Known limitations
 
-- No Mumbai historical extract, no station-level evaluation, no seasonal validation.
-- No real SHAP values, calibrated intervals or deterioration probabilities in this deployment.
-- The persistence baseline has no validated skill and is not a regulatory forecast.
-- Missing weather/pollutant inputs are not imputed with invented values; they are recorded as missing.
-- Training on demo/synthetic data is not acceptable for a real model unless the resulting model is itself labelled as a simulation model.
+- The reference extract covers one seasonal cycle. The chronological test window
+  is later than training, so some calendar months are unseen during fitting; the
+  model must rely on weather and lag features for those months.
+- Evaluation is temporal, not spatial: the test set contains future rows from the
+  same stations used in training. It does not measure skill at an unseen station.
+- Weather is Open-Meteo ERA5 reanalysis, not a co-located station measurement.
+- Station PM2.5 coverage varies (30-87%); missing pollutant inputs remain missing
+  and are handled by LightGBM's native NaN handling, not by imputation.
+- The classifier label is a fixed >60 µg/m³ threshold, not a relative change from
+  the current value. Its calibration is only valid for the validation window.
+- SHAP values are computed from the actual artifact but do not establish causality.
+- The persistence baseline remains the fallback and is not a regulatory forecast.
+- Training on demo/synthetic data is not acceptable for a real model unless the
+  resulting model is itself labelled as a simulation model.

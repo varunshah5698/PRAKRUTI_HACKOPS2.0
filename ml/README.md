@@ -1,18 +1,52 @@
 # प्रकृति ML training pipeline
 
 This directory contains the real training and evaluation code for the air-quality
-forecasting models. **No model is trained in the delivered application** because no
-verified Mumbai historical training extract was supplied.
+forecasting models. Model artifacts are gitignored and are **not shipped by
+default**. The application reports `NOT_TRAINED` and shows the labelled
+`PERSISTENCE_BASELINE_V1` until `artifacts/model_card.json`, all model files and a
+`model_registry` entry exist.
 
-The application therefore reports:
+A reproducible real-data extract can be built from OpenAQ station measurements
+and Open-Meteo weather. It does not invent missing observations: gaps stay NaN,
+unit conversions and QC rules are written to a sidecar metadata file.
 
-- `NOT_TRAINED` for LightGBM 1h/3h/6h, quantile, deterioration and anomaly models.
-- A clearly labelled persistence baseline (`PERSISTENCE_BASELINE_V1`) for the
-  forecast page and map timeline.
+## Build a real Mumbai extract
 
-Do not claim the models are trained, calibrated or accurate until this pipeline
-has been run on a verified historical extract and the evaluation results have
-been reviewed.
+OpenAQ v3 hourly API (rate-limited, paginated):
+
+```bash
+cd ml
+python fetch_real_data.py --start 2025-11-01 --end 2026-10-27
+python train.py --input data/mumbai_air_quality.csv --output artifacts
+```
+
+OpenAQ public S3 daily archive (faster; raw 15-minute values aggregated to hourly
+means by this script):
+
+```bash
+cd ml
+python fetch_real_data.py --source archive --start 2025-11-01 --end 2026-10-27 \
+  --output data/mumbai_air_quality_archive.csv \
+  --metadata data/mumbai_air_quality_archive.meta.json
+python train.py --input data/mumbai_air_quality_archive.csv --output artifacts
+```
+
+What the fetcher does:
+
+- selects active CPCB/MPCB/BMC/IITM stations inside the Greater Mumbai boundary;
+- requires at least 30% hourly PM2.5 coverage and 2,000 rows per station;
+- aggregates raw sub-hourly readings to hourly means, requiring at least half of
+  the usual cadence;
+- converts NO2/SO2/O3 from ppb to µg/m³ and CO from the CPCB mg/m³ feed (OpenAQ
+  labels the CO values ppb, but the values are ppm; see the sidecar metadata);
+- fills weather from the Open-Meteo ERA5 archive, which is **reanalysis, not a
+  co-located station measurement**;
+- writes `*.meta.json` with sources, station/sensor IDs, coverage, QC rules,
+  conversions and a SHA-256 of the CSV.
+
+The 2025-11-01 to 2026-10-27 extract contains 23 stations and 198,720 station-hours
+(72% PM2.5 coverage, 100% weather coverage). Re-running is cheap because raw
+OpenAQ pages and S3 daily files are cached under `data/raw/`.
 
 ## Expected input
 
@@ -54,9 +88,10 @@ Outputs:
 - `artifacts/model_card.json`
 
 `serve.py` exposes the artifacts as a FastAPI inference service. It reports
-`NOT_TRAINED` and returns `503` until `artifacts/model_card.json` and the model
-files exist. The API keeps showing the labelled persistence baseline in that
-case; it never invents trained output.
+`NOT_TRAINED`/`INCOMPLETE` and returns `503` until `artifacts/model_card.json`,
+all required model files and an approved `deployment_recommendation` exist. A
+model that does not beat persistence at +3h and +6h is marked `REJECTED`, so the
+app keeps the labelled persistence baseline. It never invents trained output.
 
 ```bash
 pip install -r requirements-serve.txt
