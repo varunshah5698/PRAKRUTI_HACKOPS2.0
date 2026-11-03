@@ -1,6 +1,8 @@
 import { query } from '../db/pool.js';
 import { calculateAqi } from './aqi.js';
 
+export const STALE_AFTER_HOURS = 6;
+
 export interface StationValue {
   value: number;
   unit: string;
@@ -117,7 +119,8 @@ export async function getStationSnapshots(category?: string): Promise<StationSna
       station.aqi = calculateAqi(values);
     }
     station.isStale =
-      !station.latestObservedAt || Date.now() - new Date(station.latestObservedAt).getTime() > 6 * 3_600_000;
+      !station.latestObservedAt ||
+      Date.now() - new Date(station.latestObservedAt).getTime() > STALE_AFTER_HOURS * 3_600_000;
   }
 
   const categoryType: Record<string, string> = {

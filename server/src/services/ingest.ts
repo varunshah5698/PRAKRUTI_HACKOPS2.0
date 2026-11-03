@@ -430,6 +430,70 @@ export async function ingestOpenAq(): Promise<IngestResult> {
         );
         records += 1;
       }
+      // The live /latest endpoint returns one reading per sensor. The model
+      // needs 25 consecutive hourly PM2.5 values, so backfill the hourly
+      // series once per station. OpenAQ's /hours values are pre-aggregated
+      // and floored to the hour by the training pipeline as well.
+      const pm25Sensor = (location.sensors ?? []).find(
+        (sensor) => POLLUTANT_MAP[String(sensor.parameter?.name ?? '').toUpperCase()] === 'pm25',
+      );
+      if (pm25Sensor) {
+        const historyCount = await one<{ count: number }>(
+          `SELECT COUNT(DISTINCT date_trunc('hour', observed_at))::int AS count
+           FROM environmental_observations
+           WHERE station_id=$1 AND pollutant_code='pm25' AND source_id=$2
+             AND observed_at > now() - interval '48 hours'`,
+          [station.id, sourceId],
+        );
+        if ((historyCount?.count ?? 0) < 25) {
+          const hoursUrl = new URL(`https://api.openaq.org/v3/sensors/${pm25Sensor.id}/hours`);
+          hoursUrl.searchParams.set(
+            'datetime_from',
+            new Date(Date.now() - 72 * 3_600_000).toISOString().replace(/\.\d{3}Z$/, 'Z'),
+          );
+          hoursUrl.searchParams.set('datetime_to', new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
+          hoursUrl.searchParams.set('limit', '1000');
+          const hoursResponse = await fetch(hoursUrl, {
+            headers: { 'X-API-Key': env.OPENAQ_API_KEY },
+            signal: AbortSignal.timeout(30_000),
+          });
+          if (hoursResponse.ok) {
+            const hours = (await hoursResponse.json()) as {
+              results?: Array<{
+                value?: number;
+                parameter?: { units?: string };
+                period?: { datetimeFrom?: { utc?: string } };
+              }>;
+            };
+            for (const result of hours.results ?? []) {
+              const observedAt = result.period?.datetimeFrom?.utc;
+              if (!observedAt || result.value === undefined) continue;
+              const normalised = normalisePollutantUnit('pm25', Number(result.value), String(result.parameter?.units ?? ''));
+              if (!normalised) continue;
+              await query(
+                `INSERT INTO environmental_observations
+                   (station_id, category, pollutant_code, value, unit, observed_at, retrieved_at, quality_state,
+                    is_simulated, source_id, source_record_id, location, raw)
+                 VALUES ($1,'air','pm25',$2,$3,$4,now(),'VALID',false,$5,$6,
+                   ST_SetSRID(ST_MakePoint($7,$8),4326)::geography,$9::jsonb)
+                 ON CONFLICT (station_id, pollutant_code, observed_at, source_id) DO NOTHING`,
+                [
+                  station.id,
+                  normalised.value,
+                  normalised.unit,
+                  observedAt,
+                  sourceId,
+                  `openaq-hours:${location.id}:pm25:${observedAt}`,
+                  lng,
+                  lat,
+                  JSON.stringify(result),
+                ],
+              );
+              records += 1;
+            }
+          }
+        }
+      }
     }
     await markSourceSuccess(sourceId, records);
     await finishJob(jobId, 'SUCCESS', records);

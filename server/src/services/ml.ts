@@ -55,6 +55,22 @@ export async function mlHealth(): Promise<MlHealth> {
   return value;
 }
 
+function hourlyHistory(history: ObservationPoint[]): ObservationPoint[] {
+  const buckets = new Map<number, { sum: number; count: number }>();
+  for (const point of history) {
+    const timestamp = new Date(point.observedAt).getTime();
+    if (!Number.isFinite(timestamp) || !Number.isFinite(point.value)) continue;
+    const hour = Math.floor(timestamp / 3_600_000) * 3_600_000;
+    const bucket = buckets.get(hour) ?? { sum: 0, count: 0 };
+    bucket.sum += point.value;
+    bucket.count += 1;
+    buckets.set(hour, bucket);
+  }
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([hour, bucket]) => ({ observedAt: new Date(hour).toISOString(), value: bucket.sum / bucket.count }));
+}
+
 export async function getMlPrediction(params: {
   stationId: string;
   history: ObservationPoint[];
@@ -94,7 +110,7 @@ export async function getMlPrediction(params: {
       },
       body: JSON.stringify({
         station_id: params.stationId,
-        history: params.history.map((point) => ({ timestamp: point.observedAt, pm25: point.value })),
+        history: hourlyHistory(params.history).map((point) => ({ timestamp: point.observedAt, pm25: point.value })),
         weather: params.weather ?? {},
         latest: params.latest ?? {},
       }),
@@ -104,7 +120,9 @@ export async function getMlPrediction(params: {
       const body = await response.text().catch(() => '');
       const error =
         response.status === 422
-          ? 'Trained forecasts require at least 25 consecutive hourly PM2.5 observations; showing the persistence baseline.'
+          ? body.includes('STATION_NOT_IN_TRAINING')
+            ? 'This station is not in the trained model’s OpenAQ station set; showing the labelled persistence baseline.'
+            : 'Trained forecasts require at least 25 consecutive hourly PM2.5 observations; showing the persistence baseline.'
           : response.status === 503
             ? 'The trained model is incomplete or unavailable; showing the persistence baseline.'
             : body.slice(0, 300) || `HTTP ${response.status}`;
