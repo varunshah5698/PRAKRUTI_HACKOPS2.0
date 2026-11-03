@@ -401,7 +401,7 @@ function PollutantComparisonCard({ rows }: { rows: DashboardData['charts']['poll
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#66766b]">{selected.label} · {modeLabel}</p>
-              {reading.station ? <p className="mt-0.5 truncate text-[10px] font-medium text-[#4d5e52]" title={reading.station}>{reading.station}</p> : null}
+              {reading.station ? <p className="mt-0.5 truncate text-[10px] font-medium text-[#4d5e52]" title={reading.station}>{stationComparisonLabel(reading.station)}</p> : null}
               <p className="display mt-1 text-[36px] font-bold leading-none tracking-[-0.06em] text-[#142016]">
                 {number(reading.value, reading.value < 10 ? 1 : 0)}
                 <span className="ml-1.5 text-[10px] font-medium tracking-normal text-[#66766b]">{selected.unit}</span>

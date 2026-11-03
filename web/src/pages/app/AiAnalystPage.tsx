@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight, Bot, BrainCircuit, ChevronDown, Info, Send, ShieldAlert, Sparkles, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, LoadingBlock, Select, Textarea } from '../../components/ui';
+import { AiActionText } from '../../components/AiActionText';
 import { api, ApiError, API_ORIGIN } from '../../lib/api';
 import { CATEGORY_LABELS, formatDate } from '../../lib/format';
 
@@ -273,7 +274,7 @@ export function AiAnalystPage() {
                               <div key={String(label)} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
                                 <Badge tone={tone as never}>{String(label)}</Badge>
                                 <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                                  {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
+                                  {items.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span className="text-[#66766b]">—</span><AiActionText text={item} /></li>)}
                                 </ul>
                               </div>
                             ) : null)}

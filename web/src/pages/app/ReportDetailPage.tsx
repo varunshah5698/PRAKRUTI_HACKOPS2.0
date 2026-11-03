@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { ReportAnalysisPanel } from '../../components/ReportAnalysis';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock, Select } from '../../components/ui';
+import { AiActionText } from '../../components/AiActionText';
 import { api } from '../../lib/api';
 import { categoryLabel, formatDate } from '../../lib/format';
 import { useAuth } from '../../store/auth';
@@ -224,7 +225,7 @@ export function ReportDetailPage() {
                 <div key={label} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
                   <Badge tone={tone}>{label}</Badge>
                   <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                    {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
+                    {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span><AiActionText text={item} /></li>)}
                   </ul>
                 </div>
               ) : null)}

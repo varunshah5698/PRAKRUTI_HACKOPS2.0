@@ -137,7 +137,7 @@ Rate limits: global 400/min; auth 40/15 min; report submission 12/hour; AI 20/mi
 | GET | `/simulations/scenarios` | user | 11 scenarios (7 air, 2 water, waste, industrial) with phases and preview shapes |
 | GET | `/simulations` | user | Own sessions; authority sees all |
 | POST | `/simulations` | authority | `{scenario, stationId?, seed?}`; returns `scenarioVersion` and the stored `weatherSnapshot` |
-| GET | `/simulations/:id` | user | Session, revealed events (recommendations + reasons per step), alerts/notifications/incidents |
+| GET | `/simulations/:id` | user | Session, revealed events (recommendations + reasons per step), alerts/notifications/incidents; legacy sessions are backfilled on demand |
 | POST | `/simulations/:id/play` | authority | Status PLAYING |
 | POST | `/simulations/:id/pause` | authority | Status PAUSED |
 | POST | `/simulations/:id/step` | authority | Advance one event; creates simulated alerts on transitions |

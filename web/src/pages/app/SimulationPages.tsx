@@ -91,6 +91,7 @@ interface SimulationDetail {
   session: SimulationSession;
   scenario: Scenario | null;
   scenarioVersion?: number;
+  recommendationsVersion?: number;
   weatherSnapshot?: {
     temperatureC: number | null;
     relativeHumidity: number | null;
@@ -256,33 +257,67 @@ function PhaseRail({
   steps,
   current,
   compact = false,
+  onSeek,
+  disabled = false,
 }: {
   phases: ScenarioPhase[];
   steps: number;
   current?: number;
   compact?: boolean;
+  onSeek?: (step: number) => void;
+  disabled?: boolean;
 }) {
+  const [preview, setPreview] = useState<number | null>(null);
   if (!phases?.length) return null;
   const total = Math.max(1, steps - 1);
+  const display = preview ?? current ?? 0;
   return (
     <div>
-      <div className="relative flex h-2 overflow-hidden rounded-full bg-[#e4eff1]">
-        {phases.map((phase) => (
-          <span
-            key={`${phase.label}-${phase.from}`}
-            title={`${phase.label}: step ${phase.from}–${phase.to}`}
-            className="h-full first:rounded-l-full last:rounded-r-full"
-            style={{
-              width: `${((phase.to - phase.from) / total) * 100}%`,
-              background: `linear-gradient(90deg, ${PHASE_TONE[phase.tone].color}cc, ${PHASE_TONE[phase.tone].color})`,
+      <div className="relative">
+        <div className="relative flex h-2 overflow-hidden rounded-full bg-[#e4eff1]">
+          {phases.map((phase) => (
+            <span
+              key={`${phase.label}-${phase.from}`}
+              title={`${phase.label}: step ${phase.from}–${phase.to}`}
+              className="h-full first:rounded-l-full last:rounded-r-full"
+              style={{
+                width: `${((phase.to - phase.from) / total) * 100}%`,
+                background: `linear-gradient(90deg, ${PHASE_TONE[phase.tone].color}cc, ${PHASE_TONE[phase.tone].color})`,
+              }}
+            />
+          ))}
+          {current !== undefined && !onSeek ? (
+            <span
+              className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+              style={{ left: `${Math.min(100, Math.max(0, (current / total) * 100))}%`, background: '#173d4a' }}
+              aria-hidden
+            />
+          ) : null}
+        </div>
+        {onSeek ? (
+          <input
+            type="range"
+            min={0}
+            max={Math.max(0, steps - 1)}
+            step={1}
+            value={display}
+            disabled={disabled}
+            onChange={(event) => setPreview(Number(event.target.value))}
+            onPointerUp={() => {
+              if (preview !== null) {
+                onSeek(preview);
+                setPreview(null);
+              }
             }}
-          />
-        ))}
-        {current !== undefined ? (
-          <span
-            className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
-            style={{ left: `${Math.min(100, Math.max(0, (current / total) * 100))}%`, background: '#173d4a' }}
-            aria-hidden
+            onKeyUp={(event) => {
+              if (preview !== null && ['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
+                onSeek(preview);
+                setPreview(null);
+              }
+            }}
+            aria-label="Replay position"
+            aria-valuetext={`Step ${display} of ${Math.max(0, steps - 1)}`}
+            className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent disabled:cursor-not-allowed [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#173d4a] [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#173d4a] [&::-webkit-slider-thumb]:shadow"
           />
         ) : null}
       </div>
@@ -724,7 +759,7 @@ export function SimulationSessionPage() {
   const [playing, setPlaying] = useState(false);
   const [working, setWorking] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [inspectedStep, setInspectedStep] = useState<number | null>(null);
+  const [seekPreview, setSeekPreview] = useState<number | null>(null);
   const [metricChoice, setMetricChoice] = useState('');
   const [audienceFilter, setAudienceFilter] = useState<'ALL' | SimulationRecommendation['audience']>('ALL');
   const [preview, setPreview] = useState<{ public: { subject: string; html: string }; authority: { subject: string; html: string } } | null>(null);
@@ -775,12 +810,11 @@ export function SimulationSessionPage() {
       api.post(`/simulations/${sessionId}/pause`).catch(() => {});
       return;
     }
-    setInspectedStep(null);
     const finished = data ? data.session.current_step >= data.session.total_steps - 1 : false;
     if (finished) {
       setWorking(true);
       try {
-        await api.post(`/simulations/${sessionId}/reset`);
+        await api.post(`/simulations/${sessionId}/seek`, { step: 0 });
         await load(true);
         await api.post(`/simulations/${sessionId}/play`);
         setPlaying(true);
@@ -799,7 +833,6 @@ export function SimulationSessionPage() {
   };
 
   const step = async () => {
-    setInspectedStep(null);
     setWorking(true);
     try {
       await api.post(`/simulations/${sessionId}/step`);
@@ -808,24 +841,39 @@ export function SimulationSessionPage() {
     finally { setWorking(false); }
   };
 
-  const reset = async () => {
+  const seekTo = async (target: number) => {
+    if (!sessionId || !data || working) return;
+    const maxStep = Math.max(0, data.session.total_steps - 1);
+    const nextStep = Math.max(0, Math.min(maxStep, Math.round(target)));
+    if (nextStep === data.session.current_step) {
+      setSeekPreview(null);
+      return;
+    }
     setPlaying(false);
-    setInspectedStep(null);
+    setSeekPreview(nextStep);
     setWorking(true);
     try {
-      await api.post(`/simulations/${sessionId}/reset`);
-      toast.success('Replay reset. Real observations untouched.');
+      await api.post(`/simulations/${sessionId}/seek`, { step: nextStep });
+      await load(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not move the replay position');
+    } finally {
+      setSeekPreview(null);
+      setWorking(false);
+    }
+  };
+
+  const reset = async () => {
+    if (!sessionId) return;
+    setPlaying(false);
+    setSeekPreview(null);
+    setWorking(true);
+    try {
+      await api.post(`/simulations/${sessionId}/seek`, { step: 0 });
+      toast.success('Replay rewound to step 0. Simulated alerts were rebuilt for this position.');
       await load(true);
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Reset failed'); }
     finally { setWorking(false); }
-  };
-
-  const inspectStep = (stepNumber: number | null) => {
-    if (playing && sessionId) {
-      setPlaying(false);
-      api.post(`/simulations/${sessionId}/pause`).catch(() => {});
-    }
-    setInspectedStep(stepNumber);
   };
 
   const previewEmail = async () => {
@@ -847,17 +895,12 @@ export function SimulationSessionPage() {
 
   const events = data?.events ?? [];
   const latestEvent = events[events.length - 1];
-  const latestStep = latestEvent?.step ?? null;
-  const inspectedIndex =
-    inspectedStep === null ? events.length - 1 : events.findIndex((event) => event.step === inspectedStep);
-  const viewedEvent = inspectedIndex >= 0 ? events[inspectedIndex] : latestEvent;
-  const viewed = viewedEvent?.payload;
-  const previousViewed = inspectedIndex > 0 ? events[inspectedIndex - 1]?.payload : undefined;
-  const inspecting = inspectedStep !== null && viewedEvent !== undefined && viewedEvent.step !== latestStep;
-  const viewedStep = viewedEvent?.step ?? null;
+  const viewed = latestEvent?.payload;
+  const previousViewed = events[events.length - 2]?.payload;
   const atEnd = data ? data.session.current_step >= data.session.total_steps - 1 : false;
   const currentStep = data?.session.current_step ?? 0;
   const totalSteps = data?.session.total_steps ?? 1;
+  const displayedStep = seekPreview ?? currentStep;
 
   const availableMetrics = viewed ? Object.keys(viewed.values) : [];
   const defaultMetric = viewed
@@ -910,26 +953,23 @@ export function SimulationSessionPage() {
         lineStyle: { color, width: 2.6 },
         itemStyle: { color, borderColor: '#ffffff', borderWidth: 1.5 },
         markLine:
-          inspecting || thresholdLines.length
+          thresholdLines.length
             ? {
                 silent: true,
                 symbol: 'none',
                 lineStyle: { color, type: 'dashed', width: 1, opacity: 0.6 },
                 label: { show: false },
-                data: [
-                  ...(inspecting && viewedStep !== null ? [{ xAxis: `S${viewedStep}` }] : []),
-                  ...thresholdLines.map((line) => ({
-                    yAxis: line.value,
-                    lineStyle: { color: '#c1932c', type: 'dashed', width: 1, opacity: 0.7 },
-                    label: {
-                      show: true,
-                      position: 'insideEndTop',
-                      formatter: line.label,
-                      color: '#9b6a25',
-                      fontSize: 8,
-                    },
-                  })),
-                ],
+                data: thresholdLines.map((line) => ({
+                  yAxis: line.value,
+                  lineStyle: { color: '#c1932c', type: 'dashed', width: 1, opacity: 0.7 },
+                  label: {
+                    show: true,
+                    position: 'insideEndTop',
+                    formatter: line.label,
+                    color: '#9b6a25',
+                    fontSize: 8,
+                  },
+                })),
               }
             : undefined,
         areaStyle: {
@@ -944,7 +984,7 @@ export function SimulationSessionPage() {
         },
       }],
     };
-  }, [events, metricKey, metric?.unit, inspecting, viewedStep]);
+  }, [events, metricKey, metric?.unit, thresholdLines]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -974,9 +1014,10 @@ export function SimulationSessionPage() {
   const phases = data.scenario?.phases ?? [];
   const currentPhase = phases.find((phase) => currentStep >= phase.from && currentStep <= phase.to) ?? phases.at(-1);
   const progress = Math.min(1, currentStep / Math.max(1, totalSteps - 1));
-  const peak = events
-    .slice(0, Math.max(0, inspectedIndex + 1))
-    .reduce((best, event) => Math.max(best, event.payload.values[metricKey]?.value ?? 0), 0);
+  const peak = events.reduce(
+    (best, event) => Math.max(best, event.payload.values[metricKey]?.value ?? 0),
+    0,
+  );
   const riskColor = alertTone(viewed?.risk.alertState);
   const riskScore = viewed?.risk.riskScore;
   const recommendations = viewed?.recommendations ?? [];
@@ -1091,20 +1132,6 @@ export function SimulationSessionPage() {
         <span>{data.isolation.note} Every event below is simulation-labelled. Emails are previews or SIMULATED records only.</span>
       </div>
 
-      {inspecting ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#bcdde5] bg-[#eef8fa] px-4 py-2.5 text-[10px] leading-relaxed text-[#2d7083] backdrop-blur">
-          <Timer className="h-3.5 w-3.5 shrink-0" />
-          <span>Inspecting step {viewedStep} of {currentStep}. Playback position is unchanged.</span>
-          <button
-            type="button"
-            onClick={() => inspectStep(null)}
-            className="ml-auto inline-flex items-center gap-1 font-semibold transition hover:text-[#1f5a6b]"
-          >
-            Back to latest step <ArrowUpRight className="h-3 w-3" />
-          </button>
-        </div>
-      ) : null}
-
       <Card className="overflow-hidden">
         <CardHeader className="items-center">
           <div>
@@ -1143,8 +1170,8 @@ export function SimulationSessionPage() {
           </div>
         ) : viewed && !viewed.recommendations ? (
           <EmptyState
-            title="This replay predates the recommendation layer"
-            description="Start a new replay from the Replay lab to generate audience-specific guidance with its reasons and evidence."
+            title="Recommendations could not be prepared for this step"
+            description="The automatic backfill will retry when the replay is reopened. Start a new replay if the issue continues."
             icon={<Sparkles className="h-5 w-5" />}
           />
         ) : (
@@ -1208,33 +1235,23 @@ export function SimulationSessionPage() {
                 option={chartOption}
                 onDataClick={(index) => {
                   const clicked = events[index];
-                  if (clicked) inspectStep(clicked.step === latestStep ? null : clicked.step);
+                  if (clicked && clicked.step !== currentStep) void seekTo(clicked.step);
                 }}
               />
             </div>
             <div className="border-t border-dashed border-[#dbe5d6] px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <DataLabel>Step explorer</DataLabel>
-                {inspecting ? (
-                  <button
-                    type="button"
-                    onClick={() => inspectStep(null)}
-                    className="inline-flex items-center gap-1 text-[8px] font-semibold text-[#2d7083] transition hover:text-[#1f5a6b]"
-                  >
-                    Back to latest step <ArrowUpRight className="h-3 w-3" />
-                  </button>
-                ) : (
-                  <span className="text-[8px] text-[#8ba1a9]">Click a step or the chart line to inspect it</span>
-                )}
+                <span className="text-[8px] text-[#8ba1a9]">Click a step or the chart line to move the replay position</span>
               </div>
               <div className="hide-scrollbar mt-2 flex gap-1 overflow-x-auto pb-1">
                 {events.map((event) => {
-                  const active = viewedStep === event.step;
+                  const active = displayedStep === event.step;
                   return (
                     <button
                       key={event.step}
                       type="button"
-                      onClick={() => inspectStep(event.step === latestStep ? null : event.step)}
+                      onClick={() => void seekTo(event.step)}
                       aria-pressed={active}
                       title={`Step ${event.step} · ${event.payload.risk.alertState}`}
                       className={classNames(
@@ -1256,7 +1273,7 @@ export function SimulationSessionPage() {
             </div>
             <div className="grid grid-cols-2 gap-2 border-t border-dashed border-[#dbe5d6] p-3 sm:grid-cols-4">
               <Stat label="Peak" value={`${number(peak)}`} note={metric?.unit} />
-              <Stat label={inspecting ? 'Inspecting' : 'At step'} value={viewedStep ?? 0} note={inspecting ? 'playback paused' : `${events.length} revealed`} />
+              <Stat label="At step" value={displayedStep} note={`${events.length} revealed`} />
               <Stat label="Alert state" value={viewed?.risk.alertState ?? '—'} note={viewed?.risk.riskLevel ?? 'no assessment'} />
               <Stat label="Confidence" value={viewed?.risk.confidenceScore ?? '—'} note={viewed?.risk.confidenceLevel ?? '—'} />
             </div>
@@ -1266,8 +1283,8 @@ export function SimulationSessionPage() {
             <Card className="overflow-hidden">
               <CardHeader className="items-center">
                 <div>
-                  <CardTitle>{inspecting ? 'Historical step snapshot' : 'Current simulated state'}</CardTitle>
-                  <p className="mt-1 text-[10px] text-[#66766b]">Step {viewed.step} · {formatDate(viewed.observedAt)}{inspecting ? ' · playback paused' : ''}</p>
+                  <CardTitle>Current simulated state</CardTitle>
+                  <p className="mt-1 text-[10px] text-[#66766b]">Step {viewed.step} · {formatDate(viewed.observedAt)}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <RiskBadge level={viewed.risk.alertState} />
@@ -1343,11 +1360,11 @@ export function SimulationSessionPage() {
                     <button
                       key={event.step}
                       type="button"
-                      onClick={() => inspectStep(event.step === latestStep ? null : event.step)}
-                      aria-pressed={viewedStep === event.step}
+                      onClick={() => void seekTo(event.step)}
+                      aria-pressed={displayedStep === event.step}
                       className={classNames(
                         'relative block w-full rounded-xl pb-4 pl-6 pr-2 text-left transition last:pb-0',
-                        viewedStep === event.step ? 'bg-white/75 ring-1 ring-[#d7e7ea]' : 'hover:bg-white/45',
+                        displayedStep === event.step ? 'bg-white/75 ring-1 ring-[#d7e7ea]' : 'hover:bg-white/45',
                       )}
                     >
                       <span className="absolute left-0 top-1.5 h-[11px] w-[11px] rounded-full border-2 border-white shadow-sm" style={{ background: alertTone(event.payload.risk.alertState) }} aria-hidden />
@@ -1356,8 +1373,8 @@ export function SimulationSessionPage() {
                           <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#2d7083]">Step {event.payload.step}</span>
                           <RiskBadge level={event.payload.risk.alertState} />
                           <span className="text-[8px] text-[#8ba1a9]">{formatDate(event.payload.observedAt)}</span>
-                          {viewedStep === event.step ? (
-                            <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#2d7c94]">Inspecting</span>
+                          {displayedStep === event.step ? (
+                            <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#2d7c94]">Current position</span>
                           ) : null}
                         </span>
                         {event.payload.suppressAlert ? <Badge tone="amber">Suppressed</Badge> : null}

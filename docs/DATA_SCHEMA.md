@@ -73,7 +73,8 @@ Database: PostgreSQL 18 + PostGIS 3.7. Schema source: `server/src/db/schema.sql`
 ## Simulation isolation
 
 - `environmental_reports`, `risk_assessments`, `environmental_alerts`, `environmental_incidents`, `notifications`, `simulation_sessions` and `investigation_notes`/`corrective_actions` carry simulation fields where relevant.
-- `simulation_sessions.scenario_version` records the generator version, and `weather_snapshot` stores the weather input used at generation so a session's conditions can be audited. Per-step recommendations and their reasons live inside the existing `simulation_events.payload` JSON.
+- `simulation_sessions.scenario_version` records the generator version, `weather_snapshot` stores the weather input used at generation so a session's conditions can be audited, and `recommendations_version` marks sessions whose event payloads have been enriched with recommendations. Per-step recommendations and their reasons live inside the existing `simulation_events.payload` JSON.
+- The server runs a targeted, idempotent simulation-schema migration at startup, backfills old sessions in the background, and retries on-demand when an old session is opened. `npm run simulations:backfill` runs the same backfill offline.
 - Simulation risk assessments are persisted under entity type `simulation_station` with the session UUID, not the real station entity.
 - Operational alert/incident/notification lists filter `simulation_session_id IS NULL`.
 - Reset updates `current_step`/status only. It never deletes real observations.

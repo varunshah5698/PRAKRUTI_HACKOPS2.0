@@ -35,6 +35,14 @@ import { startLiveScheduler, stopLiveScheduler } from './services/live.js';
 import { evaluateAllStations, evaluateWasteLocalities } from './services/risk.js';
 import { syncAlertsFromStationAssessments, syncAlertsFromWasteAssessments } from './services/alerts.js';
 import { addEventClient, clientCount, closeEventClients, removeEventClient } from './lib/events.js';
+import { ensureSimulationSchema } from './db/simulation-migrations.js';
+import { backfillSimulationRecommendations } from './services/simulation-backfill.js';
+
+try {
+  await ensureSimulationSchema();
+} catch (error) {
+  console.error('[simulation-schema] Targeted migration failed; the full schema may not be applied yet.', error);
+}
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -212,6 +220,13 @@ const server = app.listen(env.PORT, () => {
   console.log(`प्रकृति API listening on http://localhost:${env.PORT}`);
   console.log(`Demo mode: ${env.DEMO_MODE ? 'ON' : 'OFF'} · storage: ${appConfig.storageRoot}`);
   startSchedulers().catch((error) => console.error('[scheduler-start]', error));
+  void backfillSimulationRecommendations()
+    .then(({ sessions, events }) => {
+      if (sessions > 0) {
+        console.log(`[simulations] Backfilled recommendations for ${sessions} session(s) (${events} event(s)).`);
+      }
+    })
+    .catch((error) => console.error('[simulation-backfill]', error));
   // Seed after the server is listening so Render's health check is not blocked
   // by live weather/CAMS calls. A single instance is assumed.
   if (env.NODE_ENV === 'production' && env.DEMO_MODE) {

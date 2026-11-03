@@ -244,7 +244,7 @@ async function fetchMetNoWeather(point: CityPoint): Promise<WeatherPayload> {
   const url = new URL('https://api.met.no/weatherapi/locationforecast/2.0/compact');
   url.searchParams.set('lat', String(point.lat));
   url.searchParams.set('lon', String(point.lng));
-  const payload = await fetchJson<MetNoPayload>(url.toString(), {}, 15_000);
+  const payload = await fetchJson<MetNoPayload>(url.toString(), {}, 8_000);
   const series = payload.properties?.timeseries ?? [];
   if (series.length === 0) throw unavailable('MET Norway returned no forecast for this point.');
 
@@ -349,7 +349,7 @@ async function fetchMetNoWeather(point: CityPoint): Promise<WeatherPayload> {
 
 async function fetchWeather(point: CityPoint): Promise<{ payload: WeatherPayload; provider: 'open-meteo' | 'met-no' }> {
   try {
-    return { payload: await fetchJson<WeatherPayload>(weatherUrl(point)), provider: 'open-meteo' };
+    return { payload: await fetchJson<WeatherPayload>(weatherUrl(point), {}, 8_000), provider: 'open-meteo' };
   } catch (error) {
     console.warn('[city] Open-Meteo forecast unavailable; trying MET Norway fallback.', error instanceof Error ? error.message : error);
     return { payload: await fetchMetNoWeather(point), provider: 'met-no' };
@@ -910,7 +910,7 @@ export async function getMarine(lat: number, lng: number): Promise<MarineConditi
     url.searchParams.set('hourly', 'wave_height,sea_surface_temperature');
     url.searchParams.set('timezone', 'Asia/Kolkata');
     url.searchParams.set('forecast_days', '3');
-    const payload = await fetchJson<WeatherPayload>(url.toString());
+    const payload = await fetchJson<WeatherPayload>(url.toString(), {}, 10_000);
     const current = payload.current ?? {};
     const times = timeList(payload.hourly?.time);
     const waves = list(payload.hourly?.wave_height);
@@ -967,7 +967,7 @@ export async function getFlood(lat: number, lng: number): Promise<FloodCondition
     url.searchParams.set('daily', 'river_discharge,river_discharge_mean,river_discharge_max');
     url.searchParams.set('past_days', '7');
     url.searchParams.set('forecast_days', '14');
-    const payload = await fetchJson<WeatherPayload>(url.toString());
+    const payload = await fetchJson<WeatherPayload>(url.toString(), {}, 10_000);
     const dates = timeList(payload.daily?.time);
     const discharge = list(payload.daily?.river_discharge);
     const means = list(payload.daily?.river_discharge_mean);
@@ -1277,7 +1277,7 @@ export async function getArchiveDay(lat: number, lng: number, date: string): Pro
     url.searchParams.set('end_date', date);
     url.searchParams.set('daily', 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,shortwave_radiation_sum');
     url.searchParams.set('timezone', 'Asia/Kolkata');
-    const payload = await fetchJson<WeatherPayload>(url.toString());
+    const payload = await fetchJson<WeatherPayload>(url.toString(), {}, 12_000);
     return {
       date,
       weatherCode: list(payload.daily?.weather_code)[0] ?? null,

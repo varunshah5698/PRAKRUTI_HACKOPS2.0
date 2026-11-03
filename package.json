@@ -20,6 +20,7 @@
     "test": "npm run test -w server && npm run test -w web",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
     "ml:register": "npm run ml:register -w server",
+    "simulations:backfill": "npm run simulations:backfill -w server",
     "integrations:check": "npm run integrations:check -w server",
     "data:import-openaq": "npm run data:import-openaq -w server"
   },

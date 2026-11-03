@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchWithRetry, isSmallTalk, rankStationSnapshots, systemPrompt } from './analyst.js';
+import { extractNarrative, fetchWithRetry, isSmallTalk, parseModelJson, rankStationSnapshots, systemPrompt } from './analyst.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -93,6 +93,25 @@ describe('conversational small talk', () => {
     ]) {
       expect(isSmallTalk(question)).toBe(false);
     }
+  });
+});
+
+describe('model JSON parsing', () => {
+  it('parses double-encoded JSON', () => {
+    const inner = { narrative: 'Grounded answer', observed: ['PM2.5 52 µg/m³'] };
+    const parsed = parseModelJson(JSON.stringify(JSON.stringify(inner)));
+    expect(parsed).toEqual(inner);
+  });
+
+  it('repairs pretty-printed JSON with raw newlines inside strings', () => {
+    const text = '{\n  "narrative": "line one\nline two",\n  "observed": ["x"]\n}';
+    const parsed = parseModelJson(text);
+    expect(parsed?.narrative).toContain('line one');
+    expect(parsed?.observed).toEqual(['x']);
+  });
+
+  it('recovers the narrative even when the rest of the JSON is broken', () => {
+    expect(extractNarrative('{"narrative":"hello\\nworld","observed": [broken')).toBe('hello\nworld');
   });
 });
 

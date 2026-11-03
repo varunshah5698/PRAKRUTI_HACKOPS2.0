@@ -9,6 +9,7 @@ import { createNotificationsForAlert } from '../services/notifications.js';
 import { getAlertForEmail, renderAlertEmail } from '../services/email.js';
 import { nextPublicRef } from '../lib/refs.js';
 import { audit } from '../lib/audit.js';
+import { backfillSimulationSession } from '../services/simulation-backfill.js';
 import type { RiskAssessmentResult } from '../types.js';
 
 export const simulationsRouter = Router();
@@ -73,8 +74,8 @@ simulationsRouter.post('/', async (req, res, next) => {
     const row = await one<{ id: string }>(
       `INSERT INTO simulation_sessions
          (scenario, category, scenario_version, station_id, locality_id, seed, weather_snapshot,
-          status, current_step, total_steps, created_by, is_simulated)
-       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,'CREATED',0,$8,$9,true) RETURNING id`,
+          recommendations_version, status, current_step, total_steps, created_by, is_simulated)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,1,'CREATED',0,$8,$9,true) RETURNING id`,
       [
         scenario.id,
         scenario.category,
@@ -132,10 +133,23 @@ simulationsRouter.get('/:id', async (req, res, next) => {
       [req.params.id],
     );
     if (!session) throw notFound('Simulation session not found.');
-    const events = await query<{ step: number; event_type: string; payload: Record<string, unknown> }>(
+    let events = await query<{ step: number; event_type: string; payload: Record<string, unknown> }>(
       `SELECT step, event_type, payload FROM simulation_events WHERE session_id=$1 AND step <= $2 ORDER BY step`,
       [session.id, session.current_step],
     );
+    const needsBackfill =
+      Number(session.recommendations_version ?? 0) < 1 ||
+      events.some((event) => !Array.isArray(event.payload.recommendations));
+    if (needsBackfill) {
+      const backfill = await backfillSimulationSession(String(session.id));
+      session.recommendations_version = 1;
+      if (backfill.events > 0) {
+        events = await query<{ step: number; event_type: string; payload: Record<string, unknown> }>(
+          `SELECT step, event_type, payload FROM simulation_events WHERE session_id=$1 AND step <= $2 ORDER BY step`,
+          [session.id, session.current_step],
+        );
+      }
+    }
     const [alerts, notifications, incidents] = await Promise.all([
       query<Record<string, unknown>>(
         `SELECT id, public_ref, category, level, state, trigger_type, title, summary, triggered_at, is_simulated
@@ -158,6 +172,7 @@ simulationsRouter.get('/:id', async (req, res, next) => {
       scenario: SCENARIOS.find((s) => s.id === session.scenario) ?? null,
       scenarioVersion: session.scenario_version ?? 1,
       weatherSnapshot: session.weather_snapshot ?? null,
+      recommendationsVersion: session.recommendations_version ?? 0,
       events,
       alerts,
       notifications,
@@ -220,6 +235,84 @@ async function transitionAlertForStep(
   }
   return alert;
 }
+
+async function rebuildSessionAlerts(
+  session: { id: string; station_id: string; locality_id: string | null; scenario: string; station_name?: string },
+  targetStep: number,
+) {
+  // Alerts and notifications are derived records. Rebuild them from the
+  // persisted events so a backward scrub cannot leave future warnings visible.
+  await query('DELETE FROM notifications WHERE simulation_session_id=$1', [session.id]);
+  await query('DELETE FROM environmental_alerts WHERE simulation_session_id=$1', [session.id]);
+  await query(`UPDATE simulation_events SET payload = payload - 'alertId' WHERE session_id=$1`, [session.id]);
+  const events = await query<{ step: number; payload: Record<string, unknown> }>(
+    `SELECT step, payload FROM simulation_events
+     WHERE session_id=$1 AND step <= $2 AND event_type='READING' ORDER BY step`,
+    [session.id, targetStep],
+  );
+  for (let index = 1; index < events.length; index += 1) {
+    const previousState =
+      (events[index - 1].payload.risk as RiskAssessmentResult | undefined)?.alertState ?? null;
+    await transitionAlertForStep(session, events[index].payload, previousState);
+  }
+}
+
+simulationsRouter.post('/:id/seek', async (req, res, next) => {
+  try {
+    if (!AUTHORITY.includes(req.user!.role)) throw forbidden('Authority role required to control a simulation.');
+    const body = z.object({ step: z.number().int().min(0) }).parse(req.body);
+    const session = await one<{
+      id: string;
+      status: string;
+      current_step: number;
+      total_steps: number;
+      station_id: string;
+      locality_id: string | null;
+      scenario: string;
+      station_name: string;
+    }>(
+      `SELECT s.id, s.status, s.current_step, s.total_steps, s.station_id, s.locality_id, s.scenario,
+              st.name AS station_name
+       FROM simulation_sessions s JOIN monitoring_stations st ON st.id=s.station_id WHERE s.id=$1`,
+      [req.params.id],
+    );
+    if (!session) throw notFound('Simulation session not found.');
+    const targetStep = Math.min(session.total_steps - 1, body.step);
+    await rebuildSessionAlerts(
+      {
+        id: session.id,
+        station_id: session.station_id,
+        locality_id: session.locality_id,
+        scenario: session.scenario,
+        station_name: session.station_name,
+      },
+      targetStep,
+    );
+    const status = targetStep >= session.total_steps - 1 ? 'COMPLETED' : 'PAUSED';
+    await query(`UPDATE simulation_sessions SET current_step=$2, status=$3, updated_at=now() WHERE id=$1`, [
+      session.id,
+      targetStep,
+      status,
+    ]);
+    await audit({
+      actorId: req.user!.id,
+      action: 'SIMULATION_SEEK',
+      entityType: 'simulation_session',
+      entityId: session.id,
+      before: { step: session.current_step },
+      after: { step: targetStep },
+      ip: req.ip,
+    });
+    res.json({
+      step: targetStep,
+      totalSteps: session.total_steps,
+      status,
+      note: 'Replay position moved. Simulated alerts and notifications were rebuilt for this step; simulated incidents were retained.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 simulationsRouter.post('/:id/play', async (req, res, next) => {
   try {

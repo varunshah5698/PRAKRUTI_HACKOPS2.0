@@ -468,6 +468,7 @@ CREATE TABLE IF NOT EXISTS simulation_sessions (
   locality_id uuid REFERENCES localities(id),
   seed integer NOT NULL,
   weather_snapshot jsonb,
+  recommendations_version integer NOT NULL DEFAULT 0,
   status text NOT NULL DEFAULT 'CREATED' CHECK (status IN ('CREATED','PLAYING','PAUSED','COMPLETED','RESET')),
   current_step integer NOT NULL DEFAULT 0,
   total_steps integer NOT NULL,
@@ -489,6 +490,7 @@ CREATE TABLE IF NOT EXISTS simulation_events (
 
 ALTER TABLE simulation_sessions ADD COLUMN IF NOT EXISTS scenario_version integer NOT NULL DEFAULT 1;
 ALTER TABLE simulation_sessions ADD COLUMN IF NOT EXISTS weather_snapshot jsonb;
+ALTER TABLE simulation_sessions ADD COLUMN IF NOT EXISTS recommendations_version integer NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS simulation_sessions_scenario_idx ON simulation_sessions (scenario, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS audit_logs (

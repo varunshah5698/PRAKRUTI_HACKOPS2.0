@@ -33,6 +33,7 @@ import {
 } from '../../lib/sourceImpact';
 import { RiskBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock, Select, Sheet, Spinner, Tabs } from '../../components/ui';
+import { AiActionText } from '../../components/AiActionText';
 import { LivePanel } from '../../components/LivePanel';
 import { useLiveFeed, useLiveStation } from '../../lib/liveFeed';
 import { api } from '../../lib/api';
@@ -159,9 +160,9 @@ function stationToMap(station: TimelineStation, attribution: StationSourceAttrib
     latestObservedAt: station.latestObservedAt,
     healthStatus: station.healthStatus,
     forecast: forecast ?? null,
-    impactSharePct: attribution?.estimatedSharePct ?? 0,
+    impactSharePct: attribution && attribution.impactLevel !== 'NONE' ? attribution.estimatedSharePct : 0,
     impactLevel: attribution?.impactLevel ?? 'NONE',
-    primarySourceName: attribution?.primarySourceName ?? null,
+    primarySourceName: attribution && attribution.impactLevel !== 'NONE' ? attribution.primarySourceName : null,
   };
 }
 
@@ -576,7 +577,7 @@ function StationDrawer({
                       <div key={String(label)} className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
                         <Badge tone={tone as never}>{String(label)}</Badge>
                         <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
-                          {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
+                          {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span><AiActionText text={item} /></li>)}
                         </ul>
                       </div>
                     ) : null)}
@@ -624,7 +625,7 @@ function SourceSheet({
     return attributions
       .flatMap((attribution) => {
         const contribution = attribution.sources.find((item) => item.sourceId === source.id);
-        return contribution ? [{ attribution, contribution }] : [];
+        return contribution && contribution.contributionPct >= 8 ? [{ attribution, contribution }] : [];
       })
       .sort((a, b) => b.contribution.contributionPct - a.contribution.contributionPct);
   }, [source, attributions]);
@@ -816,6 +817,7 @@ export function MapPage() {
   );
   const worstSources = sourceImpact?.sources ?? [];
   const worstSource = worstSources[0] ?? null;
+  const highestEmission = [...worstSources].sort((a, b) => b.emissionIndex - a.emissionIndex)[0] ?? null;
   const selectedSource = worstSources.find((source) => source.id === selectedSourceId) ?? null;
   const sourceLinks = useMemo<MapSourceLink[]>(() => {
     if (!sourceImpact) return [];
@@ -825,8 +827,8 @@ export function MapPage() {
     for (const attribution of Object.values(sourceImpact.stationAttributions)) {
       const station = stationById.get(attribution.stationId);
       if (!station) continue;
-      for (const contribution of attribution.sources) {
-        if (contribution.contributionPct < 12) continue;
+      for (const contribution of attribution.sources.slice(0, 2)) {
+        if (contribution.contributionPct < 15) continue;
         const source = sourceById.get(contribution.sourceId);
         if (!source) continue;
         links.push({
@@ -1086,9 +1088,9 @@ export function MapPage() {
           <div className="flex items-center gap-3 rounded-2xl border border-[#e6d5c5] bg-white/65 p-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fdf1e6] text-[#a16207]"><MapPin className="h-4 w-4" /></span>
             <div>
-              <DataLabel>Land screen</DataLabel>
+              <DataLabel>Plume area</DataLabel>
               <p className="mt-0.5 text-[12px] font-semibold text-[#3f2b1d]">{sourceImpact.landImpact.impactedAreaKm2} km²</p>
-              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Plume footprints · not a measured area</p>
+              <p className="mt-0.5 text-[9px] text-[#9a7b66]">Screened footprint · not a measured area</p>
             </div>
           </div>
         </div>
@@ -1246,6 +1248,11 @@ export function MapPage() {
                   </button>
                 ))}
               </div>
+              {highestEmission ? (
+                <p className="border-t border-[#f0e2d5] px-4 py-2 text-[8.5px] leading-relaxed text-[#9a7b66]">
+                  Largest emission index: <strong className="text-[#8a5a3b]">{highestEmission.name}</strong> · {highestEmission.emissionIndex}/100
+                </p>
+              ) : null}
               <div className="flex items-center justify-between border-t border-[#f0e2d5] px-4 py-2.5">
                 <button
                   type="button"
@@ -1297,9 +1304,9 @@ export function MapPage() {
 
           {sourceImpact ? (
             <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-              <div className="flex items-center justify-between"><DataLabel>City source mix</DataLabel><Badge tone="neutral">Screening</Badge></div>
+              <div className="flex items-center justify-between"><DataLabel>City source impact mix</DataLabel><Badge tone="neutral">Screening</Badge></div>
               <Chart height={176} empty={worstSources.every((source) => source.impactScore <= 0)} option={sourceMixOption} />
-              <p className="mt-1 text-[8.5px] leading-relaxed text-[#9a7b66]">Share of screened industrial contribution across the monitors in view. Not a measured apportionment.</p>
+              <p className="mt-1 text-[8.5px] leading-relaxed text-[#9a7b66]">Share of the screened impact score across the monitors in view: monitor reach, plume footprint and emission index. Not a measured apportionment.</p>
               <button type="button" onClick={() => setSelectedSourceId(worstSource?.id ?? null)} className="mt-2 inline-flex items-center gap-1 text-[9px] font-semibold text-[#9a3412] hover:text-[#7c2d12]">
                 Inspect rank #{worstSource?.rank ?? '—'} <ChevronRight className="h-3 w-3" />
               </button>

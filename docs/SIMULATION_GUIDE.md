@@ -54,6 +54,16 @@ steps; sensor-fault steps explicitly recommend maintenance and suppress public
 alarm; waste advice separates reports from measured violations; and industrial
 advice never applies a legal emission threshold.
 
+## Legacy sessions and backfill
+
+Sessions created before the recommendation layer are enriched in place without
+changing their readings, risk scores, alerts or timestamps. The server applies a
+targeted, idempotent simulation-schema migration at startup and backfills old
+sessions asynchronously; opening an old session also triggers an on-demand
+backfill. A bulk offline run is available with `npm run simulations:backfill`.
+Each session stores `recommendations_version` so a completed backfill is not
+repeated.
+
 ## Meteorology and outlook
 
 Each step also records a `conditions` block (temperature, humidity, wind,

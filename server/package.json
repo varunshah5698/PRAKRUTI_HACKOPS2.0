@@ -14,6 +14,7 @@
     "test:live-ai": "RUN_LIVE_AI=1 vitest run src/services/ai/analyst.live.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ml:register": "tsx src/db/register-models.ts",
+    "simulations:backfill": "tsx src/scripts/backfill-simulations.ts",
     "integrations:check": "tsx src/scripts/check-integrations.ts",
     "data:import-openaq": "tsx src/scripts/import-openaq-archive.ts"
   },

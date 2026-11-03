@@ -1422,7 +1422,7 @@ export function CityPulsePage() {
           <SectionHeader title="Open data behind this page" detail="All providers are free and keyless. Click an endpoint to copy it." badge={<Gauge className="h-4 w-4 text-[#5f8f79]" />} />
           <div className="divide-y divide-dashed divide-[#e7ece3]">
             {[
-              ['Overview', '/city/overview', 'Open-Meteo forecast + CAMS air quality', 'https://open-meteo.com/en/docs'],
+              ['Overview', '/city/overview', data.weatherProvider === 'met-no' ? 'MET Norway fallback + CAMS air quality' : 'Open-Meteo forecast + CAMS air quality', data.weatherProvider === 'met-no' ? 'https://api.met.no/' : 'https://open-meteo.com/en/docs'],
               ['Localities', '/city/places', 'OpenStreetMap Nominatim, Open-Meteo geocoding fallback', 'https://nominatim.org/'],
               ['Compare', '/city/compare', 'Open-Meteo multi-point weather and CAMS', 'https://open-meteo.com/en/docs/air-quality-api'],
               ['Coast', '/city/marine', 'Open-Meteo Marine API', 'https://open-meteo.com/en/docs/marine-weather-api'],

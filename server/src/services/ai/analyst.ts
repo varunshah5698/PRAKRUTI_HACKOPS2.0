@@ -223,7 +223,12 @@ async function loadFocusedReport(reportId: string): Promise<FocusedReport | null
       [reportId],
     ),
   ]);
-  return { report, evidence, assessments, ...enrichment };
+  // The 3D view on the report page needs exact relative coordinates.
+  // The AI prompt only needs distance and context, so keep citizen-report
+  // coordinates out of the external model payload.
+  const stations = enrichment.stations.map(({ lat: _lat, lng: _lng, ...row }) => row);
+  const nearbyReports = enrichment.nearbyReports.map(({ lat: _lat, lng: _lng, ...row }) => row);
+  return { report, evidence, assessments, ...enrichment, stations, nearbyReports };
 }
 
 type RankableStation = {
@@ -986,18 +991,64 @@ export async function fetchWithRetry(url: string, init: RequestInit, attempts = 
   throw lastError instanceof Error ? lastError : new Error('River AI request failed');
 }
 
+export function parseModelJson(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = (fenced ? fenced[1] : trimmed).trim();
+  const start = candidate.indexOf('{');
+  const end = candidate.lastIndexOf('}');
+  const objectText = start >= 0 && end > start ? candidate.slice(start, end + 1) : null;
+  const attempts = [
+    candidate,
+    objectText,
+    objectText?.replace(/\r?\n/g, ' '),
+    objectText?.replace(/,\s*([}\]])/g, '$1'),
+    objectText?.replace(/\r?\n/g, ' ').replace(/,\s*([}\]])/g, '$1'),
+  ].filter((value): value is string => Boolean(value));
+  for (const attempt of attempts) {
+    try {
+      const value = JSON.parse(attempt) as unknown;
+      if (typeof value === 'string') {
+        const inner = parseModelJson(value);
+        if (inner) return inner;
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const object = value as Record<string, unknown>;
+        if (typeof object.narrative === 'string' && object.narrative.trim().startsWith('{')) {
+          const inner = parseModelJson(object.narrative);
+          if (inner) return inner;
+        }
+        return object;
+      }
+    } catch {
+      // Try the next repair attempt.
+    }
+  }
+  return null;
+}
+
+export function extractNarrative(text: string): string | null {
+  const match = text.match(/"narrative"\s*:\s*"((?:\\.|[^"\\])*)"/s);
+  if (!match) return null;
+  try {
+    return JSON.parse(`"${match[1]}"`) as string;
+  } catch {
+    return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  }
+}
+
 async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
   const url = `${riverConfig.baseURL.replace(/\/$/, '')}/chat/completions`;
   const body = JSON.stringify({
     model: riverConfig.model,
     temperature: 0.15,
-    max_tokens: 6000,
+    max_tokens: 8000,
     reasoning_effort: 'high',
     messages: [
       { role: 'system', content: systemPrompt() },
       {
         role: 'user',
-        content: `Question: ${evidence.question}\n\nEvidence JSON:\n${JSON.stringify(evidence).slice(0, env.AI_EVIDENCE_CHAR_LIMIT)}\n\nReturn ONLY the JSON object described in the system prompt. No markdown, no headings, and no text before or after the JSON.`,
+        content: `Question: ${evidence.question}\n\nEvidence JSON:\n${JSON.stringify(evidence).slice(0, env.AI_EVIDENCE_CHAR_LIMIT)}\n\nReturn ONLY the JSON object described in the system prompt. No markdown, no headings, and no text before or after the JSON. The JSON must be valid: escape every newline inside a string as \\n and do not use trailing commas.`,
       },
     ],
   });
@@ -1020,19 +1071,19 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
   if (!content && !reasoning) throw new Error('River AI returned no content');
   let parsed: Record<string, unknown> = {};
   const candidateText = content || reasoning;
-  try {
-    const fenced = candidateText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const candidate = (fenced ? fenced[1] : candidateText).trim();
-    const start = candidate.indexOf('{');
-    const end = candidate.lastIndexOf('}');
-    if (start === -1 || end <= start) throw new Error('No JSON object found');
-    parsed = JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
+  const parsedResult = parseModelJson(candidateText);
+  if (parsedResult) {
+    parsed = parsedResult;
     if (!content && !parsed.narrative && !Array.isArray(parsed.observed)) {
       throw new Error('River AI returned reasoning without final content');
     }
-  } catch (error) {
-    if (!content) throw error;
-    parsed = { narrative: content.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim() };
+  } else {
+    if (!content) throw new Error('No JSON object found');
+    parsed = {
+      narrative:
+        extractNarrative(content) ??
+        content.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim(),
+    };
   }
   const raw = content || String(parsed.narrative ?? 'Grounded analysis generated from the supplied evidence.');
   const strings = (value: unknown): string[] =>
