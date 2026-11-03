@@ -13,25 +13,25 @@ export const CATEGORY_SHORT: Record<string, string> = {
 };
 
 export const RISK_COLORS: Record<string, string> = {
-  LOW: '#32a879',
-  MODERATE: '#d2b04c',
-  HIGH: '#e88a43',
-  CRITICAL: '#dc555b',
-  UNKNOWN: '#788493',
-  NORMAL: '#32a879',
-  WATCH: '#d2b04c',
-  EARLY_WARNING: '#e88a43',
-  RECOVERY: '#56c1b3',
+  LOW: '#2f8f66',
+  MODERATE: '#b3860f',
+  HIGH: '#cf7227',
+  CRITICAL: '#c94a50',
+  UNKNOWN: '#728176',
+  NORMAL: '#2f8f66',
+  WATCH: '#b3860f',
+  EARLY_WARNING: '#cf7227',
+  RECOVERY: '#2f8f84',
 };
 
 export const AQI_COLORS: Record<string, string> = {
-  Good: '#32a879',
-  Satisfactory: '#7fb069',
-  Moderate: '#d2b04c',
-  Poor: '#e88a43',
-  'Very Poor': '#dc555b',
+  Good: '#2f8f66',
+  Satisfactory: '#6d9f45',
+  Moderate: '#b3860f',
+  Poor: '#cf7227',
+  'Very Poor': '#c94a50',
   Severe: '#8f2f3a',
-  'INSUFFICIENT DATA': '#788493',
+  'INSUFFICIENT DATA': '#728176',
 };
 
 export function formatDate(value?: string | null, withTime = true): string {
@@ -78,11 +78,11 @@ export function categoryLabel(value?: string | null): string {
 
 export function statusTone(status?: string | null): string {
   const s = String(status ?? '').toUpperCase();
-  if (['CONNECTED', 'ONLINE', 'ACTIVE', 'VERIFIED', 'COMPLETED', 'DELIVERED', 'LIVE'].includes(s)) return 'text-emerald-400';
-  if (['WATCH', 'STALE', 'PENDING', 'AWAITING_VERIFICATION', 'DEGRADED', 'SENT', 'IN_PROGRESS'].includes(s)) return 'text-amber-400';
-  if (['CRITICAL', 'FAILED', 'OFFLINE', 'SUSPENDED', 'REJECTED', 'MISMATCH'].includes(s)) return 'text-red-400';
-  if (['NOT_CONFIGURED', 'NOT_TRAINED', 'UNKNOWN', 'SIMULATED', 'UNVERIFIED'].includes(s)) return 'text-slate-400';
-  return 'text-slate-300';
+  if (['CONNECTED', 'ONLINE', 'ACTIVE', 'VERIFIED', 'COMPLETED', 'DELIVERED', 'LIVE'].includes(s)) return 'text-emerald-600';
+  if (['WATCH', 'STALE', 'PENDING', 'AWAITING_VERIFICATION', 'DEGRADED', 'SENT', 'IN_PROGRESS'].includes(s)) return 'text-amber-600';
+  if (['CRITICAL', 'FAILED', 'OFFLINE', 'SUSPENDED', 'REJECTED', 'MISMATCH'].includes(s)) return 'text-red-600';
+  if (['NOT_CONFIGURED', 'NOT_TRAINED', 'UNKNOWN', 'SIMULATED', 'UNVERIFIED'].includes(s)) return 'text-slate-500';
+  return 'text-slate-600';
 }
 
 export function classNames(...values: Array<string | false | null | undefined>): string {

@@ -503,3 +503,8 @@ CREATE TABLE IF NOT EXISTS app_config (
   value jsonb NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Citizen report responses. Added after the fact, so it must be idempotent for
+-- databases that already ran the original schema.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS report_id uuid REFERENCES environmental_reports(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS notifications_report_idx ON notifications (report_id, created_at DESC);

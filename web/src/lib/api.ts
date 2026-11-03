@@ -13,7 +13,8 @@ export class ApiError extends Error {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
-const RETRY_DELAYS_MS = [500, 1000, 2000];
+const RETRY_DELAYS_MS = [400, 800];
+const NETWORK_RETRY_DELAY_MS = 500;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,8 +41,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         },
       });
     } catch (error) {
-      if (!retryable || attempt === RETRY_DELAYS_MS.length) throw error;
-      await sleep(RETRY_DELAYS_MS[attempt]);
+      // A thrown fetch means no HTTP response at all (connection refused).
+      // Retry once briefly, then fail instead of hanging on a dead API.
+      if (!retryable || attempt > 0) throw error;
+      await sleep(NETWORK_RETRY_DELAY_MS);
       continue;
     }
     if (retryable && attempt < RETRY_DELAYS_MS.length && apiRestarting(response)) {

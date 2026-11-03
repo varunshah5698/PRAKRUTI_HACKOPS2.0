@@ -39,7 +39,7 @@ This deployment is a working demonstration, not an operational regulatory system
 - No email provider configured; notifications are `SIMULATED` records. `SENT` is not `DELIVERED`; delivery requires a provider webhook.
 - No S3-compatible object storage adapter; evidence uses local private storage.
 - No malware scanning (`NOT_CONFIGURED`).
-- No OpenAQ/data.gov.in credentials; adapters exist but are disabled.
+- OpenAQ is configured via environment; data.gov.in has no credentials, so its adapter remains disabled.
 - No external map API key; OpenFreeMap public instance is used with attribution. Production should self-host or use a provider with an SLA.
 - 3D building heights are OpenMapTiles render heights, not surveyed building data.
 

@@ -7,7 +7,9 @@ import {
   recordNotificationEvent,
   renderAlertEmail,
   renderIncidentUpdateEmail,
+  renderReportStatusEmail,
   type IncidentForEmail,
+  type ReportUpdateForEmail,
 } from './email.js';
 
 interface Recipient {
@@ -152,6 +154,65 @@ export async function acknowledgeNotification(notificationId: string, userId: st
   return true;
 }
 
+
+export async function notifyReportStatusChange(
+  reportId: string,
+  update: { status: string; reason: string },
+): Promise<boolean> {
+  const report = await one<ReportUpdateForEmail & { user_id: string | null }>(
+    `SELECT r.id, r.public_ref, r.category, r.incident_type, r.status, r.verification_state,
+            r.is_simulated, r.user_id, l.name AS locality_name
+     FROM environmental_reports r
+     LEFT JOIN localities l ON l.id = r.locality_id
+     WHERE r.id=$1`,
+    [reportId],
+  );
+  // Anonymous submissions have no account to notify; the reference stays the only handle.
+  if (!report?.user_id) return false;
+
+  const recipient = await one<{ id: string; email: string; notify_email: boolean }>(
+    `SELECT u.id, u.email, p.notify_email
+     FROM users u LEFT JOIN user_preferences p ON p.user_id = u.id
+     WHERE u.id=$1 AND u.account_status='ACTIVE'`,
+    [report.user_id],
+  );
+  if (!recipient) return false;
+
+  const rendered = renderReportStatusEmail(report, update);
+  const isSimulated = report.is_simulated || !emailConfigured || (env.DEMO_MODE && !env.DEMO_EMAIL_RECIPIENT);
+  const inserted = await one<{ id: string }>(
+    `INSERT INTO notifications
+       (user_id, report_id, audience, channel, template, subject, body_html, status, is_simulated)
+     VALUES ($1,$2,'PUBLIC','EMAIL','REPORT_STATUS_UPDATE',$3,$4,'SIMULATED',$5)
+     RETURNING id`,
+    [recipient.id, report.id, rendered.subject, rendered.html, isSimulated],
+  );
+  if (!inserted) return false;
+  await recordNotificationEvent(inserted.id, 'CREATED', {
+    template: 'REPORT_STATUS_UPDATE',
+    reportId: report.id,
+    status: update.status,
+    emailOptIn: recipient.notify_email === true,
+  });
+
+  if (recipient.notify_email !== true) {
+    await markNotificationStatus(inserted.id, 'SIMULATED', {
+      error: 'In-app only: the account has email notifications switched off.',
+    });
+    return true;
+  }
+
+  const delivery = await deliverEmail({
+    notificationId: inserted.id,
+    to: recipient.email,
+    subject: rendered.subject,
+    html: rendered.html,
+    isSimulated,
+  });
+  await markNotificationStatus(inserted.id, delivery.status, { providerMessageId: delivery.messageId, error: delivery.error });
+  await recordNotificationEvent(inserted.id, delivery.event);
+  return true;
+}
 
 export async function createIncidentUpdateNotifications(incidentId: string, update: string): Promise<number> {
   const incident = await one<IncidentForEmail & { is_simulated: boolean; simulation_session_id: string | null }>(

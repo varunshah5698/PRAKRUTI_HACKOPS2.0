@@ -465,33 +465,52 @@ export async function analyzeEvidenceImage(
   try {
     const isGemini = base.includes('generativelanguage.googleapis.com') || base.includes('googleapis.com');
     let content = '';
+    let usedModel = visionConfig.model;
     if (isGemini) {
-      const response = await fetch(
-        `${base}/models/${encodeURIComponent(visionConfig.model)}:generateContent?key=${encodeURIComponent(visionConfig.apiKey)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: 'user',
-                parts: [
-                  { text: prompt },
-                  { inline_data: { mime_type: mimeType, data: buffer.toString('base64') } },
+      const fallbacks = env.VISION_FALLBACK_MODELS.split(',').map((model) => model.trim()).filter(Boolean);
+      const models = [visionConfig.model, ...fallbacks.filter((model) => model !== visionConfig.model)];
+      let lastError = '';
+      for (const model of models) {
+        try {
+          const response = await fetch(
+            `${base}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(visionConfig.apiKey)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      { text: prompt },
+                      { inline_data: { mime_type: mimeType, data: buffer.toString('base64') } },
+                    ],
+                  },
                 ],
-              },
-            ],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 700, responseMimeType: 'application/json' },
-          }),
-          signal: AbortSignal.timeout(45_000),
-        },
-      );
-      if (!response.ok) throw new Error(`Gemini vision HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`);
-      const data = (await response.json()) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
-      };
-      content = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ?? '';
-      if (!content) throw new Error(`Gemini vision returned no text (finish: ${data.candidates?.[0]?.finishReason ?? 'unknown'})`);
+                generationConfig: { temperature: 0.1, maxOutputTokens: 700, responseMimeType: 'application/json' },
+              }),
+              signal: AbortSignal.timeout(45_000),
+            },
+          );
+          if (!response.ok) {
+            lastError = `Gemini vision HTTP ${response.status}: ${(await response.text()).slice(0, 240)}`;
+            continue;
+          }
+          const data = (await response.json()) as {
+            candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
+          };
+          content = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ?? '';
+          if (!content) {
+            lastError = `Gemini vision returned no text (finish: ${data.candidates?.[0]?.finishReason ?? 'unknown'})`;
+            continue;
+          }
+          usedModel = model;
+          break;
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : 'Gemini vision request failed';
+        }
+      }
+      if (!content) throw new Error(lastError || 'Gemini vision unavailable');
     } else {
       const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
       const response = await fetch(`${base}/chat/completions`, {
@@ -528,7 +547,7 @@ export async function analyzeEvidenceImage(
     }
     return {
       status: 'COMPLETED',
-      provider: `google:${visionConfig.model}`,
+      provider: `google:${usedModel}`,
       output: {
         ...parsed,
         limitations: [

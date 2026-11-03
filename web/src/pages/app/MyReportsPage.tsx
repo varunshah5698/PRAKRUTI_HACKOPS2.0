@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
   Camera,
-  CheckCircle2,
   ChevronDown,
   ClipboardList,
   FileWarning,

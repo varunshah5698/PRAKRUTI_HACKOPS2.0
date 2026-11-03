@@ -19,7 +19,7 @@ export function Chart({
 }) {
   if (loading) {
     return (
-      <div className={classNames('flex items-center justify-center text-[11px] uppercase tracking-[0.14em] text-[#788493]', className)} style={{ height }}>
+      <div className={classNames('flex items-center justify-center text-[11px] uppercase tracking-[0.14em] text-[#74847a]', className)} style={{ height }}>
         Loading chart…
       </div>
     );
@@ -27,8 +27,8 @@ export function Chart({
   if (empty) {
     return (
       <div className={classNames('flex flex-col items-center justify-center gap-2 text-center', className)} style={{ height }}>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#788493]">{emptyLabel}</span>
-        <span className="max-w-xs text-[11px] leading-relaxed text-[#5f6b78]">No reliable series is available for this view. Missing data is not filled or invented.</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#74847a]">{emptyLabel}</span>
+        <span className="max-w-xs text-[11px] leading-relaxed text-[#6d7d72]">No reliable series is available for this view. Missing data is not filled or invented.</span>
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function Chart({
       <ReactECharts
         option={{
           backgroundColor: 'transparent',
-          textStyle: { fontFamily: 'Inter Variable, Inter, sans-serif', color: '#a2adba' },
+          textStyle: { fontFamily: 'Inter Variable, Inter, sans-serif', color: '#5a6a5f' },
           ...(option as EChartsOption),
         }}
         style={{ height: '100%', width: '100%' }}
@@ -58,16 +58,17 @@ export const chartGrid = {
 };
 
 export const chartAxis = {
-  axisLine: { lineStyle: { color: '#303945' } },
+  axisLine: { lineStyle: { color: '#dce5d8' } },
   axisTick: { show: false },
-  axisLabel: { color: '#788493', fontSize: 10 },
-  splitLine: { lineStyle: { color: '#252d37' } },
+  axisLabel: { color: '#6d7d72', fontSize: 10 },
+  splitLine: { lineStyle: { color: '#e8eee4' } },
 };
 
 export const chartTooltip = {
   trigger: 'axis' as const,
-  backgroundColor: '#202730',
-  borderColor: '#303945',
-  textStyle: { color: '#f3f5f7', fontSize: 11 },
-  extraCssText: 'border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35)',
+  backgroundColor: 'rgba(255,255,255,0.97)',
+  borderColor: '#dce5d8',
+  borderWidth: 1,
+  textStyle: { color: '#142016', fontSize: 11 },
+  extraCssText: 'border-radius:12px;box-shadow:0 20px 50px -30px rgba(23,42,29,.5)',
 };

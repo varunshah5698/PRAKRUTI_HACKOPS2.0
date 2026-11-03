@@ -165,6 +165,56 @@ export function renderAlertEmail(
   };
 }
 
+export interface ReportUpdateForEmail {
+  id: string;
+  public_ref: string;
+  category: string;
+  incident_type: string;
+  status: string;
+  verification_state: string;
+  locality_name: string | null;
+  is_simulated: boolean;
+}
+
+const REPORT_STATUS_COPY: Record<string, string> = {
+  AWAITING_VERIFICATION: 'An authorised officer is now reviewing your report.',
+  VERIFIED: 'An authorised officer verified your report.',
+  UNVERIFIED: 'An authorised officer reviewed your report and could not verify it.',
+  LINKED_TO_INVESTIGATION: 'Your verified report is now part of an official investigation.',
+};
+
+export function renderReportStatusEmail(
+  report: ReportUpdateForEmail,
+  update: { status: string; reason: string },
+): { subject: string; html: string } {
+  const category = CATEGORY_LABEL[report.category] ?? report.category;
+  const subject = `Report ${update.status.replace(/_/g, ' ').toLowerCase()} · ${report.public_ref}`;
+  const outcome = REPORT_STATUS_COPY[update.status] ?? `Your report moved to ${update.status.replace(/_/g, ' ')}.`;
+  return {
+    subject,
+    html: shell(
+      'Authority response to your report',
+      outcome,
+      `${detailRows([
+        ['Reference', report.public_ref],
+        ['Reported', `${report.incident_type.replace(/_/g, ' ')} — ${category.toLowerCase()}`],
+        ['Locality', report.locality_name ?? 'Mumbai'],
+        ['Current status', update.status.replace(/_/g, ' ')],
+        ['Verification', report.verification_state.replace(/_/g, ' ')],
+        ['Updated', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })],
+      ])}
+      <p style="font-size:13px;line-height:1.55"><strong>Officer note.</strong> ${escapeHtml(update.reason)}</p>
+      <div style="background:#f6f8f0;border-left:3px solid #b5e36b;padding:12px 14px;font-size:13px;line-height:1.55">
+        Sign in and open <strong>My reports</strong> to read the full verification trail. You can add further evidence to the
+        same reference if conditions change.
+      </div>`,
+      report.is_simulated
+        ? 'SIMULATION DATA: this notification came from a demonstration record and was not sent to a real mailing list.'
+        : 'A report is only an official violation once an authorised officer verifies it.',
+    ),
+  };
+}
+
 export async function deliverEmail(params: {
   notificationId: string;
   to: string;

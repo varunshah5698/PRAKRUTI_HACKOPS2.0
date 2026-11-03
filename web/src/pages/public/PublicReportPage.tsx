@@ -8,6 +8,7 @@ import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { Button, PublicBadge, PublicInput, PublicLabel, PublicSelect, PublicTextarea, Spinner } from '../../components/ui';
 import { api } from '../../lib/api';
 import { CATEGORY_LABELS } from '../../lib/format';
+import { useAuth } from '../../store/auth';
 
 const INCIDENT_TYPES: Record<string, Array<{ value: string; label: string }>> = {
   air: [
@@ -55,6 +56,7 @@ function nearestLocality(localities: Locality[], lat: number, lng: number): Loca
 }
 
 export function PublicReportPage() {
+  const user = useAuth((state) => state.user);
   const [localities, setLocalities] = useState<Locality[]>([]);
   const [category, setCategory] = useState('air');
   const [incidentType, setIncidentType] = useState('OPEN_BURNING');
@@ -184,6 +186,11 @@ export function PublicReportPage() {
               <strong className="text-ink"> {success.report.status.replace(/_/g, ' ').toLowerCase()}</strong> and its verification
               state is UNVERIFIED. An authorised reviewer must verify it. A report is not an official violation.
             </p>
+            <p className="mt-3 text-sm leading-relaxed text-ink/60">
+              {user
+                ? 'This report is attached to your account. Open your tracker any time to read the authority verification updates as they happen.'
+                : 'Create an account or sign in before submitting to follow the authority response on your own tracker. Anonymous reports are still verified — keep this reference.'}
+            </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-ink/10 bg-[#f5f6f0] p-4">
                 <p className="text-[9px] uppercase tracking-[0.1em] text-ink/40">AI image assessment</p>
@@ -204,7 +211,11 @@ export function PublicReportPage() {
               </p>
             ) : null}
             <div className="mt-7 flex flex-wrap gap-2">
-              <Link to="/login"><Button variant="dark">Sign in to track this report</Button></Link>
+              {user ? (
+                <Link to="/my-reports"><Button variant="dark">Open my report tracker</Button></Link>
+              ) : (
+                <Link to="/login?next=%2Fmy-reports"><Button variant="dark">Sign in to track this report</Button></Link>
+              )}
               <Link to="/report"><Button variant="outline">Submit another report</Button></Link>
               <Link to="/"><Button variant="ghost">Back to home</Button></Link>
             </div>

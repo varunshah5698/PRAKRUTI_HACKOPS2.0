@@ -181,7 +181,7 @@ export async function ingestOpenMeteoCams(): Promise<IngestResult> {
               quality_state, is_simulated, source_id, source_record_id, location, raw)
            VALUES (NULL,$1,'air',$2,$3,'µg/m³',$4,now(),'MODELLED',false,$5,$6,
              ST_SetSRID(ST_MakePoint($7,$8),4326)::geography,$9::jsonb)
-           ON CONFLICT (station_id, pollutant_code, observed_at, source_id) DO NOTHING`,
+           ON CONFLICT DO NOTHING`,
           [
             locality.id,
             code,
@@ -337,19 +337,36 @@ export async function ingestOpenAq(): Promise<IngestResult> {
     });
     if (!locationsResponse.ok) throw new Error(`OpenAQ locations ${locationsResponse.status}`);
     const locations = (await locationsResponse.json()) as {
-      results?: Array<{ id: number; name: string; coordinates?: { latitude: number; longitude: number }; country?: { code: string } }>;
+      results?: Array<{
+        id: number;
+        name: string;
+        coordinates?: { latitude: number; longitude: number };
+        country?: { code: string };
+        sensors?: Array<{ id: number; parameter?: { name?: string; units?: string } }>;
+      }>;
     };
     for (const location of (locations.results ?? []).slice(0, 15)) {
       const lat = location.coordinates?.latitude;
       const lng = location.coordinates?.longitude;
       if (!lat || !lng || !isWithinMumbai(lat, lng)) continue;
+      // OpenAQ /latest returns sensor IDs only, so resolve parameter and unit
+      // from the sensors embedded in the locations response.
+      const sensors = new Map(
+        (location.sensors ?? []).map((sensor) => [
+          sensor.id,
+          {
+            name: String(sensor.parameter?.name ?? '').toUpperCase(),
+            unit: String(sensor.parameter?.units ?? ''),
+          },
+        ]),
+      );
       const latestResponse = await fetch(`https://api.openaq.org/v3/locations/${location.id}/latest`, {
         headers: { 'X-API-Key': env.OPENAQ_API_KEY },
         signal: AbortSignal.timeout(30_000),
       });
       if (!latestResponse.ok) continue;
       const latest = (await latestResponse.json()) as {
-        results?: Array<{ parameter?: { name?: string }; value?: number; unit?: string; datetime?: { utc?: string } }>;
+        results?: Array<{ sensorsId?: number; value?: number; datetime?: { utc?: string } }>;
       };
       const station = await one<{ id: string }>(
         `INSERT INTO monitoring_stations (code, name, provider, station_type, location, is_simulated, metadata)
@@ -367,9 +384,10 @@ export async function ingestOpenAq(): Promise<IngestResult> {
         [station.id],
       );
       for (const result of latest.results ?? []) {
-        const code = POLLUTANT_MAP[String(result.parameter?.name ?? '').toUpperCase()];
-        if (!code || result.value === undefined || !result.datetime?.utc) continue;
-        const normalised = normalisePollutantUnit(code, result.value, String(result.unit ?? ''));
+        const sensor = result.sensorsId != null ? sensors.get(result.sensorsId) : undefined;
+        const code = sensor ? POLLUTANT_MAP[sensor.name] : undefined;
+        if (!sensor || !code || result.value === undefined || !result.datetime?.utc) continue;
+        const normalised = normalisePollutantUnit(code, result.value, sensor.unit);
         if (!normalised) continue;
         await query(
           `INSERT INTO environmental_observations

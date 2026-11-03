@@ -3,6 +3,7 @@ import { query } from '../db/pool.js';
 import { calculateAqi } from './aqi.js';
 import { emitEvent } from '../lib/events.js';
 import { markSourceAttempt, markSourceFailure, markSourceSuccess } from './sources.js';
+import { ingestDataGovIn, ingestOpenAq } from './ingest.js';
 
 /**
  * Live polling. Upstream providers publish on their own clocks (Open-Meteo
@@ -66,6 +67,16 @@ export interface LiveReading {
 function isoUtc(value: unknown): string {
   const time = String(value);
   return time.endsWith('Z') ? time : `${time}Z`;
+}
+
+/**
+ * pg hands back timestamps as Date objects; String(date) would serialise as a
+ * locale-dependent "Tue Nov 03 2026 ..." string. Every timestamp leaving this
+ * service is ISO-8601 UTC so the UI can compare it against generatedAt.
+ */
+function toIso(value: unknown): string {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -315,6 +326,24 @@ export async function tickSimulatedStations(): Promise<{ records: number; messag
   }
 }
 
+/** True when at least one credentialed real-world air-quality feed is available. */
+export function airQualityConfigured(): boolean {
+  return Boolean(
+    (env.DATA_GOV_IN_API_KEY && env.DATA_GOV_IN_AIR_RESOURCE_ID) || env.OPENAQ_API_KEY,
+  );
+}
+
+/**
+ * Real-world air quality: CPCB CAAQMS via data.gov.in, plus OpenAQ. Each
+ * adapter returns NOT_CONFIGURED without its credentials and validates records
+ * against the Mumbai boundary before storing, so this never invents a reading.
+ */
+export async function pollLiveAirQuality(): Promise<{ records: number; message?: string }> {
+  const [dataGov, openAq] = await Promise.all([ingestDataGovIn(), ingestOpenAq()]);
+  const message = [dataGov.message, openAq.message].filter(Boolean).join(' · ') || undefined;
+  return { records: dataGov.records + openAq.records, message };
+}
+
 /** Latest reading per station with both freshness clocks, for the live UI. */
 export async function getLiveSnapshot(stationId?: string): Promise<LiveReading[]> {
   const rows = await query<Record<string, unknown>>(
@@ -374,8 +403,8 @@ export async function getLiveSnapshot(stationId?: string): Promise<LiveReading[]
       const value: LiveValue = {
         value: Number(row.value),
         unit: String(row.unit ?? ''),
-        observedAt: String(row.observed_at),
-        retrievedAt: String(row.retrieved_at ?? row.observed_at),
+        observedAt: toIso(row.observed_at),
+        retrievedAt: toIso(row.retrieved_at ?? row.observed_at),
         sourceId: String(row.source_id ?? 'unknown'),
         isSimulated: Boolean(row.obs_simulated),
         qualityState: String(row.quality_state ?? 'VALID'),
@@ -406,8 +435,8 @@ export async function getLiveSnapshot(stationId?: string): Promise<LiveReading[]
         windDirectionDeg: w.wind_direction_deg === null ? null : Number(w.wind_direction_deg),
         precipitationMm: w.precipitation_mm === null ? null : Number(w.precipitation_mm),
         pressureHpa: w.pressure_hpa === null ? null : Number(w.pressure_hpa),
-        observedAt: w.observed_at ? String(w.observed_at) : null,
-        retrievedAt: w.retrieved_at ? String(w.retrieved_at) : null,
+        observedAt: w.observed_at ? toIso(w.observed_at) : null,
+        retrievedAt: w.retrieved_at ? toIso(w.retrieved_at) : null,
         sourceId: w.source_id ? String(w.source_id) : null,
       };
     }
@@ -431,11 +460,12 @@ interface LiveCycleState {
   at: string | null;
   weather: number;
   aqi: number;
+  airQuality: number;
   simulated: number;
   errors: string[];
 }
 
-const state: LiveCycleState = { at: null, weather: 0, aqi: 0, simulated: 0, errors: [] };
+const state: LiveCycleState = { at: null, weather: 0, aqi: 0, airQuality: 0, simulated: 0, errors: [] };
 const timers: NodeJS.Timeout[] = [];
 
 async function broadcast() {
@@ -447,7 +477,7 @@ async function broadcast() {
 const inFlight = new Set<string>();
 
 async function runTask(
-  name: 'weather' | 'aqi' | 'simulated',
+  name: 'weather' | 'aqi' | 'airQuality' | 'simulated',
   task: () => Promise<{ records: number; message?: string }>,
 ) {
   if (inFlight.has(name)) return;
@@ -471,22 +501,33 @@ async function runTask(
 export async function runLiveCycle() {
   const weather = await pollLiveWeather();
   const aqi = await pollLiveAqi();
+  const airQuality = airQualityConfigured() ? await pollLiveAirQuality() : { records: 0 };
   const simulated = await tickSimulatedStations();
   await broadcast();
-  return { weather, aqi, simulated, at: state.at };
+  return { weather, aqi, airQuality, simulated, at: state.at };
 }
 
 export function startLiveScheduler(): void {
   if (!env.LIVE_ENABLED || timers.length > 0) return;
+  const withAirQuality = airQualityConfigured();
   void (async () => {
     await runTask('weather', pollLiveWeather);
     await runTask('aqi', pollLiveAqi);
+    if (withAirQuality) await runTask('airQuality', pollLiveAirQuality);
     if (env.DEMO_MODE) await runTask('simulated', tickSimulatedStations);
   })();
   timers.push(
     setInterval(() => void runTask('weather', pollLiveWeather), env.LIVE_WEATHER_INTERVAL_SECONDS * 1000),
     setInterval(() => void runTask('aqi', pollLiveAqi), env.LIVE_AQI_INTERVAL_SECONDS * 1000),
   );
+  if (withAirQuality) {
+    timers.push(
+      setInterval(
+        () => void runTask('airQuality', pollLiveAirQuality),
+        env.LIVE_AIR_QUALITY_INTERVAL_SECONDS * 1000,
+      ),
+    );
+  }
   if (env.DEMO_MODE) {
     timers.push(
       setInterval(() => void runTask('simulated', tickSimulatedStations), env.LIVE_SIMULATION_INTERVAL_SECONDS * 1000),
@@ -504,12 +545,26 @@ export function liveStatus() {
     enabled: env.LIVE_ENABLED,
     weatherIntervalSeconds: env.LIVE_WEATHER_INTERVAL_SECONDS,
     aqiIntervalSeconds: env.LIVE_AQI_INTERVAL_SECONDS,
+    airQualityIntervalSeconds: env.LIVE_AIR_QUALITY_INTERVAL_SECONDS,
     simulationIntervalSeconds: env.LIVE_SIMULATION_INTERVAL_SECONDS,
     upstreamWeatherIntervalSeconds: 900,
+    airQuality: {
+      configured: airQualityConfigured(),
+      dataGovIn: Boolean(env.DATA_GOV_IN_API_KEY && env.DATA_GOV_IN_AIR_RESOURCE_ID),
+      openAq: Boolean(env.OPENAQ_API_KEY),
+      note: airQualityConfigured()
+        ? 'Real-world station records are ingested on the air-quality interval.'
+        : 'No credentialed CPCB/OpenAQ feed is configured, so station records are simulation-labelled only. Set DATA_GOV_IN_API_KEY or OPENAQ_API_KEY to enable live ingestion.',
+    },
     note:
       'Polling runs on the intervals above. Upstream values only change when the provider publishes them, so a poll can return the same reading as the previous one.',
     lastCycleAt: state.at,
-    lastCycleRecords: { weather: state.weather, aqi: state.aqi, simulated: state.simulated },
+    lastCycleRecords: {
+      weather: state.weather,
+      aqi: state.aqi,
+      airQuality: state.airQuality,
+      simulated: state.simulated,
+    },
     lastCycleErrors: state.errors,
   };
 }

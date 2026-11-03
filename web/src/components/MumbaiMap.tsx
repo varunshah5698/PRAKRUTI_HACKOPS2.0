@@ -214,12 +214,12 @@ export function MumbaiMap({
   selectedStationId,
   className,
   compact = false,
-  theme = 'dark',
+  theme = 'light',
   showBuildings = true,
   styleUrl,
   initialZoom,
   initialPitch,
-  overlayLabel = 'Demo stations',
+  overlayLabel,
   interactive,
   autoFit = true,
 }: Props) {
@@ -280,7 +280,7 @@ export function MumbaiMap({
           id: 'mumbai-outside-mask',
           type: 'fill',
           source: 'mumbai-outside-mask',
-          paint: { 'fill-color': theme === 'dark' ? '#0b0e11' : '#f7f7f2', 'fill-opacity': 1 },
+          paint: { 'fill-color': theme === 'dark' ? '#0b0e11' : '#eef3ec', 'fill-opacity': 1 },
         });
         map.addLayer({
           id: 'mumbai-boundary-fill',
@@ -292,7 +292,7 @@ export function MumbaiMap({
           id: 'mumbai-boundary-line',
           type: 'line',
           source: 'mumbai-boundary',
-          paint: { 'line-color': theme === 'dark' ? '#b5e36b' : '#111310', 'line-width': 1.4, 'line-opacity': 0.75 },
+          paint: { 'line-color': theme === 'dark' ? '#b5e36b' : '#557a4b', 'line-width': 1.4, 'line-opacity': 0.75 },
         });
         const bbox = boundary.features.flatMap((feature) => {
           const coords: number[][] = [];
@@ -333,7 +333,7 @@ export function MumbaiMap({
               'source-layer': 'building',
               minzoom: 12.2,
               paint: {
-                'fill-extrusion-color': theme === 'dark' ? '#29313a' : '#d9d8cf',
+                'fill-extrusion-color': theme === 'dark' ? '#29313a' : '#d7e0d3',
                 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 12],
                 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
                 'fill-extrusion-opacity': theme === 'dark' ? 0.72 : 0.5,
@@ -366,7 +366,7 @@ export function MumbaiMap({
           'circle-radius': ['case', ['get', 'selected'], 9, 6.5],
           'circle-color': ['get', 'color'],
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': theme === 'dark' ? '#101317' : '#f7f7f2',
+          'circle-stroke-color': theme === 'dark' ? '#101317' : '#ffffff',
           'circle-opacity': 0.95,
         },
       });
@@ -398,7 +398,7 @@ export function MumbaiMap({
         },
         paint: {
           'text-color': theme === 'dark' ? '#e6edf3' : '#111310',
-          'text-halo-color': theme === 'dark' ? '#101317' : '#f7f7f2',
+          'text-halo-color': theme === 'dark' ? '#101317' : '#f7faf4',
           'text-halo-width': 2,
         },
       });
@@ -411,7 +411,7 @@ export function MumbaiMap({
           'circle-radius': 5,
           'circle-color': ['get', 'color'],
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': theme === 'dark' ? '#101317' : '#f7f7f2',
+          'circle-stroke-color': theme === 'dark' ? '#101317' : '#ffffff',
           'circle-opacity': 0.9,
         },
       });
@@ -463,9 +463,9 @@ export function MumbaiMap({
           .setLngLat(event.lngLat)
           .setHTML(
             `<div style="min-width:160px"><div style="font-weight:700;margin-bottom:4px">${escapeHtml(p.name)}</div>
-             <div style="color:#a2adba;font-size:11px">${escapeHtml(p.locality)}</div>
+             <div style="color:#5f7065;font-size:11px">${escapeHtml(p.locality)}</div>
              <div style="margin-top:6px;font-size:12px"><strong>${escapeHtml(p.valueLabel)}</strong></div>
-             <div style="margin-top:4px;font-size:10px;color:#8d99a6">${p.isSimulated ? 'SIMULATION DATA · ' : ''}${escapeHtml(p.health)}</div></div>`,
+             <div style="margin-top:4px;font-size:10px;color:#74847a">${p.isSimulated ? 'SIMULATION DATA · ' : ''}${escapeHtml(p.health)}</div></div>`,
           )
           .addTo(map);
       });
@@ -516,7 +516,7 @@ export function MumbaiMap({
               const map = mapRef.current;
               if (map && boundaryBoundsRef.current) map.fitBounds(boundaryBoundsRef.current, { padding: 40, duration: 900, maxZoom: 11.8 });
             }}
-            className="rounded-lg border border-[#303945] bg-[#101317]/90 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#a2adba] backdrop-blur hover:text-white"
+            className="rounded-full border border-white/85 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#4d5e52] shadow-pill backdrop-blur hover:bg-white hover:text-[#142016]"
           >
             Fit Mumbai
           </button>
@@ -525,19 +525,19 @@ export function MumbaiMap({
             onClick={() => {
               mapRef.current?.easeTo({ center: [72.8777, 19.076], zoom: 14.1, pitch: 60, bearing: -18, duration: 1200 });
             }}
-            className="rounded-lg border border-[#b5e36b]/25 bg-[#b5e36b]/10 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c8ef8d] backdrop-blur hover:bg-[#b5e36b]/15"
+            className="rounded-full border border-[#b3df7c] bg-[#e9fbd3] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#2f5f20] shadow-pill backdrop-blur hover:bg-[#def8c4]"
           >
             3D city
           </button>
         </div>
       ) : null}
       {error ? (
-        <div className="absolute inset-x-4 bottom-12 z-10 rounded-xl border border-amber-500/30 bg-[#1d2023]/95 px-3 py-2 text-[11px] text-amber-200 shadow-lg">
+        <div className="absolute inset-x-4 bottom-12 z-10 rounded-xl border border-amber-500/30 bg-white/95 px-3 py-2 text-[11px] text-amber-700 shadow-lg">
           {error}
         </div>
       ) : null}
-      {compact ? (
-        <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-[#101317]/80 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#dbe2e9] backdrop-blur">
+      {compact && overlayLabel ? (
+        <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full border border-white/85 bg-white/80 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#34463a] shadow-pill backdrop-blur">
           <span className="h-1.5 w-1.5 rounded-full bg-[#b5e36b]" />
           {overlayLabel}
         </div>

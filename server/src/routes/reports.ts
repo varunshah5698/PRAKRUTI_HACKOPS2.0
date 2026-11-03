@@ -14,6 +14,7 @@ import { nextPublicRef } from '../lib/refs.js';
 import { REPORT_TRANSITIONS, type ReportStatus } from '../types.js';
 import { evaluateWasteLocalities } from '../services/risk.js';
 import { syncAlertsFromWasteAssessments } from '../services/alerts.js';
+import { notifyReportStatusChange } from '../services/notifications.js';
 
 export const reportsRouter = Router();
 
@@ -347,11 +348,17 @@ reportsRouter.patch('/:id/status', requireAuth, async (req, res, next) => {
       after: { status: body.status, verification, reason: body.reason },
       ip: req.ip,
     });
+    const notified = await notifyReportStatusChange(String(report.id), { status: body.status, reason: body.reason });
     if (String(report.category) === 'waste' && (body.status === 'VERIFIED' || body.status === 'UNVERIFIED')) {
       const assessments = await evaluateWasteLocalities();
       await syncAlertsFromWasteAssessments(assessments, Boolean(report.is_simulated));
     }
-    res.json({ message: `Report moved to ${body.status}.`, status: body.status, verificationState: verification });
+    res.json({
+      message: `Report moved to ${body.status}.`,
+      status: body.status,
+      verificationState: verification,
+      citizenNotified: notified,
+    });
   } catch (error) {
     next(error);
   }
@@ -382,6 +389,7 @@ reportsRouter.post('/:id/link-incident', requireAuth, async (req, res, next) => 
       after: { incidentId: incident.id, reason: body.reason },
       ip: req.ip,
     });
+    await notifyReportStatusChange(String(report.id), { status: 'LINKED_TO_INVESTIGATION', reason: body.reason });
     res.json({ message: 'Report linked to incident.', incidentId: incident.id });
   } catch (error) {
     next(error);

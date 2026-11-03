@@ -7,10 +7,11 @@ import { CATEGORY_LABELS, categoryLabel, formatDate, timeAgo } from '../../lib/f
 import { useAuth } from '../../store/auth';
 
 interface NotificationRow {
-  id: string; alert_id: string | null; incident_id: string | null; audience: string; channel: string; template: string;
+  id: string; alert_id: string | null; incident_id: string | null; report_id: string | null; audience: string; channel: string; template: string;
   subject: string; status: string; provider_message_id: string | null; sent_at: string | null; delivered_at: string | null;
   error: string | null; is_simulated: boolean; created_at: string; acknowledged_at: string | null;
   alert_ref: string | null; alert_category: string | null; alert_level: string | null; trigger_type: string | null;
+  report_status: string | null;
   locality_name: string | null;
 }
 interface Locality { id: string; name: string }

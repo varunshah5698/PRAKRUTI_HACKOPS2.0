@@ -79,7 +79,9 @@ mapRouter.get('/layers', async (_req, res, next) => {
         reason:
           'No interpolated surface is produced. The station network is sparse and demo observations are synthetic; a point measurement cannot establish concentration across an area.',
       },
-      sources: sources.filter((s) => ['demo-network', 'open-meteo-weather', 'open-meteo-cams', 'cpcb-caaqms'].includes(s.id)),
+      sources: sources.filter((s) =>
+        ['demo-network', 'open-meteo-weather', 'open-meteo-cams', 'data-gov-in-air', 'openaq'].includes(s.id),
+      ),
       modelStatus,
       attribution: 'OpenFreeMap © OpenMapTiles · Data © OpenStreetMap contributors (ODbL)',
     });

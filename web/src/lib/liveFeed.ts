@@ -43,8 +43,15 @@ export interface LiveStatus {
   enabled: boolean;
   weatherIntervalSeconds: number;
   aqiIntervalSeconds: number;
+  airQualityIntervalSeconds: number;
   simulationIntervalSeconds: number;
   upstreamWeatherIntervalSeconds: number;
+  airQuality: {
+    configured: boolean;
+    dataGovIn: boolean;
+    openAq: boolean;
+    note: string;
+  };
   lastCycleAt: string | null;
 }
 

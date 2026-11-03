@@ -30,6 +30,14 @@ describe('api request retry', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('gives a network failure one short retry, then fails fast', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(api.get('/test')).rejects.toThrow('Failed to fetch');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('does not retry a POST because it may have side effects', async () => {
     const fetchMock = vi.fn().mockResolvedValue(proxyError());
     vi.stubGlobal('fetch', fetchMock);

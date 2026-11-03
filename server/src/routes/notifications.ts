@@ -55,19 +55,22 @@ notificationsRouter.get('/', async (req, res, next) => {
     const page = Math.max(1, Number(req.query.page ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize ?? 30)));
     const rows = await query<Record<string, unknown>>(
-      `SELECT n.id, n.alert_id, n.incident_id, n.audience, n.channel, n.template, n.subject, n.status,
+      `SELECT n.id, n.alert_id, n.incident_id, n.report_id, n.audience, n.channel, n.template, n.subject, n.status,
               n.provider_message_id, n.sent_at, n.delivered_at, n.error, n.is_simulated, n.created_at,
               n.acknowledged_at,
-              COALESCE(a.public_ref, i.public_ref) AS alert_ref,
-              COALESCE(a.category, i.category) AS alert_category,
+              COALESCE(a.public_ref, i.public_ref, r.public_ref) AS alert_ref,
+              COALESCE(a.category, i.category, r.category) AS alert_category,
               COALESCE(a.level, i.risk_level) AS alert_level,
               COALESCE(a.trigger_type, 'INCIDENT_UPDATE') AS trigger_type,
-              COALESCE(l.name, il.name) AS locality_name
+              r.status AS report_status,
+              COALESCE(l.name, il.name, rl.name) AS locality_name
        FROM notifications n
        LEFT JOIN environmental_alerts a ON a.id=n.alert_id
        LEFT JOIN environmental_incidents i ON i.id=n.incident_id
+       LEFT JOIN environmental_reports r ON r.id=n.report_id
        LEFT JOIN localities l ON l.id=a.locality_id
        LEFT JOIN localities il ON il.id=i.locality_id
+       LEFT JOIN localities rl ON rl.id=r.locality_id
        WHERE n.user_id=$1 AND n.simulation_session_id IS NULL AND ($2::text IS NULL OR n.status=$2)
        ORDER BY n.created_at DESC LIMIT $3 OFFSET $4`,
       [req.user!.id, status, pageSize, (page - 1) * pageSize],

@@ -20,6 +20,7 @@ const EnvSchema = z.object({
   RIVER_API_KEY: z.string().default(''),
   VISION_BASE_URL: z.string().default(''),
   VISION_MODEL: z.string().default(''),
+  VISION_FALLBACK_MODELS: z.string().default('gemini-3.1-flash-lite'),
   VISION_API_KEY: z.string().default(''),
   DATA_GOV_IN_API_KEY: z.string().default(''),
   DATA_GOV_IN_AIR_RESOURCE_ID: z.string().default(''),
@@ -33,6 +34,9 @@ const EnvSchema = z.object({
   LIVE_WEATHER_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
   LIVE_AQI_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(300),
   LIVE_SIMULATION_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
+  // CPCB/CAAQMS and OpenAQ republish on an hourly clock, so a 15-minute poll
+  // detects a new value without hammering the provider.
+  LIVE_AIR_QUALITY_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(900),
   ML_SERVICE_URL: z.string().default(''),
   ML_SERVICE_API_KEY: z.string().default(''),
   MAP_STYLE_URL: z.string().default('https://tiles.openfreemap.org/styles/liberty'),
