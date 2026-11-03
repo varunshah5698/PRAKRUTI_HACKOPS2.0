@@ -431,9 +431,9 @@ export async function ingestOpenAq(): Promise<IngestResult> {
         records += 1;
       }
       // The live /latest endpoint returns one reading per sensor. The model
-      // needs 25 consecutive hourly PM2.5 values, so backfill the hourly
-      // series once per station. OpenAQ's /hours values are pre-aggregated
-      // and floored to the hour by the training pipeline as well.
+      // needs 25 consecutive hourly PM2.5 values, so backfill from the raw
+      // sub-hourly measurements and aggregate to UTC hourly means, matching
+      // the training pipeline. /hours can lag by a few hours and leave gaps.
       const pm25Sensor = (location.sensors ?? [])
         .filter((sensor) => POLLUTANT_MAP[String(sensor.parameter?.name ?? '').toUpperCase()] === 'pm25')
         // Locations can expose a legacy and a current PM2.5 sensor. Prefer the
@@ -444,37 +444,46 @@ export async function ingestOpenAq(): Promise<IngestResult> {
           `SELECT COUNT(DISTINCT date_trunc('hour', observed_at))::int AS count
            FROM environmental_observations
            WHERE station_id=$1 AND pollutant_code='pm25' AND source_id=$2
-             AND observed_at > now() - interval '48 hours'`,
+             AND observed_at > now() - interval '25 hours'`,
           [station.id, sourceId],
         );
         if ((historyCount?.count ?? 0) < 25) {
-          const hoursUrl = new URL(`https://api.openaq.org/v3/sensors/${pm25Sensor.id}/hours`);
-          hoursUrl.searchParams.set(
+          const measurementsUrl = new URL(`https://api.openaq.org/v3/sensors/${pm25Sensor.id}/measurements`);
+          measurementsUrl.searchParams.set(
             'datetime_from',
             new Date(Date.now() - 72 * 3_600_000).toISOString().replace(/\.\d{3}Z$/, 'Z'),
           );
-          hoursUrl.searchParams.set('datetime_to', new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
-          hoursUrl.searchParams.set('limit', '1000');
+          measurementsUrl.searchParams.set('datetime_to', new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
+          measurementsUrl.searchParams.set('limit', '1000');
           // OpenAQ allows 60 requests/minute. Keep the historical backfill
           // below that even when several stations need it in one cycle.
           await new Promise((resolve) => setTimeout(resolve, 1_100));
-          const hoursResponse = await fetch(hoursUrl, {
+          const measurementsResponse = await fetch(measurementsUrl, {
             headers: { 'X-API-Key': env.OPENAQ_API_KEY },
             signal: AbortSignal.timeout(30_000),
           });
-          if (hoursResponse.ok) {
-            const hours = (await hoursResponse.json()) as {
+          if (measurementsResponse.ok) {
+            const measurements = (await measurementsResponse.json()) as {
               results?: Array<{
                 value?: number;
                 parameter?: { units?: string };
                 period?: { datetimeFrom?: { utc?: string } };
               }>;
             };
-            for (const result of hours.results ?? []) {
-              const observedAt = result.period?.datetimeFrom?.utc;
-              if (!observedAt || result.value === undefined) continue;
+            const hourly = new Map<number, { sum: number; count: number; unit: string; sample: unknown }>();
+            for (const result of measurements.results ?? []) {
+              const timestamp = result.period?.datetimeFrom?.utc ? new Date(result.period.datetimeFrom.utc) : null;
+              if (!timestamp || !Number.isFinite(timestamp.getTime()) || result.value === undefined) continue;
               const normalised = normalisePollutantUnit('pm25', Number(result.value), String(result.parameter?.units ?? ''));
               if (!normalised) continue;
+              const hour = Math.floor(timestamp.getTime() / 3_600_000) * 3_600_000;
+              const bucket = hourly.get(hour) ?? { sum: 0, count: 0, unit: normalised.unit, sample: result };
+              bucket.sum += normalised.value;
+              bucket.count += 1;
+              hourly.set(hour, bucket);
+            }
+            for (const [hour, bucket] of hourly) {
+              const observedAt = new Date(hour).toISOString();
               await query(
                 `INSERT INTO environmental_observations
                    (station_id, category, pollutant_code, value, unit, observed_at, retrieved_at, quality_state,
@@ -484,14 +493,14 @@ export async function ingestOpenAq(): Promise<IngestResult> {
                  ON CONFLICT (station_id, pollutant_code, observed_at, source_id) DO NOTHING`,
                 [
                   station.id,
-                  normalised.value,
-                  normalised.unit,
+                  bucket.sum / bucket.count,
+                  bucket.unit,
                   observedAt,
                   sourceId,
-                  `openaq-hours:${location.id}:pm25:${observedAt}`,
+                  `openaq-hourly:${location.id}:pm25:${observedAt}`,
                   lng,
                   lat,
-                  JSON.stringify(result),
+                  JSON.stringify({ hourlyMean: bucket.sum / bucket.count, samples: bucket.count, sample: bucket.sample }),
                 ],
               );
               records += 1;

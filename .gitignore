@@ -10,6 +10,7 @@ server/storage/evidence/*
 coverage/
 ml/.venv/
 ml/artifacts/*.joblib
+ml/artifacts_20mo/*.joblib
 ml/artifacts_archive/
 ml/data/*.csv
 __pycache__/
