@@ -34,6 +34,7 @@ interface EvidenceBundle {
   locality?: Record<string, unknown> | null;
   latestObservations: Array<Record<string, unknown>>;
   history: Array<{ observedAt: string; value: number }>;
+  historyParameter: string;
   weather?: Record<string, unknown> | null;
   forecasts: Array<Record<string, unknown>>;
   anomaly?: Record<string, unknown> | null;
@@ -171,13 +172,8 @@ export async function buildEvidence(params: {
             d.title AS document_title, d.authority, d.url
      FROM regulatory_standards st JOIN regulatory_documents d ON d.id=st.document_id
      WHERE st.category=$1
-       AND (st.parameter ILIKE ANY($2) OR st.section_ref ILIKE ANY($2) OR $3 = TRUE)
      ORDER BY st.parameter LIMIT 8`,
-    [
-      category,
-      searchTokens.map((t) => `%${t}%`),
-      searchTokens.length === 0,
-    ],
+    [category],
   );
   if (standards.length === 0) notes.push('No matching reference standards were retrieved for this category.');
   notes.push(
@@ -197,6 +193,7 @@ export async function buildEvidence(params: {
     locality,
     latestObservations,
     history,
+    historyParameter: 'PM2.5',
     weather,
     forecasts,
     anomaly,
@@ -330,7 +327,7 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
     body: JSON.stringify({
       model: riverConfig.model,
       temperature: 0.15,
-      max_tokens: 1200,
+      max_tokens: 4096,
       messages: [
         { role: 'system', content: systemPrompt() },
         {
@@ -343,17 +340,24 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
   });
   if (!response.ok) throw new Error(`River AI HTTP ${response.status}`);
   const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
+    choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
     model?: string;
   };
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('River AI returned no content');
+  const message = data.choices?.[0]?.message;
+  const content = message?.content?.trim() ?? '';
+  const reasoning = message?.reasoning_content?.trim() ?? '';
+  if (!content && !reasoning) throw new Error('River AI returned no content');
+  const raw = content || reasoning;
   let parsed: Record<string, unknown> = {};
   try {
-    const cleaned = content.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-    parsed = JSON.parse(cleaned) as Record<string, unknown>;
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = (fenced ? fenced[1] : raw).trim();
+    const start = candidate.indexOf('{');
+    const end = candidate.lastIndexOf('}');
+    if (start === -1 || end <= start) throw new Error('No JSON object found');
+    parsed = JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
   } catch {
-    parsed = { narrative: content };
+    parsed = { narrative: raw.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim() };
   }
   const strings = (value: unknown): string[] =>
     Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
@@ -363,7 +367,7 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
     model: data.model ?? riverConfig.model,
     generatedAt: new Date().toISOString(),
     question: evidence.question,
-    narrative: typeof parsed.narrative === 'string' ? parsed.narrative : content,
+    narrative: typeof parsed.narrative === 'string' ? parsed.narrative : raw,
     sections: {
       observed: strings(parsed.observed),
       predicted: strings(parsed.predicted),

@@ -20,7 +20,6 @@ import {
   X,
 } from 'lucide-react';
 import { Logo } from './Logo';
-import { DemoBanner } from './DemoBanner';
 import { Badge, Button } from './ui';
 import { useAuth } from '../store/auth';
 import { classNames } from '../lib/format';
@@ -234,7 +233,6 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
               ) : null}
             </div>
           </div>
-          <DemoBanner compact />
         </header>
         <main className="min-h-[calc(100vh-96px)] px-4 py-5 lg:px-6 lg:py-6">
           {children ?? <Outlet />}

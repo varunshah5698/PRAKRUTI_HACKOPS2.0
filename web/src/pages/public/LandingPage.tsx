@@ -240,10 +240,6 @@ export function LandingPage() {
                 <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Reports · 7 days</p>
               </div>
             </div>
-            <p className="mt-3 text-[10px] leading-relaxed text-ink/40">
-              Counts are read from this deployment. Synthetic demo records are labelled SIMULATION DATA; connected-source
-              records show their source and timestamp. Weather is live from Open-Meteo; check the source registry for CPCB/MPCB status.
-            </p>
           </div>
 
           <div className="relative">
