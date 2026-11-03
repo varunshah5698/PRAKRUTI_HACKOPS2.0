@@ -87,5 +87,5 @@ Some seeded URLs point to authority landing pages rather than a deep PDF link be
 - No legal advice.
 - No automatic legal applicability determination.
 - No official exceedance from an hourly value.
-- No facility attribution from a nearby station.
+- No regulatory facility attribution from a nearby station. The map's factory plume layer is a simulated screening estimate and is never presented as a measured source apportionment or a violation.
 - No invented clause or threshold.

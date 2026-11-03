@@ -75,10 +75,10 @@ Rate limits: global 400/min; auth 40/15 min; report submission 12/hour; AI 20/mi
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/ai/status` | user | River/vision status and mode |
-| POST | `/ai/analyse` | user | `{stationId?, localityId?, category?, type: observation|predictive|compliance|custom, question?}` |
-| POST | `/ai/chat` | user | `{question, stationId?, localityId?, category?}` |
+| POST | `/ai/analyse` | user | `{stationId?, localityId?, reportId?, category?, type: observation|predictive|compliance|custom, question?}` |
+| POST | `/ai/chat` | user | `{question, stationId?, localityId?, reportId?, category?}` |
 
-Responses include `provider` (`RIVER_AI` or `RULE_BASED`), `status`, narrative, labelled sections (observed/predicted/reported/estimated/standards/limitations/nextActions), citations, evidence and disclaimer. Without `RIVER_API_KEY`, status is `NOT_CONFIGURED` and provider is `RULE_BASED`.
+`reportId` focuses the evidence bundle on one citizen report: its description and evidence metadata, nearby monitors and weather, related reports, alerts and incidents. Without a report focus, the bundle includes the aggregated report register (counts by category/status/verification) and the latest reports. Every bundle also includes the cached environmental news feed, treated as reported and unverified. Responses include `provider` (`RIVER_AI` or `RULE_BASED`), `status`, narrative, labelled sections (observed/predicted/reported/estimated/standards/limitations/nextActions), citations, evidence and disclaimer. Without `RIVER_API_KEY`, status is `NOT_CONFIGURED` and provider is `RULE_BASED`.
 
 ## Reports / evidence
 

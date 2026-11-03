@@ -10,23 +10,25 @@ export function Logo({ dark = false, compact = false }: { dark?: boolean; compac
           dark ? 'border-[#3b4550] bg-[#1d242c]' : 'border-ink/15 bg-ink',
         )}
       >
-        <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden>
-          <circle cx="23.4" cy="9.2" r="4.1" fill="#b9ff66" />
+        <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden>
+          <circle cx="24" cy="5.5" r="4" fill="#b9ff66" />
+          <path d="M7 25V9M25 25V9" stroke="#f3f7ec" strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M3 23h26" stroke="#f3f7ec" strokeWidth="2.4" strokeLinecap="round" />
           <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M7.2 24.4v-8.2c0-.5.2-.9.5-1.3l1.4-1.8c.3-.4.7-.6 1.2-.6h1.6v-2.1c0-.5.4-.9.9-.9h1.2c.5 0 .9.4.9.9v2.1h1.9v-2.1c0-.5.4-.9.9-.9h1.2c.5 0 .9.4.9.9v2.1h1.6c.5 0 .9.2 1.2.6l1.4 1.8c.3.4.5.8.5 1.3v8.2h-3.4v-4.9c0-1.9-1.5-3.4-3.4-3.4s-3.4 1.5-3.4 3.4v4.9H7.2Z M13.2 24.4v-4.9a3 3 0 0 1 6 0v4.9h-6Z"
-            fill="#f3f7ec"
+            d="M7 9 3 23M7 9l4 14M7 9l9 14M25 9l4 14M25 9l-4 14M25 9l-9 14"
+            stroke="#f3f7ec"
+            strokeWidth=".85"
+            opacity=".65"
           />
           <path
-            d="M4 27c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1 2 1 4 1"
+            d="M4 27.2c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1 2 1 4 1"
             fill="none"
             stroke="#5fc7b6"
             strokeWidth="1.5"
             strokeLinecap="round"
           />
           <path
-            d="M8 29.2c1.5 0 1.5-.8 3-.8s1.5.8 3 .8 1.5-.8 3-.8 1.5.8 3 .8 1.5-.8 3-.8 1.5.8 3 .8"
+            d="M8 29.4c1.5 0 1.5-.8 3-.8s1.5.8 3 .8 1.5-.8 3-.8 1.5.8 3 .8 1.5-.8 3-.8 1.5.8 3 .8"
             fill="none"
             stroke="#5fc7b6"
             strokeWidth="1.3"

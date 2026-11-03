@@ -3,14 +3,27 @@ import { DATA_SOURCE_CATALOGUE } from '../config/data-sources.js';
 import { one, query } from '../db/pool.js';
 import type { DataSource } from '../config/data-sources.js';
 
+const ON_DEMAND_PUBLIC_SOURCES = new Set([
+  'open-meteo-marine',
+  'open-meteo-flood',
+  'open-meteo-archive',
+  'open-meteo-geocoding',
+  'osm-nominatim',
+  'osm-overpass',
+  'osm-valhalla',
+  'nasa-eonet',
+  'usgs-earthquakes',
+]);
+
 export async function syncSourceCatalogue(): Promise<void> {
   for (const source of DATA_SOURCE_CATALOGUE) {
     let status: DataSource['status'] = source.configured ? 'STALE' : 'NOT_CONFIGURED';
-    if (source.id === 'demo-network' || source.id === 'openfreemap') status = 'CONNECTED';
+    if (source.id === 'demo-network' || source.id === 'openfreemap' || ON_DEMAND_PUBLIC_SOURCES.has(source.id)) status = 'CONNECTED';
     if (source.id === 'ml-service') status = 'NOT_CONFIGURED';
     if (source.id === 'river-ai' && !riverConfig.configured) status = 'NOT_CONFIGURED';
     if (source.id === 'vision-ai' && !visionConfig.configured) status = 'NOT_CONFIGURED';
     if (source.id === 'email' && !emailConfigured) status = 'NOT_CONFIGURED';
+    if (source.id === 'evidence-storage' && source.configured) status = 'CONNECTED';
     await query(
       `INSERT INTO data_sources (id, name, category, provider, status, attribution, documentation_url, notes, is_simulated)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
@@ -19,6 +32,7 @@ export async function syncSourceCatalogue(): Promise<void> {
          attribution=EXCLUDED.attribution, documentation_url=EXCLUDED.documentation_url,
          notes=EXCLUDED.notes, is_simulated=EXCLUDED.is_simulated, updated_at=now(),
          status = CASE
+           WHEN EXCLUDED.status = 'NOT_CONFIGURED' THEN 'NOT_CONFIGURED'
            WHEN data_sources.last_success_at IS NOT NULL AND data_sources.status IN ('CONNECTED','STALE','FAILED') THEN data_sources.status
            ELSE EXCLUDED.status END`,
       [
@@ -90,6 +104,16 @@ export async function getSourceStatuses(): Promise<DataSource[]> {
     if (row.id === 'demo-network' && row.last_success_at) {
       const age = now - new Date(row.last_success_at).getTime();
       status = age <= Math.max(5 * 60_000, env.LIVE_SIMULATION_INTERVAL_SECONDS * 4 * 1000) ? 'CONNECTED' : 'STALE';
+    }
+    if (row.id === 'openaq') {
+      const age = row.last_success_at ? now - new Date(row.last_success_at).getTime() : Infinity;
+      status = !env.OPENAQ_API_KEY ? 'NOT_CONFIGURED' : age <= aqiWindow ? 'CONNECTED' : 'STALE';
+    }
+    if (row.id === 'evidence-storage') {
+      status =
+        env.STORAGE_DRIVER === 'local' || Boolean(env.STORAGE_ENDPOINT && env.STORAGE_BUCKET)
+          ? 'CONNECTED'
+          : 'NOT_CONFIGURED';
     }
     if (row.id === 'river-ai' && riverConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';
     if (row.id === 'vision-ai' && visionConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';

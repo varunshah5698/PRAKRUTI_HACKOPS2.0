@@ -16,6 +16,7 @@ import {
   Menu,
   Plus,
   Scale,
+  Search,
   Settings,
   ShieldAlert,
   Sparkles,
@@ -23,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import { Logo } from './Logo';
+import { CommandPalette } from './CommandPalette';
 import { Badge } from './ui';
 import { useAuth } from '../store/auth';
 import { classNames } from '../lib/format';
@@ -39,6 +41,7 @@ const groups: Array<{
       { to: '/dashboard', label: 'Command centre', short: 'Home', icon: LayoutDashboard, end: true },
       { to: '/atmosphere', label: 'Atmosphere lab', short: 'Air lab', icon: CloudSun, roles: AUTHORITY_ROLES },
       { to: '/map', label: 'Mumbai map', short: 'Map', icon: Map },
+      { to: '/city', label: 'Live city pulse', short: 'Pulse', icon: CloudSun },
       { to: '/intelligence/predictions', label: 'Predictive intelligence', short: 'Predict', icon: BrainCircuit, roles: AUTHORITY_ROLES },
       { to: '/ai-analyst', label: 'AI analyst', short: 'Analyst', icon: Sparkles, roles: AUTHORITY_ROLES },
     ],
@@ -67,6 +70,7 @@ const titles: Array<[string, string]> = [
   ['/dashboard', 'Environmental command centre'],
   ['/atmosphere', 'Atmosphere lab · 3D air intelligence'],
   ['/map', 'Live environmental intelligence map'],
+  ['/city', 'Live city pulse · open data'],
   ['/intelligence/predictions', 'Predictive environmental intelligence'],
   ['/ai-analyst', 'AI environmental analyst'],
   ['/my-reports', 'Your reports & authority responses'],
@@ -85,6 +89,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   const { user, logout, isAuthority } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [now, setNow] = useState(new Date());
   const mainRef = useRef<HTMLElement | null>(null);
   const location = useLocation();
@@ -101,6 +106,17 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandOpen((value) => !value);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const handleLogout = async () => {
@@ -284,6 +300,24 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
               </div>
 
               <div className="ml-auto flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCommandOpen(true)}
+                  className="hidden items-center gap-2 rounded-full border border-white/80 bg-white/65 px-3 py-2 text-[#5f7065] transition hover:bg-white hover:text-[#142016] sm:flex"
+                  aria-label="Search Prakriti (Command K)"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-semibold">Search</span>
+                  <kbd className="rounded border border-[#dbe5d6] bg-white/70 px-1 py-0.5 text-[8px] font-semibold text-[#8a9b8e]">⌘K</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCommandOpen(true)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/65 text-[#5f7065] transition hover:bg-white hover:text-[#142016] sm:hidden"
+                  aria-label="Search Prakriti"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
                 <div className="hidden items-center gap-2 rounded-full border border-white/80 bg-white/65 px-3 py-2 md:flex">
                   <CloudSun className="h-4 w-4 text-[#c49a1c]" />
                   <span className="text-[10px] font-semibold text-[#223328]">Mumbai</span>
@@ -349,6 +383,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
           </main>
         </div>
       </div>
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </div>
   );
 }

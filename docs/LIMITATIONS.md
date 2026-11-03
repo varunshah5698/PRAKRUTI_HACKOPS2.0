@@ -13,6 +13,7 @@ This deployment is a working demonstration, not an operational regulatory system
 - **Weather is live but context only.** It does not establish causation.
 - **CAMS is modelled, not measured.** It is never a station reading or official AQI.
 - **Demo water/industrial stations are synthetic.** Water risk uses reference criteria, not a verified ambient-water monitoring programme.
+- **Factory plume attribution is a screen, not a measurement.** The ten industrial sources are a simulated catalogue. The map applies a distance/wind weight to place plumes and estimate each monitor's source share; it does not identify a real facility, measure apportionment or establish a regulatory impact zone.
 - **No waste monitoring stations.** Waste risk is report-evidence based.
 
 ## Predictions and AI

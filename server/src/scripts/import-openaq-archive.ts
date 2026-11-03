@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { env } from '../config/env.js';
 import { closePool, one, query } from '../db/pool.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -76,7 +77,7 @@ async function main() {
   let batch: Array<Record<string, string | number | boolean | null>> = [];
   const flush = async () => {
     if (batch.length === 0) return;
-    await query(
+    const insertedRows = await query<{ id: string }>(
       `INSERT INTO environmental_observations
          (station_id, locality_id, category, pollutant_code, value, unit, observed_at, retrieved_at,
           quality_state, is_simulated, source_id, source_record_id)
@@ -84,7 +85,8 @@ async function main() {
          $1::uuid[], $2::uuid[], $3::text[], $4::text[], $5::numeric[], $6::text[], $7::timestamptz[],
          $8::timestamptz[], $9::text[], $10::boolean[], $11::text[], $12::text[]
        )
-       ON CONFLICT (station_id, pollutant_code, observed_at, source_id) DO NOTHING`,
+       ON CONFLICT (station_id, pollutant_code, observed_at, source_id) DO NOTHING
+       RETURNING id`,
       [
         batch.map((row) => row.station_id),
         batch.map((row) => row.locality_id),
@@ -100,7 +102,7 @@ async function main() {
         batch.map((row) => row.source_record_id),
       ],
     );
-    inserted += batch.length;
+    inserted += insertedRows.length;
     batch = [];
   };
 
@@ -150,10 +152,11 @@ async function main() {
      WHERE s.id=latest.station_id`,
   );
   await query(
-    `UPDATE data_sources SET status='CONNECTED', last_success_at=now(), last_attempt_at=now(),
+    `UPDATE data_sources SET status=$1, last_success_at=now(), last_attempt_at=now(),
        record_count=GREATEST(record_count,(SELECT COUNT(*) FROM environmental_observations WHERE source_id='openaq')),
        error_message=NULL, notes='OpenAQ live + historical archive (CPCB/MPCB/BMC/IITM operators); source is OpenAQ, not a direct CPCB feed.'
      WHERE id='openaq'`,
+    [env.OPENAQ_API_KEY ? 'CONNECTED' : 'NOT_CONFIGURED'],
   );
   console.log({ inserted, skipped, stations: stationIds.size, days, cutoff: new Date(cutoff).toISOString() });
   await closePool();

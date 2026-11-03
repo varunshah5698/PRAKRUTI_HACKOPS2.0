@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Camera, CheckCircle2, FileWarning, Filter, RefreshCw, ShieldAlert } from 'lucide-react';
+import { ArrowUpRight, Camera, CheckCircle2, FileWarning, Filter, RefreshCw, ShieldAlert, Sparkles } from 'lucide-react';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock, Select } from '../../components/ui';
 import { RiskBadge } from '../../components/Status';
 import { api } from '../../lib/api';
@@ -51,6 +51,7 @@ export function ReportsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="dark" size="sm" onClick={load}><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
+          <Link to="/ai-analyst"><Button variant="dark" size="sm"><Sparkles className="h-3.5 w-3.5" /> AI report review</Button></Link>
           <Link to="/report"><Button variant="lime" size="sm">New report <ArrowUpRight className="h-3.5 w-3.5" /></Button></Link>
         </div>
       </div>

@@ -1,6 +1,6 @@
 {
-  "model_version": "lightgbm-202611030840-ed07b475",
-  "trained_at": "2026-11-03T08:40:00.571210+00:00",
+  "model_version": "lightgbm-202611031000-ed07b475",
+  "trained_at": "2026-11-03T10:00:53.020013+00:00",
   "dataset": "data/mumbai_air_quality_archive.csv",
   "dataset_sha256": "ed07b475c1e4620acca6c8b59fc782fc064d60e8a954a78e57dc1e121255fb21",
   "dataset_metadata": "data/mumbai_air_quality_archive.meta.json",

@@ -938,7 +938,7 @@ async function main() {
         demoMode: true,
         seededAt: new Date().toISOString(),
         boundary: 'Greater Mumbai (Mumbai City + Mumbai Suburban districts), OSM ODbL',
-        note: 'All station observations, reports, alerts, incidents and notifications are simulation-labelled.',
+        note: 'Demo-network observations, seeded reports, alerts, incidents and notifications are simulation-labelled. Imported OpenAQ rows are real measurements; Open-Meteo/CAMS rows are live or modelled as labelled by their source.',
       }),
     ],
   );

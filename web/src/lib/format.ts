@@ -48,6 +48,17 @@ export function formatDate(value?: string | null, withTime = true): string {
   });
 }
 
+export function formatTime(value?: string | null): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '—';
+  return date.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function timeAgo(value?: string | null): string {
   if (!value) return '—';
   const ms = Date.now() - new Date(value).getTime();

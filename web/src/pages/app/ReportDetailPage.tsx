@@ -3,22 +3,23 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
-  ArrowUpRight,
+  Bot,
   Camera,
   CheckCircle2,
-  FileSearch,
   Link2,
   MapPin,
+  RefreshCw,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
-import { RiskBadge } from '../../components/Status';
+import { ReportAnalysisPanel } from '../../components/ReportAnalysis';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock, Select } from '../../components/ui';
 import { api } from '../../lib/api';
-import { categoryLabel, formatDate, number, timeAgo } from '../../lib/format';
+import { categoryLabel, formatDate } from '../../lib/format';
 import { useAuth } from '../../store/auth';
 
 interface ReportDetail {
@@ -31,16 +32,27 @@ interface ReportDetail {
   evidence: Array<{ id: string; original_name: string | null; mime_type: string; size_bytes: number; sha256: string; gps_consistency: string; malware_scan_status: string; uploaded_at: string }>;
   aiAssessments: Array<{ id: string; assessment_type: string; provider: string; model: string | null; status: string; output: Record<string, unknown>; created_at: string }>;
   enrichment: {
-    stations: Array<{ id: string; name: string; distance_m: number; latest_readings: Record<string, { value: number; unit: string; observedAt: string; sourceId: string; isSimulated: boolean }> | null }>;
-    weather: { observed_at: string; temperature_c: number; relative_humidity: number; wind_speed_kmh: number; wind_direction_deg: number; source_id: string } | null;
-    nearbyReports: Array<{ id: string; public_ref: string; category: string; incident_type: string; status: string; verification_state: string; distance_m: number; submitted_at: string }>;
-    alerts: Array<{ id: string; public_ref: string; level: string; state: string; trigger_type: string; title: string; triggered_at: string }>;
-    incidents: Array<{ id: string; public_ref: string; title: string; status: string; risk_level: string; detected_at: string; distance_m: number }>;
+    stations: Array<{ id: string; name: string; station_type: string | null; lat: number; lng: number; distance_m: number; latest_readings: Record<string, { value: number; unit: string; observedAt: string; sourceId: string; isSimulated: boolean }> | null }>;
+    weather: { observed_at: string; temperature_c: number; relative_humidity: number; wind_speed_kmh: number; wind_direction_deg: number; precipitation_mm: number; is_simulated: boolean; source_id: string } | null;
+    nearbyReports: Array<{ id: string; public_ref: string; category: string; incident_type: string; status: string; verification_state: string; distance_m: number; submitted_at: string; lat: number; lng: number }>;
+    alerts: Array<{ id: string; public_ref: string; category: string; level: string; state: string; trigger_type: string; title: string; triggered_at: string }>;
+    incidents: Array<{ id: string; public_ref: string; category: string; title: string; status: string; risk_level: string; detected_at: string; distance_m: number }>;
   };
   audit: Array<{ action: string; actor_id: string | null; after: Record<string, unknown>; created_at: string }>;
 }
 
 interface IncidentOption { id: string; public_ref: string; title: string; status: string }
+
+interface AiAnswer {
+  status: string;
+  provider: string;
+  model: string | null;
+  generatedAt: string;
+  narrative: string;
+  sections: { observed: string[]; predicted: string[]; reported: string[]; estimated: string[]; standards: string[]; limitations: string[]; nextActions: string[] };
+  citations: Array<{ title: string; section: string; authority: string; url: string | null }>;
+  disclaimer: string;
+}
 
 export function ReportDetailPage() {
   const { reportId } = useParams();
@@ -49,6 +61,8 @@ export function ReportDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<IncidentOption[]>([]);
   const [incidentId, setIncidentId] = useState('');
+  const [aiAnswer, setAiAnswer] = useState<AiAnswer | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const { isAuthority } = useAuth();
   const navigate = useNavigate();
@@ -102,6 +116,24 @@ export function ReportDetailPage() {
     }
   };
 
+  const analyseWithAi = async () => {
+    if (!data || aiLoading) return;
+    setAiLoading(true);
+    try {
+      const answer = await api.post<AiAnswer>('/ai/analyse', {
+        reportId: data.report.id,
+        category: data.report.category,
+        type: 'custom',
+        question: `Analyse citizen report ${data.report.public_ref}. Explain what was reported, what nearby monitors and weather show, what other reports or cases are related, how strong the evidence is, and what should be verified next. Do not declare a violation.`,
+      });
+      setAiAnswer(answer);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'AI analysis failed');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading) return <LoadingBlock className="min-h-[60vh]" label="Loading report evidence" />;
   if (error || !data) return <EmptyState title="Report unavailable" description={error ?? 'Report not found.'} icon={<AlertTriangle className="h-5 w-5" />} action={<Button variant="lime" onClick={load}>Retry</Button>} />;
 
@@ -140,6 +172,81 @@ export function ReportDetailPage() {
           ) : null}
         </div>
       </div>
+
+      <ReportAnalysisPanel
+        report={data.report}
+        evidence={data.evidence}
+        aiAssessments={data.aiAssessments}
+        enrichment={data.enrichment}
+        audit={data.audit}
+      />
+
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle>AI report analysis</CardTitle>
+            <p className="mt-1 text-[10px] text-[#66766b]">Grounded in this report, nearby monitors, weather, related reports and today's environmental news.</p>
+          </div>
+          <Badge tone={aiLoading ? 'amber' : aiAnswer?.status === 'COMPLETED' ? 'green' : aiAnswer ? 'amber' : 'neutral'}>
+            {aiLoading ? 'ANALYSING' : aiAnswer ? aiAnswer.status.replace(/_/g, ' ') : 'NOT RUN'}
+          </Badge>
+        </CardHeader>
+        <div className="space-y-3 p-4">
+          {aiLoading ? <LoadingBlock label="Reading the report, nearby evidence and news" /> : null}
+          {!aiAnswer && !aiLoading ? (
+            <>
+              <p className="text-[11px] leading-relaxed text-[#5a6a5f]">
+                Ask Prakriti to read this report against the evidence on this page. Citizen claims stay labelled as reported; nearby readings stay separate.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="lime" size="sm" onClick={analyseWithAi}><Sparkles className="h-3.5 w-3.5" /> Analyse this report</Button>
+                <Link to={`/ai-analyst?report=${data.report.id}&category=${data.report.category}`}><Button variant="dark" size="sm"><Bot className="h-3.5 w-3.5" /> Open AI analyst</Button></Link>
+              </div>
+            </>
+          ) : null}
+          {aiAnswer ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={aiAnswer.provider === 'RIVER_AI' ? 'lime' : 'amber'}>{aiAnswer.provider === 'RIVER_AI' ? 'AI-generated explanation' : 'Rule-based evidence digest'}</Badge>
+                <Badge tone={aiAnswer.status === 'COMPLETED' ? 'green' : 'neutral'}>{aiAnswer.status.replace(/_/g, ' ')}</Badge>
+                <span className="text-[9px] text-[#66766b]">{formatDate(aiAnswer.generatedAt)}</span>
+              </div>
+              <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#405246]">{aiAnswer.narrative}</p>
+              {([
+                ['OBSERVED', aiAnswer.sections.observed, 'green'],
+                ['PREDICTED', aiAnswer.sections.predicted, 'teal'],
+                ['REPORTED / UNVERIFIED', aiAnswer.sections.reported, 'amber'],
+                ['ANALYSIS / REASONING', aiAnswer.sections.estimated, 'neutral'],
+                ['REFERENCE STANDARDS', aiAnswer.sections.standards, 'neutral'],
+                ['LIMITATIONS', aiAnswer.sections.limitations, 'red'],
+                ['SUGGESTED NEXT ACTIONS', aiAnswer.sections.nextActions, 'lime'],
+              ] as Array<[string, string[], 'green' | 'teal' | 'amber' | 'neutral' | 'red' | 'lime']>).map(([label, items, tone]) => items.length ? (
+                <div key={label} className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
+                  <Badge tone={tone}>{label}</Badge>
+                  <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-[#5a6a5f]">
+                    {items.map((item, index) => <li key={index} className="flex gap-2"><span className="text-[#66766b]">—</span>{item}</li>)}
+                  </ul>
+                </div>
+              ) : null)}
+              {aiAnswer.citations.length ? (
+                <div className="rounded-xl border border-[#e7ece3] bg-[#ffffff] p-3">
+                  <DataLabel>Citations</DataLabel>
+                  <ul className="mt-2 space-y-1 text-[10px] text-[#5a6a5f]">
+                    {aiAnswer.citations.map((citation, index) => (
+                      <li key={index}>{citation.title} · {citation.section} · {citation.authority}{citation.url ? <> · <a href={citation.url} target="_blank" rel="noreferrer" className="text-[#3f7d2a] underline">source</a></> : null}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {aiAnswer.disclaimer ? <p className="text-[9px] leading-relaxed text-[#66766b]">{aiAnswer.disclaimer}</p> : null}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="dark" size="sm" onClick={analyseWithAi} disabled={aiLoading}><RefreshCw className="h-3.5 w-3.5" /> Analyse again</Button>
+                <Link to={`/ai-analyst?report=${data.report.id}&category=${data.report.category}`}><Button variant="outline" size="sm"><Bot className="h-3.5 w-3.5" /> Follow up in AI analyst</Button></Link>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-4">
@@ -224,56 +331,6 @@ export function ReportDetailPage() {
             </div>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Nearby environmental evidence</CardTitle><Badge tone="neutral">Enrichment</Badge></CardHeader>
-            <div className="grid gap-3 p-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                <DataLabel>Monitoring stations within 3 km</DataLabel>
-                <div className="mt-2 space-y-2">
-                  {data.enrichment.stations.map((station) => (
-                    <div key={station.id} className="text-[10px] text-[#5a6a5f]">
-                      <p className="font-medium text-[#26362a]">{station.name.replace(' demo air monitor', '')} · {Math.round(station.distance_m)} m</p>
-                      {station.latest_readings ? <p className="mt-0.5 text-[9px] text-[#66766b]">{Object.entries(station.latest_readings).slice(0, 3).map(([code, value]) => `${code.toUpperCase()} ${number(value.value)} ${value.unit}`).join(' · ')}</p> : null}
-                    </div>
-                  ))}
-                  {data.enrichment.stations.length === 0 ? <p className="text-[10px] text-[#66766b]">No monitoring station within 3 km.</p> : null}
-                </div>
-              </div>
-              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                <DataLabel>Weather context</DataLabel>
-                {data.enrichment.weather ? (
-                  <div className="mt-2 text-[10px] text-[#5a6a5f]">
-                    <p>{number(data.enrichment.weather.temperature_c)}°C · {number(data.enrichment.weather.relative_humidity, 0)}% RH</p>
-                    <p>Wind {number(data.enrichment.weather.wind_speed_kmh)} km/h · {number(data.enrichment.weather.wind_direction_deg, 0)}°</p>
-                    <p className="mt-1 text-[9px] text-[#66766b]">{formatDate(data.enrichment.weather.observed_at)} · {data.enrichment.weather.source_id}</p>
-                  </div>
-                ) : <p className="mt-2 text-[10px] text-[#66766b]">No nearby weather observation.</p>}
-              </div>
-              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                <DataLabel>Nearby reports · 500 m</DataLabel>
-                <div className="mt-2 space-y-1.5">
-                  {data.enrichment.nearbyReports.map((report) => (
-                    <Link key={report.id} to={`/reports/${report.id}`} className="block text-[10px] text-[#5a6a5f] hover:text-[#142016]">
-                      {report.public_ref} · {report.incident_type.replace(/_/g, ' ')} · {Math.round(report.distance_m)} m
-                    </Link>
-                  ))}
-                  {data.enrichment.nearbyReports.length === 0 ? <p className="text-[10px] text-[#66766b]">No other reports within 500 m.</p> : null}
-                </div>
-              </div>
-              <div className="rounded-xl border border-[#dfe6db] bg-[#f5f8f2] p-3">
-                <DataLabel>Alerts / incidents</DataLabel>
-                <div className="mt-2 space-y-1.5">
-                  {data.enrichment.alerts.slice(0, 3).map((alert) => (
-                    <Link key={alert.id} to={`/alerts/${alert.id}`} className="block text-[10px] text-[#5a6a5f] hover:text-[#142016]">{alert.public_ref} · {alert.level} · {alert.title}</Link>
-                  ))}
-                  {data.enrichment.incidents.slice(0, 3).map((incident) => (
-                    <Link key={incident.id} to={`/incidents/${incident.id}`} className="block text-[10px] text-[#5a6a5f] hover:text-[#142016]">{incident.public_ref} · {incident.status.replace(/_/g, ' ')}</Link>
-                  ))}
-                  {!data.enrichment.alerts.length && !data.enrichment.incidents.length ? <p className="text-[10px] text-[#66766b]">No related alerts or incidents.</p> : null}
-                </div>
-              </div>
-            </div>
-          </Card>
         </div>
 
         <div className="space-y-4">
@@ -321,19 +378,6 @@ export function ReportDetailPage() {
             </div>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Audit history</CardTitle><FileSearch className="h-4 w-4 text-[#6f7f74]" /></CardHeader>
-            <div className="space-y-2 p-4">
-              {data.audit.map((event, index) => (
-                <div key={index} className="rounded-lg border border-[#e7ece3] bg-[#f5f8f2] p-2.5 text-[9px] leading-relaxed text-[#5a6a5f]">
-                  <p className="font-semibold uppercase tracking-[0.08em] text-[#3f7d2a]">{event.action.replace(/_/g, ' ')}</p>
-                  <p className="mt-1">{formatDate(event.created_at)}</p>
-                  {event.after ? <p className="mt-1 text-[#66766b]">{JSON.stringify(event.after).slice(0, 180)}</p> : null}
-                </div>
-              ))}
-              {data.audit.length === 0 ? <p className="text-[10px] text-[#66766b]">No audit events recorded.</p> : null}
-            </div>
-          </Card>
         </div>
       </div>
     </div>

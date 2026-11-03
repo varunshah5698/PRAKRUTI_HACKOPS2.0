@@ -157,9 +157,9 @@ export function MumbaiWeatherScene({
   const hazeId = `mumbai-haze-${uid}`;
   const waveId = `mumbai-wave-${uid}`;
 
-  const palette = night ? NIGHT : mood === 'rain' ? RAIN : mood === 'humid' ? HUMID : CLEAR;
+  const palette = night ? NIGHT : mood === 'rain' ? RAIN : mood === 'humid' || mood === 'cool' ? HUMID : CLEAR;
   const rainy = mood === 'rain';
-  const cloudy = rainy || mood === 'humid';
+  const cloudy = rainy || mood === 'humid' || mood === 'cool';
   const windy = mood === 'windy';
 
   return (
@@ -172,7 +172,7 @@ export function MumbaiWeatherScene({
         preserveAspectRatio="xMidYMax meet"
         className="absolute inset-x-0 bottom-0 w-full"
         role="img"
-        aria-label={`Illustrated Mumbai waterfront with ${rainy ? 'rain' : mood === 'humid' ? 'humid haze' : night ? 'a moonlit sky' : 'clear skies'}`}
+        aria-label="Illustrated Mumbai waterfront weather scene"
       >
         <defs>
           <linearGradient id={skyId} x1="0" y1="0" x2="0" y2="1">

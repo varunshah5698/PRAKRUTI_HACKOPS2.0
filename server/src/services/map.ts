@@ -3,6 +3,7 @@ import { calculateAqi } from './aqi.js';
 import { baselineForecast, anomalyScore } from './forecast.js';
 import { getStationSeries, getStationSnapshots, getLatestWeather } from './station-data.js';
 import { getForecastsForStation } from './forecast-service.js';
+import { computeSourceImpactAt, type ImpactStation } from './source-impact.js';
 
 export interface MapFilters {
   at: string;
@@ -303,6 +304,30 @@ export async function getMapTimeline(filters: MapFilters) {
     stations = stations.filter((s) => String(s.aqiCategory ?? '').toLowerCase() === filters.severity!.toLowerCase());
   }
 
+  const impactStations: ImpactStation[] = stations
+    .filter((station) => station.stationType !== 'WATER_SAMPLING')
+    .map((station) => {
+      const values = (station.values ?? {}) as Record<string, { value: number }>;
+      const forecast = station.forecast as { predictedValue?: number } | null | undefined;
+      return {
+        id: String(station.id),
+        name: String(station.name),
+        localityName: (station.localityName as string | null | undefined) ?? null,
+        lat: Number(station.lat),
+        lng: Number(station.lng),
+        pm25: values.pm25?.value ?? forecast?.predictedValue ?? null,
+      };
+    });
+  const sourceImpact =
+    category === 'air' || category === 'industrial'
+      ? await computeSourceImpactAt(impactStations, at)
+      : null;
+  if (sourceImpact && sourceImpact.landImpact.affectedStations > 0) {
+    warnings.push(
+      `${sourceImpact.landImpact.affectedStations} monitor(s) fall inside a simulated industrial plume screen. Source shares are screening estimates, not measured apportionment or regulatory attribution.`,
+    );
+  }
+
   const reportWindowStart = mode === 'PAST' ? new Date(at.getTime() - 48 * 3_600_000) : new Date(Date.now() - 7 * 86_400_000);
   const reports = await query<Record<string, unknown>>(
     `SELECT r.id, r.public_ref, r.category, r.incident_type, r.status, r.verification_state, r.submitted_at,
@@ -361,9 +386,10 @@ export async function getMapTimeline(filters: MapFilters) {
     localities,
     warnings,
     forecastMeta,
+    sourceImpact,
     estimatedZones: [],
     estimatedZoneNote:
-      'No interpolated pollution surface or risk polygon is drawn. The monitoring network is sparse and station observations in this deployment are simulation-labelled. A point measurement does not establish concentration across a locality.',
+      'Station values are point observations, not an interpolated surface. Industrial plumes are screening footprints derived from simulated sources and current wind; they are not measured pollution areas. A point measurement does not establish concentration across a locality.',
     boundary: {
       url: '/geo/mumbai-boundary.geojson',
       source: 'OpenStreetMap via Nominatim (ODbL 1.0)',
@@ -404,6 +430,33 @@ export async function getStationDetail(stationId: string) {
       : null;
   const forecasts = bundle?.forecasts ?? [];
   const anomaly = anomalyScore(history);
+
+  let sourceAttribution: Record<string, unknown> | null = null;
+  if (station.stationType === 'AIR_CAAQMS') {
+    const impact = await computeSourceImpactAt(
+      [
+        {
+          id: station.id,
+          name: station.name,
+          localityName: station.localityName,
+          lat: Number(station.lat),
+          lng: Number(station.lng),
+          pm25: station.values.pm25?.value ?? null,
+        },
+      ],
+      new Date(),
+    );
+    const attribution = impact.stationAttributions[station.id];
+    if (attribution) {
+      sourceAttribution = {
+        ...attribution,
+        wind: impact.wind,
+        method: impact.method,
+        note: impact.note,
+        disclaimer: impact.disclaimer,
+      };
+    }
+  }
 
   const nearbyStations = await query<Record<string, unknown>>(
     `SELECT s.id, s.code, s.name, s.station_type, s.health_status,
@@ -461,6 +514,7 @@ export async function getStationDetail(stationId: string) {
     nearbyStations,
     nearbyReports,
     alerts,
+    sourceAttribution,
     risk: risk[0] ?? null,
     forecastStatus: {
       trainedModel: bundle?.modelStatus ?? 'NOT_CONFIGURED',

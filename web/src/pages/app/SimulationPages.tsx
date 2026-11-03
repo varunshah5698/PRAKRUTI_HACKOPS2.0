@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowUpRight,
+  Building2,
   Check,
   CheckCircle2,
   Droplets,
@@ -12,6 +13,7 @@ import {
   FlaskConical,
   Gauge,
   Mail,
+  MapPin,
   Pause,
   Play,
   RotateCcw,
@@ -20,9 +22,11 @@ import {
   Shuffle,
   SkipForward,
   Sparkles,
+  Thermometer,
   Timer,
   Trash2,
   TrendingUp,
+  Users,
   Wind,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,22 +34,56 @@ import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Char
 import { RiskBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, Dialog, DialogContent, EmptyState, Input, LoadingBlock, Select } from '../../components/ui';
 import { api } from '../../lib/api';
-import { RISK_COLORS, classNames, formatDate, number } from '../../lib/format';
+import { RISK_COLORS, classNames, formatDate, number, windDirection } from '../../lib/format';
 import { useAuth } from '../../store/auth';
 
+interface ScenarioPhase { label: string; from: number; to: number; tone: 'calm' | 'build' | 'peak' | 'recovery' | 'fault' }
 interface Scenario {
   id: string; name: string; category: string; steps: number; description: string; stationRequired: boolean; demonstrates: string[];
+  phases: ScenarioPhase[]; preview: number[]; previewUnit: string;
 }
 interface SimulationSession {
   id: string; scenario: string; category: string; seed: number; status: string; current_step: number; total_steps: number;
   created_at: string; updated_at: string; station_name: string; station_code: string; locality_name: string | null; created_by_name: string | null;
 }
+interface SimulationRecommendation {
+  id: string;
+  priority: 'IMMEDIATE' | 'PRIORITY' | 'WATCH' | 'ROUTINE';
+  audience: 'PUBLIC' | 'AUTHORITY' | 'FIELD';
+  title: string;
+  action: string;
+  reason: string;
+  evidence: string[];
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+interface SimulationConditions {
+  temperatureC: number | null;
+  relativeHumidity: number | null;
+  windSpeedKmh: number | null;
+  windDirectionDeg: number | null;
+  precipitationMm: number | null;
+  dispersion: 'Poor' | 'Moderate' | 'Good';
+  source: string;
+}
+interface SimulationOutlook {
+  horizonHours: number;
+  metric: string;
+  value: number;
+  lowerBound: number;
+  upperBound: number;
+  trend: 'RISING' | 'FALLING' | 'STEADY';
+  method: string;
+  note: string;
+}
 interface SimulationEvent {
   step: number;
   payload: {
     step: number; observedAt: string; values: Record<string, { value: number; unit: string; qualityState: string; isSimulated: boolean }>;
-    risk: { riskScore: number | null; riskLevel: string; confidenceScore: number | null; confidenceLevel: string; alertState: string; method: string; missingInputs: string[]; factors: Array<{ factor: string; contribution: number; detail: string }> };
+    risk: { riskScore: number | null; riskLevel: string; confidenceScore: number | null; confidenceLevel: string; alertState: string; method: string; missingInputs: string[]; factors: Array<{ factor: string; weight: number; contribution: number; detail: string }> };
     note: string; suppressAlert: boolean; neighbour?: { name: string; pm25: number; note: string }; emailPreviewAvailable: boolean; alertId?: string;
+    conditions?: SimulationConditions;
+    outlook?: SimulationOutlook;
+    recommendations?: SimulationRecommendation[];
   };
 }
 interface SimulationDetail {
@@ -70,6 +108,37 @@ const REQUIRED_STATION: Record<string, string | undefined> = {
   air: 'AIR_CAAQMS',
   water: 'WATER_SAMPLING',
   industrial: 'INDUSTRIAL_STACK',
+};
+
+const PHASE_TONE: Record<ScenarioPhase['tone'], { color: string; soft: string; label: string }> = {
+  calm: { color: '#7aa58f', soft: '#eef7ef', label: 'Calm' },
+  build: { color: '#c1932c', soft: '#fbf4df', label: 'Build-up' },
+  peak: { color: '#c94a50', soft: '#fdeeee', label: 'Peak' },
+  recovery: { color: '#2f8f84', soft: '#e9f7f3', label: 'Recovery' },
+  fault: { color: '#9a7620', soft: '#fdf6e8', label: 'Fault' },
+};
+
+const PRIORITY_STYLE: Record<SimulationRecommendation['priority'], { color: string; soft: string; border: string; label: string }> = {
+  IMMEDIATE: { color: '#c94a50', soft: '#fdeeee', border: '#f0cdce', label: 'Do now' },
+  PRIORITY: { color: '#cf7227', soft: '#fdf1e5', border: '#f0d5bd', label: 'Priority' },
+  WATCH: { color: '#b3860f', soft: '#fbf4df', border: '#eadcb2', label: 'Watch' },
+  ROUTINE: { color: '#2f8f84', soft: '#e9f7f3', border: '#c3e5de', label: 'Routine' },
+};
+
+const AUDIENCE_META: Record<SimulationRecommendation['audience'], { label: string; icon: LucideIcon }> = {
+  PUBLIC: { label: 'Public', icon: Users },
+  AUTHORITY: { label: 'Authority', icon: Building2 },
+  FIELD: { label: 'Field team', icon: MapPin },
+};
+
+const THRESHOLDS: Record<string, { value: number; label: string }[]> = {
+  pm25: [{ value: 60, label: 'PM2.5 24h screening' }],
+  pm10: [{ value: 100, label: 'PM10 24h screening' }],
+  no2: [{ value: 80, label: 'NO₂ 24h screening' }],
+  so2: [{ value: 80, label: 'SO₂ 24h screening' }],
+  o3: [{ value: 100, label: 'O₃ 8h screening' }],
+  ph: [{ value: 6.5, label: 'Lower reference' }, { value: 8.5, label: 'Upper reference' }],
+  do: [{ value: 5, label: 'Minimum reference' }],
 };
 
 const METRIC_LABELS: Record<string, string> = {
@@ -155,11 +224,140 @@ function Stat({ label, value, note }: { label: string; value: React.ReactNode; n
   );
 }
 
+function ScenarioSparkline({ values, color, height = 48 }: { values: number[]; color: string; height?: number }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const points = values
+    .map((value, index) => `${(index / (values.length - 1)) * 100},${38 - ((value - min) / span) * 32}`)
+    .join(' ');
+  return (
+    <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="w-full" style={{ height }} aria-hidden>
+      <polygon points={`0,40 ${points} 100,40`} fill={color} opacity="0.1" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function PhaseRail({
+  phases,
+  steps,
+  current,
+  compact = false,
+}: {
+  phases: ScenarioPhase[];
+  steps: number;
+  current?: number;
+  compact?: boolean;
+}) {
+  if (!phases?.length) return null;
+  const total = Math.max(1, steps - 1);
+  return (
+    <div>
+      <div className="relative flex h-2 overflow-hidden rounded-full bg-[#e4eff1]">
+        {phases.map((phase) => (
+          <span
+            key={`${phase.label}-${phase.from}`}
+            title={`${phase.label}: step ${phase.from}–${phase.to}`}
+            className="h-full first:rounded-l-full last:rounded-r-full"
+            style={{
+              width: `${((phase.to - phase.from) / total) * 100}%`,
+              background: `linear-gradient(90deg, ${PHASE_TONE[phase.tone].color}cc, ${PHASE_TONE[phase.tone].color})`,
+            }}
+          />
+        ))}
+        {current !== undefined ? (
+          <span
+            className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+            style={{ left: `${Math.min(100, Math.max(0, (current / total) * 100))}%`, background: '#173d4a' }}
+            aria-hidden
+          />
+        ) : null}
+      </div>
+      {!compact ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {phases.map((phase) => (
+            <span key={`${phase.label}-label`} className="inline-flex items-center gap-1 text-[8px] font-medium text-[#6e8b95]">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: PHASE_TONE[phase.tone].color }} />
+              {phase.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RecommendationCard({ item }: { item: SimulationRecommendation }) {
+  const priority = PRIORITY_STYLE[item.priority] ?? PRIORITY_STYLE.ROUTINE;
+  const audience = AUDIENCE_META[item.audience] ?? AUDIENCE_META.PUBLIC;
+  const Icon = audience.icon;
+  return (
+    <article className="relative overflow-hidden rounded-[20px] border bg-white/70 p-3.5" style={{ borderColor: priority.border }}>
+      <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: priority.color }} aria-hidden />
+      <div className="flex items-start justify-between gap-2 pl-1">
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border" style={{ color: priority.color, background: priority.soft, borderColor: priority.border }}>
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#8ba1a9]">{audience.label}</p>
+            <p className="text-[12px] font-semibold leading-tight text-[#173d4a]">{item.title}</p>
+          </div>
+        </div>
+        <span className="shrink-0 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em]" style={{ color: priority.color, background: priority.soft, borderColor: priority.border }}>
+          {priority.label}
+        </span>
+      </div>
+      <p className="mt-2 pl-1 text-[10.5px] leading-relaxed text-[#527482]">{item.action}</p>
+      <div className="mt-2 rounded-xl border border-[#e4eef0] bg-[#f7fbfb] px-2.5 py-2">
+        <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-[#6e8b95]">Why this recommendation</p>
+        <p className="mt-0.5 text-[9.5px] leading-relaxed text-[#405f6b]">{item.reason}</p>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1">
+        {item.evidence.slice(0, 4).map((evidence) => (
+          <span key={evidence} className="rounded-full border border-white/90 bg-white/80 px-2 py-0.5 text-[8px] font-medium text-[#557480]">{evidence}</span>
+        ))}
+        <span className="ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em]" style={{ color: priority.color }}>
+          {item.confidence} confidence
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function ConditionsStrip({ conditions }: { conditions?: SimulationConditions }) {
+  if (!conditions) return null;
+  const dispersion = conditions.dispersion;
+  const tone = dispersion === 'Poor' ? '#c94a50' : dispersion === 'Moderate' ? '#b3860f' : '#2f8f84';
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {[
+        { icon: Thermometer, label: 'Temperature', value: conditions.temperatureC === null ? '—' : `${number(conditions.temperatureC)} °C`, note: 'at station' },
+        { icon: Droplets, label: 'Humidity', value: conditions.relativeHumidity === null ? '—' : `${number(conditions.relativeHumidity, 0)}%`, note: 'relative' },
+        { icon: Wind, label: 'Wind', value: conditions.windSpeedKmh === null ? '—' : `${number(conditions.windSpeedKmh)} km/h`, note: windDirection(conditions.windDirectionDeg) },
+        { icon: Gauge, label: 'Dispersion', value: dispersion, note: conditions.source },
+      ].map(({ icon: Icon, label, value, note }) => (
+        <div key={label} className="rounded-2xl border border-white/80 bg-white/55 px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#8ba1a9]">{label}</span>
+            <Icon className="h-3 w-3" style={{ color: label === 'Dispersion' ? tone : '#8ba1a9' }} />
+          </div>
+          <p className="display mt-0.5 text-[13px] font-bold leading-none" style={{ color: label === 'Dispersion' ? tone : '#173d4a' }}>{value}</p>
+          <p className="mt-1 truncate text-[8px] text-[#8ba1a9]">{note}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function SimulationPage() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [sessions, setSessions] = useState<SimulationSession[]>([]);
   const [stations, setStations] = useState<StationOption[]>([]);
   const [scenario, setScenario] = useState('gradual_pm25');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [stationId, setStationId] = useState('');
   const [seed, setSeed] = useState('42');
   const [loading, setLoading] = useState(true);
@@ -185,6 +383,15 @@ export function SimulationPage() {
   }, []);
 
   const selected = scenarios.find((item) => item.id === scenario);
+  const filteredScenarios = categoryFilter === 'all' ? scenarios : scenarios.filter((item) => item.category === categoryFilter);
+
+  const chooseCategory = (next: string) => {
+    setCategoryFilter(next);
+    if (next !== 'all' && !scenarios.some((item) => item.id === scenario && item.category === next)) {
+      const first = scenarios.find((item) => item.category === next);
+      if (first) setScenario(first.id);
+    }
+  };
 
   const eligibleStations = useMemo(() => {
     const required = selected ? REQUIRED_STATION[selected.category] : undefined;
@@ -246,7 +453,7 @@ export function SimulationPage() {
               Replay the city.<br className="hidden sm:block" /> Isolate the evidence.
             </h1>
             <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-[#527482]">
-              Run deterministic pollution scenarios minute by minute — see how readings, risk, alerts, emails and incidents respond, without ever touching a real observation.
+              Run repeatable pollution scenarios minute by minute — see how readings, risk, alerts, recommendations, emails and incidents respond, without ever touching a real observation.
             </p>
             <div className="mt-5 grid max-w-xl grid-cols-3 gap-2">
               <Stat label="Scenarios" value={scenarios.length} note="air · water · waste · industrial" />
@@ -262,15 +469,25 @@ export function SimulationPage() {
             </div>
             <p className="display mt-2 text-[19px] font-bold leading-tight tracking-[-0.03em] text-[#123240]">{selected?.name ?? 'Choose a scenario'}</p>
             <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-[#5f7f8b]">{selected?.description}</p>
-            <div className="mt-3 flex items-center gap-2">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#d9e9ee]">
-                <div className="h-full w-2/5 rounded-full" style={{ background: `linear-gradient(90deg, ${category.color}, ${category.color}aa)` }} />
+            {selected?.preview?.length ? (
+              <div className="mt-2.5 rounded-2xl border border-white/80 bg-white/45 px-2.5 pb-1 pt-2">
+                <ScenarioSparkline values={selected.preview} color={category.color} height={46} />
+                <div className="flex items-center justify-between gap-2 pb-0.5">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#8ba1a9]">Scenario shape preview</span>
+                  <span className="text-[8px] text-[#8ba1a9]">{selected.previewUnit}</span>
+                </div>
               </div>
-              <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#6e8b95]">{selected?.steps ?? 0} steps</span>
+            ) : null}
+            <div className="mt-2.5">
+              <PhaseRail phases={selected?.phases ?? []} steps={selected?.steps ?? 1} />
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-1.5">
+            <div className="mt-2 flex items-center justify-between text-[8px] text-[#6e8b95]">
+              <span className="font-semibold uppercase tracking-[0.08em]">{selected?.steps ?? 0} steps</span>
+              <span>Repeatable · isolated · step-stored</span>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
               {[
-                { icon: Timer, label: 'Deterministic' },
+                { icon: Timer, label: 'Repeatable' },
                 { icon: ShieldCheck, label: 'Labelled' },
                 { icon: TrendingUp, label: 'Stepwise' },
               ].map(({ icon: Icon, label }) => (
@@ -293,12 +510,40 @@ export function SimulationPage() {
             <CardHeader className="items-center">
               <div>
                 <CardTitle>Build a replay</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Pick a scenario, a matching station and a seed. Same inputs always produce the same replay.</p>
+                <p className="mt-1 text-[10px] text-[#66766b]">Pick a scenario, a matching station and a seed. Steps are generated once, then replay exactly — including weather context and recommendations.</p>
               </div>
               <Badge tone="teal">{scenarios.length} ready</Badge>
             </CardHeader>
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-dashed border-[#e0ebed] px-4 py-3">
+              <button type="button" onClick={() => chooseCategory('all')} aria-pressed={categoryFilter === 'all'} data-active={categoryFilter === 'all'} className="atmo-chip">
+                All scenarios <span className="opacity-60">{scenarios.length}</span>
+              </button>
+              {Object.entries(CATEGORY).map(([key, meta]) => {
+                const Icon = meta.icon;
+                const count = scenarios.filter((item) => item.category === key).length;
+                return (
+                  <button key={key} type="button" onClick={() => chooseCategory(key)} aria-pressed={categoryFilter === key} data-active={categoryFilter === key} className="atmo-chip">
+                    <Icon className="h-3 w-3" /> {meta.label} <span className="opacity-60">{count}</span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  const pool = filteredScenarios.length ? filteredScenarios : scenarios;
+                  const pick = pool[Math.floor(Math.random() * pool.length)];
+                  if (pick) {
+                    setScenario(pick.id);
+                    setSeed(String(Math.floor(Math.random() * 900) + 100));
+                  }
+                }}
+                className="ml-auto inline-flex items-center gap-1 px-1 text-[9px] font-semibold text-[#2d7083] transition hover:text-[#1f5a6b]"
+              >
+                <Shuffle className="h-3 w-3" /> Surprise me
+              </button>
+            </div>
             <div className="grid gap-2 p-4 sm:grid-cols-2">
-              {scenarios.map((item) => {
+              {filteredScenarios.map((item) => {
                 const meta = CATEGORY[item.category] ?? CATEGORY.air;
                 const Icon = meta.icon;
                 const active = scenario === item.id;
@@ -329,7 +574,15 @@ export function SimulationPage() {
                     </div>
                     <p className="mt-2.5 text-[12px] font-semibold leading-tight text-[#173d4a]">{item.name}</p>
                     <p className="mt-1 line-clamp-2 text-[9.5px] leading-relaxed text-[#6e8b95]">{item.description}</p>
-                    <div className="mt-2.5 flex items-center justify-between">
+                    {item.preview?.length ? (
+                      <div className="mt-2 rounded-xl border border-white/70 bg-white/35 px-2 pt-1">
+                        <ScenarioSparkline values={item.preview} color={meta.color} height={32} />
+                      </div>
+                    ) : null}
+                    <div className="mt-2">
+                      <PhaseRail phases={item.phases ?? []} steps={item.steps} compact />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
                       <span className="text-[8px] font-semibold uppercase tracking-[0.1em]" style={{ color: meta.color }}>{meta.label}</span>
                       <span className="text-[8px] text-[#8ba1a9]">{active ? `${item.steps} steps · selected` : `${item.steps} steps`}</span>
                     </div>
@@ -381,6 +634,9 @@ export function SimulationPage() {
                   <span className="text-[9px] font-semibold text-[#557480]">{selected?.steps ?? 0} steps</span>
                 </div>
                 <p className="mt-2 text-[11px] font-semibold leading-tight text-[#173d4a]">{selected?.name}</p>
+                <div className="mt-2">
+                  <PhaseRail phases={selected?.phases ?? []} steps={selected?.steps ?? 1} />
+                </div>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {(selected?.demonstrates ?? []).slice(0, 4).map((item) => (
                     <span key={item} className="rounded-full border border-white/80 bg-white/70 px-2 py-0.5 text-[8px] font-medium text-[#557480]">{item}</span>
@@ -456,6 +712,10 @@ export function SimulationSessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [working, setWorking] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [inspectedStep, setInspectedStep] = useState<number | null>(null);
+  const [metricChoice, setMetricChoice] = useState('');
+  const [audienceFilter, setAudienceFilter] = useState<'ALL' | SimulationRecommendation['audience']>('ALL');
   const [preview, setPreview] = useState<{ public: { subject: string; html: string }; authority: { subject: string; html: string } } | null>(null);
   const { isAuthority } = useAuth();
   const loadRef = useRef<(quiet?: boolean) => void>(() => {});
@@ -487,7 +747,7 @@ export function SimulationSessionPage() {
           setPlaying(false);
           return;
         }
-        timer = window.setTimeout(tick, 1400);
+        timer = window.setTimeout(tick, 1400 / speed);
       } catch {
         if (active) setPlaying(false);
       }
@@ -495,13 +755,29 @@ export function SimulationSessionPage() {
 
     timer = window.setTimeout(tick, 250);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [playing, sessionId]);
+  }, [playing, sessionId, speed]);
 
   const togglePlay = async () => {
     if (!sessionId) return;
     if (playing) {
       setPlaying(false);
       api.post(`/simulations/${sessionId}/pause`).catch(() => {});
+      return;
+    }
+    setInspectedStep(null);
+    const finished = data ? data.session.current_step >= data.session.total_steps - 1 : false;
+    if (finished) {
+      setWorking(true);
+      try {
+        await api.post(`/simulations/${sessionId}/reset`);
+        await load(true);
+        await api.post(`/simulations/${sessionId}/play`);
+        setPlaying(true);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not restart the replay');
+      } finally {
+        setWorking(false);
+      }
       return;
     }
     setPlaying(true);
@@ -512,6 +788,7 @@ export function SimulationSessionPage() {
   };
 
   const step = async () => {
+    setInspectedStep(null);
     setWorking(true);
     try {
       await api.post(`/simulations/${sessionId}/step`);
@@ -522,6 +799,7 @@ export function SimulationSessionPage() {
 
   const reset = async () => {
     setPlaying(false);
+    setInspectedStep(null);
     setWorking(true);
     try {
       await api.post(`/simulations/${sessionId}/reset`);
@@ -529,6 +807,14 @@ export function SimulationSessionPage() {
       await load(true);
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Reset failed'); }
     finally { setWorking(false); }
+  };
+
+  const inspectStep = (stepNumber: number | null) => {
+    if (playing && sessionId) {
+      setPlaying(false);
+      api.post(`/simulations/${sessionId}/pause`).catch(() => {});
+    }
+    setInspectedStep(stepNumber);
   };
 
   const previewEmail = async () => {
@@ -549,17 +835,27 @@ export function SimulationSessionPage() {
   };
 
   const events = data?.events ?? [];
-  const latest = events[events.length - 1]?.payload;
-  const previous = events[events.length - 2]?.payload;
+  const latestEvent = events[events.length - 1];
+  const latestStep = latestEvent?.step ?? null;
+  const inspectedIndex =
+    inspectedStep === null ? events.length - 1 : events.findIndex((event) => event.step === inspectedStep);
+  const viewedEvent = inspectedIndex >= 0 ? events[inspectedIndex] : latestEvent;
+  const viewed = viewedEvent?.payload;
+  const previousViewed = inspectedIndex > 0 ? events[inspectedIndex - 1]?.payload : undefined;
+  const inspecting = inspectedStep !== null && viewedEvent !== undefined && viewedEvent.step !== latestStep;
+  const viewedStep = viewedEvent?.step ?? null;
   const atEnd = data ? data.session.current_step >= data.session.total_steps - 1 : false;
   const currentStep = data?.session.current_step ?? 0;
   const totalSteps = data?.session.total_steps ?? 1;
 
-  const metricKey = latest
-    ? (['pm25', 'ph', 'stack_pm'].find((key) => latest.values[key]) ?? Object.keys(latest.values)[0] ?? 'pm25')
+  const availableMetrics = viewed ? Object.keys(viewed.values) : [];
+  const defaultMetric = viewed
+    ? (['pm25', 'ph', 'stack_pm'].find((key) => viewed.values[key]) ?? availableMetrics[0] ?? 'pm25')
     : 'pm25';
-  const metric = latest?.values[metricKey];
-  const previousMetric = previous?.values[metricKey];
+  const metricKey = metricChoice && viewed?.values[metricChoice] ? metricChoice : defaultMetric;
+  const metric = viewed?.values[metricKey];
+  const thresholdLines = THRESHOLDS[metricKey] ?? [];
+  const previousMetric = previousViewed?.values[metricKey];
   const delta = metric && previousMetric ? metric.value - previousMetric.value : null;
 
   const chartOption = useMemo(() => {
@@ -602,6 +898,29 @@ export function SimulationSessionPage() {
         data: points.map((point) => point.value),
         lineStyle: { color, width: 2.6 },
         itemStyle: { color, borderColor: '#ffffff', borderWidth: 1.5 },
+        markLine:
+          inspecting || thresholdLines.length
+            ? {
+                silent: true,
+                symbol: 'none',
+                lineStyle: { color, type: 'dashed', width: 1, opacity: 0.6 },
+                label: { show: false },
+                data: [
+                  ...(inspecting && viewedStep !== null ? [{ xAxis: `S${viewedStep}` }] : []),
+                  ...thresholdLines.map((line) => ({
+                    yAxis: line.value,
+                    lineStyle: { color: '#c1932c', type: 'dashed', width: 1, opacity: 0.7 },
+                    label: {
+                      show: true,
+                      position: 'insideEndTop',
+                      formatter: line.label,
+                      color: '#9b6a25',
+                      fontSize: 8,
+                    },
+                  })),
+                ],
+              }
+            : undefined,
         areaStyle: {
           color: {
             type: 'linear',
@@ -614,17 +933,45 @@ export function SimulationSessionPage() {
         },
       }],
     };
-  }, [events, metricKey, metric?.unit]);
+  }, [events, metricKey, metric?.unit, inspecting, viewedStep]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      if (preview) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        void togglePlay();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        if (!working && !atEnd) void step();
+      } else if (event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        if (!working) void reset();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [preview, working, atEnd, playing, sessionId, data]);
 
   if (loading) return <LoadingBlock className="min-h-[60vh]" label="Loading simulation replay" />;
   if (error || !data) return <EmptyState title="Simulation unavailable" description={error ?? 'Simulation not found.'} icon={<FlaskConical className="h-5 w-5" />} action={<Button variant="teal" onClick={() => load()}>Retry</Button>} />;
 
   const meta = CATEGORY[data.session.category] ?? CATEGORY.air;
   const scenario = data.scenario?.name ?? scenarioName(data.session.scenario, []);
+  const phases = data.scenario?.phases ?? [];
+  const currentPhase = phases.find((phase) => currentStep >= phase.from && currentStep <= phase.to) ?? phases.at(-1);
   const progress = Math.min(1, currentStep / Math.max(1, totalSteps - 1));
-  const peak = events.reduce((best, event) => Math.max(best, event.payload.values[metricKey]?.value ?? 0), 0);
-  const riskColor = alertTone(latest?.risk.alertState);
-  const riskScore = latest?.risk.riskScore;
+  const peak = events
+    .slice(0, Math.max(0, inspectedIndex + 1))
+    .reduce((best, event) => Math.max(best, event.payload.values[metricKey]?.value ?? 0), 0);
+  const riskColor = alertTone(viewed?.risk.alertState);
+  const riskScore = viewed?.risk.riskScore;
+  const recommendations = viewed?.recommendations ?? [];
+  const filteredRecommendations =
+    audienceFilter === 'ALL' ? recommendations : recommendations.filter((item) => item.audience === audienceFilter);
+  const immediateCount = recommendations.filter((item) => item.priority === 'IMMEDIATE').length;
 
   return (
     <div className="space-y-4">
@@ -641,6 +988,15 @@ export function SimulationSessionPage() {
               </span>
               <CategoryPill category={data.session.category} />
               <Badge tone={data.session.status === 'COMPLETED' ? 'teal' : 'amber'} dot>{data.session.status}</Badge>
+              {currentPhase ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.1em]"
+                  style={{ color: PHASE_TONE[currentPhase.tone].color, background: PHASE_TONE[currentPhase.tone].soft, borderColor: `${PHASE_TONE[currentPhase.tone].color}44` }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: PHASE_TONE[currentPhase.tone].color }} />
+                  {currentPhase.label}
+                </span>
+              ) : null}
               <span className="rounded-full border border-white/80 bg-white/50 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#5f7f8b]">Seed {data.session.seed}</span>
             </div>
             <h1 className="display mt-2.5 text-[28px] font-bold leading-[1.02] tracking-[-0.05em] text-[#123240] sm:text-[36px]">{scenario}</h1>
@@ -662,15 +1018,35 @@ export function SimulationSessionPage() {
               <span className="mt-1 text-[8px] text-[#8ba1a9]">of {Math.max(0, totalSteps - 1)}</span>
             </GaugeRing>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="teal" size="md" onClick={togglePlay} disabled={(atEnd && !playing) || working} className="col-span-2 min-w-[152px]">
-                {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {playing ? 'Pause replay' : atEnd ? 'Replay complete' : 'Play replay'}
+              <Button variant="teal" size="md" onClick={togglePlay} disabled={working} className="col-span-2 min-w-[152px]">
+                {playing ? <Pause className="h-4 w-4" /> : atEnd ? <RotateCcw className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {playing ? 'Pause replay' : atEnd ? 'Replay from start' : 'Play replay'}
               </Button>
               <Button variant="dark" size="sm" onClick={step} disabled={working || atEnd}><SkipForward className="h-3.5 w-3.5" /> Step</Button>
               <Button variant="dark" size="sm" onClick={reset} disabled={working}><RotateCcw className="h-3.5 w-3.5" /> Reset</Button>
+              <div className="col-span-2 flex items-center justify-between rounded-full border border-white/70 bg-white/45 px-2 py-1">
+                <span className="px-1 text-[8px] font-semibold uppercase tracking-[0.1em] text-[#6e8b95]">Speed</span>
+                <div className="flex items-center gap-0.5">
+                  {[0.5, 1, 2, 4].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setSpeed(option)}
+                      aria-pressed={speed === option}
+                      className={classNames(
+                        'rounded-full px-2 py-0.5 text-[9px] font-semibold transition',
+                        speed === option ? 'bg-[#2d7c94] text-white' : 'text-[#557480] hover:bg-white',
+                      )}
+                    >
+                      {option}×
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Link to="/simulation" className="col-span-2">
                 <Button variant="ghost" size="sm" className="w-full"><ArrowLeft className="h-3.5 w-3.5" /> All sessions</Button>
               </Link>
+              <p className="col-span-2 text-center text-[8px] text-[#6e8b95]">Space play/pause · → step · R reset</p>
             </div>
           </div>
         </div>
@@ -678,11 +1054,14 @@ export function SimulationSessionPage() {
         <div className="relative z-10 px-5 pb-5 sm:px-6">
           <div className="flex items-center gap-3">
             <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#6e8b95]">S0</span>
-            <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/55">
-              <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-500" style={{ width: `${Math.max(2, progress * 100)}%`, background: `linear-gradient(90deg, ${meta.color}, ${meta.color}bb)` }} />
-              {Array.from({ length: 9 }, (_, index) => (
-                <span key={index} className="absolute top-0 h-full w-px bg-white/70" style={{ left: `${(index / 8) * 100}%` }} />
-              ))}
+            <div className="flex-1">
+              {phases.length ? (
+                <PhaseRail phases={phases} steps={totalSteps} current={currentStep} />
+              ) : (
+                <div className="relative h-2 overflow-hidden rounded-full bg-white/55">
+                  <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-500" style={{ width: `${Math.max(2, progress * 100)}%`, background: `linear-gradient(90deg, ${meta.color}, ${meta.color}bb)` }} />
+                </div>
+              )}
             </div>
             <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#6e8b95]">S{Math.max(0, totalSteps - 1)}</span>
           </div>
@@ -693,6 +1072,65 @@ export function SimulationSessionPage() {
         <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#2d7c94]" />
         <span>{data.isolation.note} Every event below is simulation-labelled. Emails are previews or SIMULATED records only.</span>
       </div>
+
+      {inspecting ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#bcdde5] bg-[#eef8fa] px-4 py-2.5 text-[10px] leading-relaxed text-[#2d7083] backdrop-blur">
+          <Timer className="h-3.5 w-3.5 shrink-0" />
+          <span>Inspecting step {viewedStep} of {currentStep}. Playback position is unchanged.</span>
+          <button
+            type="button"
+            onClick={() => inspectStep(null)}
+            className="ml-auto inline-flex items-center gap-1 font-semibold transition hover:text-[#1f5a6b]"
+          >
+            Back to latest step <ArrowUpRight className="h-3 w-3" />
+          </button>
+        </div>
+      ) : null}
+
+      <Card className="overflow-hidden">
+        <CardHeader className="items-center">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle>Recommended response</CardTitle>
+              {!viewed ? <Badge tone="neutral">Awaiting first step</Badge> : immediateCount > 0 ? <Badge tone="red" dot>{immediateCount} immediate</Badge> : <Badge tone="teal" dot>No immediate action</Badge>}
+            </div>
+            <p className="mt-1 text-[10px] text-[#66766b]">
+              {viewed ? `Step ${viewed.step} guidance by audience, with the evidence and reasoning behind each action.` : 'Advance the replay to generate guidance.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {(['ALL', 'PUBLIC', 'AUTHORITY', 'FIELD'] as const).map((audience) => (
+              <button
+                key={audience}
+                type="button"
+                onClick={() => setAudienceFilter(audience)}
+                aria-pressed={audienceFilter === audience}
+                className={classNames(
+                  'rounded-full border px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.08em] transition',
+                  audienceFilter === audience
+                    ? 'border-[#9ccfdb] bg-[#eef8fa] text-[#1f5a6b]'
+                    : 'border-white/80 bg-white/50 text-[#6e8b95] hover:border-[#c7e3ea] hover:bg-white',
+                )}
+              >
+                {audience === 'ALL' ? 'All' : AUDIENCE_META[audience].label}
+              </button>
+            ))}
+          </div>
+        </CardHeader>
+        {filteredRecommendations.length ? (
+          <div className="grid gap-2.5 p-4 lg:grid-cols-2">
+            {filteredRecommendations.map((item) => (
+              <RecommendationCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No recommendation for this filter"
+            description="Try another audience, or advance the replay to the next step to generate new guidance."
+            icon={<Sparkles className="h-5 w-5" />}
+          />
+        )}
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-4">
@@ -717,31 +1155,104 @@ export function SimulationSessionPage() {
               </div>
             </CardHeader>
             <div className="px-2 pb-2 pt-3">
-              <Chart height={300} empty={events.length === 0} option={chartOption} />
+              <div className="mb-2 flex flex-wrap items-center gap-1 px-2">
+                {availableMetrics.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setMetricChoice(code)}
+                    aria-pressed={metricKey === code}
+                    className={classNames(
+                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[9px] font-semibold transition',
+                      metricKey === code
+                        ? 'border-[#9ccfdb] bg-[#eef8fa] text-[#1f5a6b]'
+                        : 'border-white/80 bg-white/50 text-[#6e8b95] hover:border-[#c7e3ea] hover:bg-white',
+                    )}
+                  >
+                    {metricLabel(code)}
+                  </button>
+                ))}
+                {thresholdLines.length ? (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[8px] text-[#9b6a25]">
+                    <span className="h-px w-4 border-t border-dashed border-[#c1932c]" /> screening reference
+                  </span>
+                ) : null}
+              </div>
+              <Chart
+                height={300}
+                empty={events.length === 0}
+                option={chartOption}
+                onDataClick={(index) => {
+                  const clicked = events[index];
+                  if (clicked) inspectStep(clicked.step === latestStep ? null : clicked.step);
+                }}
+              />
+            </div>
+            <div className="border-t border-dashed border-[#dbe5d6] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <DataLabel>Step explorer</DataLabel>
+                {inspecting ? (
+                  <button
+                    type="button"
+                    onClick={() => inspectStep(null)}
+                    className="inline-flex items-center gap-1 text-[8px] font-semibold text-[#2d7083] transition hover:text-[#1f5a6b]"
+                  >
+                    Back to latest step <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                ) : (
+                  <span className="text-[8px] text-[#8ba1a9]">Click a step or the chart line to inspect it</span>
+                )}
+              </div>
+              <div className="hide-scrollbar mt-2 flex gap-1 overflow-x-auto pb-1">
+                {events.map((event) => {
+                  const active = viewedStep === event.step;
+                  return (
+                    <button
+                      key={event.step}
+                      type="button"
+                      onClick={() => inspectStep(event.step === latestStep ? null : event.step)}
+                      aria-pressed={active}
+                      title={`Step ${event.step} · ${event.payload.risk.alertState}`}
+                      className={classNames(
+                        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold transition',
+                        active
+                          ? 'border-[#9ccfdb] bg-[#eef8fa] text-[#1f5a6b]'
+                          : 'border-white/80 bg-white/50 text-[#6e8b95] hover:border-[#c7e3ea] hover:bg-white',
+                      )}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: alertTone(event.payload.risk.alertState) }} />
+                      S{event.step}
+                    </button>
+                  );
+                })}
+                {events.length === 0 ? (
+                  <span className="text-[9px] text-[#8ba1a9]">Advance the replay to reveal steps.</span>
+                ) : null}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2 border-t border-dashed border-[#dbe5d6] p-3 sm:grid-cols-4">
               <Stat label="Peak" value={`${number(peak)}`} note={metric?.unit} />
-              <Stat label="At step" value={currentStep} note={`${events.length} revealed`} />
-              <Stat label="Alert state" value={latest?.risk.alertState ?? '—'} note={latest?.risk.riskLevel ?? 'no assessment'} />
-              <Stat label="Confidence" value={latest?.risk.confidenceScore ?? '—'} note={latest?.risk.confidenceLevel ?? '—'} />
+              <Stat label={inspecting ? 'Inspecting' : 'At step'} value={viewedStep ?? 0} note={inspecting ? 'playback paused' : `${events.length} revealed`} />
+              <Stat label="Alert state" value={viewed?.risk.alertState ?? '—'} note={viewed?.risk.riskLevel ?? 'no assessment'} />
+              <Stat label="Confidence" value={viewed?.risk.confidenceScore ?? '—'} note={viewed?.risk.confidenceLevel ?? '—'} />
             </div>
           </Card>
 
-          {latest ? (
+          {viewed ? (
             <Card className="overflow-hidden">
               <CardHeader className="items-center">
                 <div>
-                  <CardTitle>Current simulated state</CardTitle>
-                  <p className="mt-1 text-[10px] text-[#66766b]">Step {latest.step} · {formatDate(latest.observedAt)}</p>
+                  <CardTitle>{inspecting ? 'Historical step snapshot' : 'Current simulated state'}</CardTitle>
+                  <p className="mt-1 text-[10px] text-[#66766b]">Step {viewed.step} · {formatDate(viewed.observedAt)}{inspecting ? ' · playback paused' : ''}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <RiskBadge level={latest.risk.alertState} />
-                  {latest.suppressAlert ? <Badge tone="amber">Alert suppressed</Badge> : null}
+                  <RiskBadge level={viewed.risk.alertState} />
+                  {viewed.suppressAlert ? <Badge tone="amber">Alert suppressed</Badge> : null}
                 </div>
               </CardHeader>
               <div className="p-4">
                 <div className="grid gap-2 sm:grid-cols-3">
-                  {Object.entries(latest.values).map(([code, value]) => (
+                  {Object.entries(viewed.values).map(([code, value]) => (
                     <div key={code} className={classNames('rounded-2xl border p-3', value.qualityState === 'SUSPECT' ? 'border-[#eed9a8] bg-[#fdf8ec]' : 'border-white/80 bg-white/55')}>
                       <div className="flex items-center justify-between">
                         <DataLabel>{metricLabel(code)}</DataLabel>
@@ -757,11 +1268,35 @@ export function SimulationSessionPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 rounded-2xl border border-[#e4eef0] bg-[#f7fbfb] px-3.5 py-2.5 text-[11px] leading-relaxed text-[#405f6b]">{latest.note}</p>
-                {latest.neighbour ? (
+                <p className="mt-3 rounded-2xl border border-[#e4eef0] bg-[#f7fbfb] px-3.5 py-2.5 text-[11px] leading-relaxed text-[#405f6b]">{viewed.note}</p>
+                {viewed.conditions ? (
+                  <div className="mt-3">
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <DataLabel>Meteorology &amp; dispersion</DataLabel>
+                      <span className="text-[8px] text-[#8ba1a9]">Wind and stability change how a source affects the monitor</span>
+                    </div>
+                    <ConditionsStrip conditions={viewed.conditions} />
+                  </div>
+                ) : null}
+                {viewed.outlook ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-[#d7e7ea] bg-gradient-to-r from-[#f0f9fb] to-[#f7fbf4] px-3.5 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className={classNames('h-3.5 w-3.5', viewed.outlook.trend === 'FALLING' && 'rotate-180')} style={{ color: viewed.outlook.trend === 'RISING' ? '#cf7227' : viewed.outlook.trend === 'FALLING' ? '#2f8f84' : '#6e8b95' }} />
+                      <div>
+                        <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#6e8b95]">3-hour outlook · persistence baseline</p>
+                        <p className="mt-0.5 text-[11px] font-semibold text-[#173d4a]">
+                          {number(viewed.outlook.value)} µg/m³ · {viewed.outlook.trend.toLowerCase()}
+                          <span className="ml-1 font-normal text-[#6e8b95]">({number(viewed.outlook.lowerBound)}–{number(viewed.outlook.upperBound)} band)</span>
+                        </p>
+                      </div>
+                    </div>
+                    <p className="ml-auto max-w-sm text-[8px] leading-relaxed text-[#8ba1a9]">{viewed.outlook.note}</p>
+                  </div>
+                ) : null}
+                {viewed.neighbour ? (
                   <p className="mt-2 flex items-start gap-2 rounded-2xl border border-[#c7e3ea] bg-[#eef8fa] px-3.5 py-2.5 text-[10px] leading-relaxed text-[#2d7083]">
                     <Wind className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span><b>{latest.neighbour.name}</b> · {latest.neighbour.pm25} µg/m³. {latest.neighbour.note}</span>
+                    <span><b>{viewed.neighbour.name}</b> · {viewed.neighbour.pm25} µg/m³. {viewed.neighbour.note}</span>
                   </p>
                 ) : null}
               </div>
@@ -781,18 +1316,37 @@ export function SimulationSessionPage() {
                 <div className="relative">
                   <span className="absolute bottom-2 left-[5px] top-2 w-px bg-[#dbe8ea]" aria-hidden />
                   {events.map((event) => (
-                    <div key={event.step} className="relative pb-4 pl-6 last:pb-0">
+                    <button
+                      key={event.step}
+                      type="button"
+                      onClick={() => inspectStep(event.step === latestStep ? null : event.step)}
+                      aria-pressed={viewedStep === event.step}
+                      className={classNames(
+                        'relative block w-full rounded-xl pb-4 pl-6 pr-2 text-left transition last:pb-0',
+                        viewedStep === event.step ? 'bg-white/75 ring-1 ring-[#d7e7ea]' : 'hover:bg-white/45',
+                      )}
+                    >
                       <span className="absolute left-0 top-1.5 h-[11px] w-[11px] rounded-full border-2 border-white shadow-sm" style={{ background: alertTone(event.payload.risk.alertState) }} aria-hidden />
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <span className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="flex flex-wrap items-center gap-2">
                           <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#2d7083]">Step {event.payload.step}</span>
                           <RiskBadge level={event.payload.risk.alertState} />
                           <span className="text-[8px] text-[#8ba1a9]">{formatDate(event.payload.observedAt)}</span>
-                        </div>
+                          {viewedStep === event.step ? (
+                            <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#2d7c94]">Inspecting</span>
+                          ) : null}
+                        </span>
                         {event.payload.suppressAlert ? <Badge tone="amber">Suppressed</Badge> : null}
-                      </div>
-                      <p className="mt-1 text-[10.5px] leading-relaxed text-[#527482]">{event.payload.note}</p>
-                    </div>
+                      </span>
+                      <span className="mt-1 block text-[10.5px] leading-relaxed text-[#527482]">{event.payload.note}</span>
+                      <span className="mt-1.5 flex flex-wrap gap-1">
+                        {Object.entries(event.payload.values).slice(0, 3).map(([code, value]) => (
+                          <span key={code} className="rounded-full border border-white/80 bg-white/60 px-1.5 py-0.5 text-[8px] font-medium text-[#557480]">
+                            {metricLabel(code)} {number(value.value)} {value.unit}
+                          </span>
+                        ))}
+                      </span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -801,14 +1355,14 @@ export function SimulationSessionPage() {
         </div>
 
         <div className="space-y-4">
-          {latest ? (
+          {viewed ? (
             <Card className="overflow-hidden">
               <CardHeader className="items-center">
                 <div>
                   <CardTitle>Risk assessment</CardTitle>
-                  <p className="mt-1 text-[10px] text-[#66766b]">Severity and confidence are separate signals.</p>
+                  <p className="mt-1 text-[10px] text-[#66766b]">Step {viewed.step} · severity and confidence are separate signals.</p>
                 </div>
-                <RiskBadge level={latest.risk.alertState} />
+                <RiskBadge level={viewed.risk.alertState} />
               </CardHeader>
               <div className="p-5">
                 <div className="flex items-center gap-4">
@@ -818,22 +1372,43 @@ export function SimulationSessionPage() {
                   </GaugeRing>
                   <div className="min-w-0">
                     <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#8ba1a9]">Risk level</p>
-                    <p className="display mt-0.5 text-[18px] font-bold leading-tight tracking-[-0.03em] text-[#173d4a]">{latest.risk.riskLevel}</p>
+                    <p className="display mt-0.5 text-[18px] font-bold leading-tight tracking-[-0.03em] text-[#173d4a]">{viewed.risk.riskLevel}</p>
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e8eff0]">
-                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (latest.risk.confidenceScore ?? 0))}%`, background: '#3f9a83' }} />
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (viewed.risk.confidenceScore ?? 0))}%`, background: '#3f9a83' }} />
                     </div>
-                    <p className="mt-1 text-[9px] text-[#6e8b95]">Confidence {latest.risk.confidenceScore ?? '—'}/100 · {latest.risk.confidenceLevel}</p>
+                    <p className="mt-1 text-[9px] text-[#6e8b95]">Confidence {viewed.risk.confidenceScore ?? '—'}/100 · {viewed.risk.confidenceLevel}</p>
                   </div>
                 </div>
-                <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#6e8b95]">{latest.risk.method}</p>
-                {latest.risk.missingInputs.length ? (
+                <p className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3 text-[9px] leading-relaxed text-[#6e8b95]">{viewed.risk.method}</p>
+                {viewed.risk.factors.length ? (
+                  <div className="mt-3 space-y-2">
+                    <DataLabel>How the score was built</DataLabel>
+                    {viewed.risk.factors.map((factor) => {
+                      const max = Math.max(0.01, factor.weight * 100);
+                      const pct = Math.min(100, Math.max(2, (factor.contribution / max) * 100));
+                      return (
+                        <div key={factor.factor} title={factor.detail}>
+                          <div className="flex items-center justify-between gap-2 text-[8px]">
+                            <span className="truncate font-medium text-[#557480]">{factor.factor}</span>
+                            <span className="shrink-0 font-semibold text-[#2d7083]">{number(factor.contribution)} / {number(max)}</span>
+                          </div>
+                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#e8eff0]">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${meta.color}, ${meta.color}aa)` }} />
+                          </div>
+                          <p className="mt-0.5 truncate text-[8px] text-[#8ba1a9]">{factor.detail}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {viewed.risk.missingInputs.length ? (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {latest.risk.missingInputs.map((item) => (
+                    {viewed.risk.missingInputs.map((item) => (
                       <span key={item} className="rounded-full border border-[#ead9b6] bg-[#fdf6e8] px-2 py-0.5 text-[8px] text-[#9b6a25]">{item}</span>
                     ))}
                   </div>
                 ) : null}
-                {latest.suppressAlert ? (
+                {viewed.suppressAlert ? (
                   <p className="mt-3 flex items-start gap-1.5 rounded-xl border border-[#ead9b6] bg-[#fdf6e8] px-2.5 py-2 text-[9px] leading-relaxed text-[#9b6a25]">
                     <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /> Alert suppressed because the reading quality is degraded.
                   </p>
@@ -846,7 +1421,7 @@ export function SimulationSessionPage() {
             <CardHeader className="items-center">
               <div>
                 <CardTitle>Simulated alerts</CardTitle>
-                <p className="mt-1 text-[10px] text-[#66766b]">Generated only by this session.</p>
+                <p className="mt-1 text-[10px] text-[#66766b]">Session-wide records, not filtered by the inspected step.</p>
               </div>
               <Badge tone="neutral">{data.alerts.length}</Badge>
             </CardHeader>

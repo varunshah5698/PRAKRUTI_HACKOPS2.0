@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight, Bot, BrainCircuit, ChevronDown, Info, Send, ShieldAlert, Sparkles, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, LoadingBlock, Select, Textarea } from '../../components/ui';
@@ -28,12 +28,28 @@ interface StationOption {
   isSimulated: boolean;
 }
 
+interface ReportOption {
+  id: string;
+  public_ref: string;
+  category: string;
+  incident_type: string;
+  status: string;
+  verification_state: string;
+  locality_name: string | null;
+}
+
 const SUGGESTIONS = [
-  'What is the air like right now?',
+  'What can this website do?',
+  'Which data sources are live or not configured?',
+  'Where do I verify a citizen report?',
+  'Analyse Mumbai air quality and explain what is driving it.',
   'How might pollution change in the next few hours?',
-  'Which stations look unusual today?',
+  'Which stations are worst and cleanest right now?',
+  'What is the environmental news saying today?',
+  'Analyse all recent citizen reports',
+  'Which reports need verification first?',
+  'What patterns do the reports show?',
   'Is the wind helping or hurting air quality?',
-  'What are people reporting nearby?',
   'Which standards might apply here?',
   'What evidence is missing?',
   'What should be checked next?',
@@ -44,8 +60,13 @@ function hasEvidence(answer: AiAnswer) {
 }
 
 export function AiAnalystPage() {
+  const [searchParams] = useSearchParams();
+  const reportParam = searchParams.get('report');
+  const categoryParam = searchParams.get('category');
   const [stations, setStations] = useState<StationOption[]>([]);
+  const [reports, setReports] = useState<ReportOption[]>([]);
   const [stationId, setStationId] = useState('');
+  const [reportId, setReportId] = useState('');
   const [category, setCategory] = useState('air');
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text?: string; answer?: AiAnswer }>>([]);
@@ -58,8 +79,10 @@ export function AiAnalystPage() {
   useEffect(() => {
     api.get<{ stations: Array<{ id: string; name: string; stationType: string; localityName: string | null; isSimulated: boolean }> }>('/map/stations').then((result) => {
       setStations(result.stations);
-      const first = result.stations.find((s) => s.stationType === 'AIR_CAAQMS') ?? result.stations[0];
-      if (first) setStationId(first.id);
+    }).catch(() => undefined);
+    // shortcut: the focus picker lists the latest 50 reports; add server-side search when the register grows.
+    api.get<{ reports: ReportOption[] }>('/reports?pageSize=50').then((result) => {
+      setReports(result.reports);
     }).catch(() => undefined);
     api.get<{ river: string; model: string | null; vision: string; mode: string; note: string }>('/ai/status').then(setStatus).catch(() => undefined);
   }, []);
@@ -68,12 +91,26 @@ export function AiAnalystPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // A station from the previous category is not valid evidence for a new one.
   useEffect(() => {
-    const match = stations.find((s) =>
-      category === 'air' ? s.stationType === 'AIR_CAAQMS' : category === 'water' ? s.stationType === 'WATER_SAMPLING' : category === 'industrial' ? s.stationType === 'INDUSTRIAL_STACK' : true,
-    );
-    setStationId(match?.id ?? '');
-  }, [category, stations]);
+    setStationId('');
+  }, [category]);
+
+  useEffect(() => {
+    if (reportParam) setReportId(reportParam);
+  }, [reportParam]);
+
+  useEffect(() => {
+    if (categoryParam && ['air', 'water', 'waste', 'industrial'].includes(categoryParam)) {
+      setCategory(categoryParam);
+    }
+  }, [categoryParam]);
+
+  // A selected report also decides the category, so the right standards load.
+  useEffect(() => {
+    const report = reports.find((item) => item.id === reportId);
+    if (report) setCategory(report.category);
+  }, [reportId, reports]);
 
   const ask = async (text?: string) => {
     const prompt = (text ?? question).trim();
@@ -86,6 +123,7 @@ export function AiAnalystPage() {
       const post = () => api.post<AiAnswer>('/ai/chat', {
         question: prompt,
         stationId: stationId || undefined,
+        reportId: reportId || undefined,
         category,
       });
       let answer: AiAnswer | null = null;
@@ -140,22 +178,29 @@ export function AiAnalystPage() {
             <Badge tone={status?.river === 'CONFIGURED' ? 'lime' : 'amber'} dot>
               {status?.river === 'CONFIGURED' ? `River AI · ${status.model}` : 'Rule-based evidence digest'}
             </Badge>
-            <Badge tone="neutral">Looks at the whole picture</Badge>
+            <Badge tone="neutral">News + reports in view</Badge>
             <Badge tone="neutral">Answers from app records</Badge>
           </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">AI environmental analyst</h2>
           <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
-            Ask in plain English. I'll separate what's observed, predicted, reported and estimated — and tell you when the evidence is thin.
+            Ask in plain English about the news, every citizen report or one specific report. I'll separate what's observed, predicted, reported and estimated — and tell you when the evidence is thin.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 w-[170px] text-[11px]">
+          <Select value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 w-[150px] text-[11px]">
             {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </Select>
-          <Select value={stationId} onChange={(e) => setStationId(e.target.value)} className="h-9 w-[240px] text-[11px]">
+          <Select value={stationId} onChange={(e) => { setStationId(e.target.value); if (e.target.value) setReportId(''); }} className="h-9 w-[220px] text-[11px]">
             <option value="">Citywide context</option>
             {stations.filter((s) => category === 'air' ? s.stationType === 'AIR_CAAQMS' : category === 'water' ? s.stationType === 'WATER_SAMPLING' : category === 'industrial' ? s.stationType === 'INDUSTRIAL_STACK' : true).map((station) => (
               <option key={station.id} value={station.id}>{station.name}</option>
+            ))}
+          </Select>
+          <Select value={reportId} onChange={(e) => { setReportId(e.target.value); setStationId(''); }} className="h-9 w-[280px] text-[11px]">
+            <option value="">All reports (citywide)</option>
+            {reportId && !reports.some((report) => report.id === reportId) ? <option value={reportId}>Selected report</option> : null}
+            {reports.map((report) => (
+              <option key={report.id} value={report.id}>{report.public_ref} · {report.category} · {report.incident_type.replace(/_/g, ' ')}</option>
             ))}
           </Select>
         </div>
@@ -172,7 +217,7 @@ export function AiAnalystPage() {
               <div className="rounded-2xl border border-[#dfe6db] bg-[#f5f8f2] p-5">
                 <div className="flex items-center gap-2 text-[#3f7d2a]"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold">Namaste — I'm Prakriti</span></div>
                 <p className="mt-2 text-[11px] leading-relaxed text-[#5a6a5f]">
-                  Your Mumbai environment guide. Ask about today's air, a station, a forecast or a nearby report — I'll keep it short and stick to what the data shows.
+                  Your Mumbai environment guide. Ask about today's air, the latest environmental news, all citizen reports or one selected report — I'll keep it short and stick to what the data shows.
                 </p>
                 <p className="mt-3 text-[10px] font-medium text-[#66766b]">Try one of these:</p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -220,7 +265,7 @@ export function AiAnalystPage() {
                               ['OBSERVED', message.answer.sections.observed, 'green'],
                               ['PREDICTED', message.answer.sections.predicted, 'teal'],
                               ['REPORTED / UNVERIFIED', message.answer.sections.reported, 'amber'],
-                              ['ESTIMATED', message.answer.sections.estimated, 'neutral'],
+                              ['ANALYSIS / REASONING', message.answer.sections.estimated, 'neutral'],
                               ['REFERENCE STANDARDS', message.answer.sections.standards, 'neutral'],
                               ['LIMITATIONS', message.answer.sections.limitations, 'red'],
                               ['SUGGESTED NEXT ACTIONS', message.answer.sections.nextActions, 'lime'],
@@ -276,7 +321,7 @@ export function AiAnalystPage() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
                 rows={2}
                 maxLength={1200}
-                placeholder="Ask about the air, water, a station or a report…"
+                placeholder={reportId ? 'Ask about this report, its evidence or next checks…' : 'Ask about the news, all reports, the air or a station…'}
                 className="min-h-[48px] resize-none"
               />
               <Button variant="lime" size="icon" onClick={() => ask()} disabled={loading || !question.trim()} className="h-[48px] w-[48px] shrink-0" aria-label="Send question">

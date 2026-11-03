@@ -21,6 +21,7 @@ aiRouter.post('/analyse', limiter, async (req, res, next) => {
       .object({
         stationId: z.string().uuid().optional(),
         localityId: z.string().uuid().optional(),
+        reportId: z.string().uuid().optional(),
         category: z.enum(['air', 'water', 'waste', 'industrial']).optional(),
         type: z.enum(['observation', 'predictive', 'compliance', 'custom']).default('custom'),
         question: z.string().trim().min(5).max(1200).optional(),
@@ -38,6 +39,7 @@ aiRouter.post('/analyse', limiter, async (req, res, next) => {
       question,
       stationId: body.stationId ?? null,
       localityId: body.localityId ?? null,
+      reportId: body.reportId ?? null,
       category: body.category ?? 'air',
     });
     res.json(answer);
@@ -53,6 +55,7 @@ aiRouter.post('/chat', limiter, async (req, res, next) => {
         question: z.string().trim().min(2).max(1200),
         stationId: z.string().uuid().optional(),
         localityId: z.string().uuid().optional(),
+        reportId: z.string().uuid().optional(),
         category: z.enum(['air', 'water', 'waste', 'industrial']).optional(),
       })
       .parse(req.body);
@@ -60,6 +63,7 @@ aiRouter.post('/chat', limiter, async (req, res, next) => {
       question: body.question,
       stationId: body.stationId ?? null,
       localityId: body.localityId ?? null,
+      reportId: body.reportId ?? null,
       category: body.category ?? 'air',
     });
     res.json(answer);

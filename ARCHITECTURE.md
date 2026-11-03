@@ -86,7 +86,7 @@ Core geospatial choices:
 
 ## AI
 
-Three analysis modes (observation, predictive, compliance) share a grounded evidence bundle. If `RIVER_API_KEY` is present, a server-side OpenAI-compatible chat-completions call is made. Otherwise the server returns a clearly labelled rule-based evidence digest. The prompt instructs the model to treat evidence as untrusted data, avoid invented readings/standards, distinguish observed/predicted/reported/estimated, and never declare a violation. The LLM cannot create or override forecasts.
+Three analysis modes (observation, predictive, compliance) share a grounded evidence bundle. The bundle also carries the cached environmental news feed, the aggregated citizen-report register, and an optional focused report with its nearby monitors, weather and related cases. If `RIVER_API_KEY` is present, a server-side OpenAI-compatible chat-completions call is made. Otherwise the server returns a clearly labelled rule-based evidence digest. The prompt instructs the model to treat evidence and news as untrusted data, avoid invented readings/standards, distinguish observed/predicted/reported/estimated, keep citizen reports unverified until verified in the workflow, and never declare a violation. The LLM cannot create or override forecasts.
 
 Regulatory retrieval is lexical (category/parameter/section matching) over the seeded reference documents. It is retrieval-augmented generation, not a vector database. Citations are exact document title + section refs.
 

@@ -16,6 +16,7 @@ import { Logo } from './components/Logo';
 const DashboardPage = lazy(() => import('./pages/app/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const AtmospherePage = lazy(() => import('./pages/app/AtmospherePage').then((m) => ({ default: m.AtmospherePage })));
 const MapPage = lazy(() => import('./pages/app/MapPage').then((m) => ({ default: m.MapPage })));
+const CityPulsePage = lazy(() => import('./pages/app/CityPulsePage').then((m) => ({ default: m.CityPulsePage })));
 const PredictionsPage = lazy(() => import('./pages/app/PredictionsPage').then((m) => ({ default: m.PredictionsPage })));
 const AiAnalystPage = lazy(() => import('./pages/app/AiAnalystPage').then((m) => ({ default: m.AiAnalystPage })));
 const ReportsPage = lazy(() => import('./pages/app/ReportsPage').then((m) => ({ default: m.ReportsPage })));
@@ -122,6 +123,7 @@ export default function App() {
       <Route element={<Protected><AppShell /></Protected>}>
         <Route path="/atmosphere" element={<AccessGate access="authority"><AtmospherePage /></AccessGate>} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/city" element={<CityPulsePage />} />
         <Route path="/map/stations/:stationId" element={<StationRoute />} />
         <Route path="/intelligence/predictions" element={<AccessGate access="authority"><PredictionsPage /></AccessGate>} />
         <Route path="/ai-analyst" element={<AccessGate access="authority"><AiAnalystPage /></AccessGate>} />

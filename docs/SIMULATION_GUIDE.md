@@ -37,16 +37,46 @@ Implementation details:
 
 Air pollution remains the deepest predictive simulation. Water, waste and industrial use their own risk methods.
 
+## Recommendations and reasons
+
+Every revealed step carries a set of audience-specific recommendations
+(`PUBLIC`, `AUTHORITY`, `FIELD`) with a priority, a concrete action, and a
+`reason` that explains the rule and the readings behind it. Evidence chips name
+the exact value, alert state and confidence used. The session page lets the
+viewer filter by audience and inspect the recommendation at any revealed step.
+
+Recommendations are guidance for the replay, not an official determination.
+Critical air advice is paired with monitor-verification and source-inspection
+steps; sensor-fault steps explicitly recommend maintenance and suppress public
+alarm; waste advice separates reports from measured violations; and industrial
+advice never applies a legal emission threshold.
+
+## Meteorology and outlook
+
+Each step also records a `conditions` block (temperature, humidity, wind,
+precipitation, dispersion class and its source) and, for air scenarios, a
+3-hour `outlook` from the labelled persistence baseline. Conditions use the
+latest station weather observation when one exists and otherwise a deterministic
+replay atmosphere. The outlook is never presented as trained ML output.
+
+## Scenario phases
+
+Scenario metadata includes `phases` (baseline, build-up, peak, recovery or
+fault) and a synthetic `preview` series used only to draw the scenario shape on
+the selection page. Wind collapses during spike and build-up phases, which makes
+the dispersion context visible rather than decorative.
+
 ## Controls
 
-- Scenario selection
+- Scenario selection and category filter
 - Station/locality context
 - Deterministic seed
-- Play / Pause
+- Play / Pause, speed and keyboard controls
 - Step
 - Reset
 - Email preview (public and authority)
 - Create simulated incident
+- Step explorer (inspect an earlier step without changing playback)
 - Event history and current risk/confidence
 
 ## API
@@ -68,7 +98,12 @@ Creation/control requires an authority role. Viewing a session is available to a
 
 ## Determinism
 
-`mulberry32(seed)` drives noise. The step base time is truncated to the minute. The same seed and scenario produce the same values. Changing the seed changes the noise but not the scenario shape.
+`mulberry32(seed)` drives noise. All steps are generated once and persisted, so
+replaying a session is exact. A new session snapshots the latest station weather
+observation (when one exists) before generation, so creating the same
+scenario + station + seed later can shift the meteorology and values slightly.
+Changing the seed changes the noise but not the scenario shape. When no weather
+observation exists, a deterministic synthetic replay atmosphere is used.
 
 ## Sensor malfunction
 

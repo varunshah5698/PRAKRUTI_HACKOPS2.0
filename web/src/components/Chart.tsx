@@ -9,6 +9,7 @@ export function Chart({
   loading = false,
   empty = false,
   emptyLabel = 'INSUFFICIENT DATA',
+  onDataClick,
 }: {
   option: EChartsOption | Record<string, unknown>;
   height?: number;
@@ -16,6 +17,7 @@ export function Chart({
   loading?: boolean;
   empty?: boolean;
   emptyLabel?: string;
+  onDataClick?: (dataIndex: number) => void;
 }) {
   if (loading) {
     return (
@@ -33,7 +35,7 @@ export function Chart({
     );
   }
   return (
-    <div className={className} style={{ height }}>
+    <div className={classNames(className, onDataClick && 'cursor-pointer')} style={{ height }}>
       <ReactECharts
         option={{
           backgroundColor: 'transparent',
@@ -42,6 +44,15 @@ export function Chart({
         }}
         style={{ height: '100%', width: '100%' }}
         opts={{ renderer: 'canvas' }}
+        onEvents={
+          onDataClick
+            ? {
+                click: (params: { dataIndex?: number }) => {
+                  if (typeof params.dataIndex === 'number') onDataClick(params.dataIndex);
+                },
+              }
+            : undefined
+        }
         notMerge
         lazyUpdate
       />

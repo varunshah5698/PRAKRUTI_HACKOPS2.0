@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getMapTimeline, getStationDetail } from '../services/map.js';
+import { getLocationAnalysis } from '../services/location-analysis.js';
 import { getStationSnapshots } from '../services/station-data.js';
 import { getSourceStatuses } from '../services/sources.js';
 import { baselineForecast } from '../services/forecast.js';
@@ -38,6 +39,22 @@ mapRouter.get('/timeline', async (req, res, next) => {
       verification: parsed.verification ?? null,
       includeForecast: parsed.includeForecast ?? true,
     });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+const locationSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  category: z.enum(['air', 'water', 'waste', 'industrial']).default('air'),
+});
+
+mapRouter.get('/location', async (req, res, next) => {
+  try {
+    const parsed = locationSchema.parse(req.query);
+    const result = await getLocationAnalysis(parsed);
     res.json(result);
   } catch (error) {
     next(error);

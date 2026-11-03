@@ -9,7 +9,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { ZodError } from 'zod';
 import { env, appConfig } from './config/env.js';
-import { pool } from './db/pool.js';
+import { pool, query } from './db/pool.js';
 import { ApiError } from './middleware/errors.js';
 import { optionalAuth, requireAuth } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
@@ -27,6 +27,7 @@ import { aiRouter } from './routes/ai.js';
 import { sourcesRouter, governanceRouter } from './routes/sources.js';
 import { liveRouter } from './routes/live.js';
 import { newsRouter } from './routes/news.js';
+import { cityRouter } from './routes/city.js';
 import { getDashboard } from './services/dashboard.js';
 import { syncSourceCatalogue } from './services/sources.js';
 import { ingestOpenMeteoWeather } from './services/ingest.js';
@@ -106,6 +107,7 @@ app.use('/api/v1/ai', aiRouter);
 app.use('/api/v1/sources', sourcesRouter);
 app.use('/api/v1/live', liveRouter);
 app.use('/api/v1/news', newsRouter);
+app.use('/api/v1/city', cityRouter);
 app.use('/api/v1/governance', governanceRouter);
 
 app.get('/api/v1/environment/categories', requireAuth, async (_req, res, next) => {
@@ -179,6 +181,12 @@ app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
 
 async function startSchedulers() {
   if (env.NODE_ENV === 'test') return;
+  // Runs killed by a restart cannot finish their job row. Retire stale rows so
+  // the UI never reports work that stopped when the process died.
+  await query(
+    `UPDATE ingestion_jobs SET status='FAILED', error='Interrupted by server restart', finished_at=now()
+     WHERE status='RUNNING' AND started_at < now() - interval '15 minutes'`,
+  );
   await syncSourceCatalogue();
   startLiveScheduler();
   // Hourly forecast grids: the providers republish them on the hour, so a

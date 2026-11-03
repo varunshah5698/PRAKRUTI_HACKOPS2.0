@@ -6,7 +6,7 @@ This is a working demonstration application, not a static dashboard. It connects
 
 - an environmental command centre,
 - an immersive Atmosphere lab with 3D dispersion columns, scenario forecasting and model transparency,
-- an interactive 3D Mumbai map with timeline replay,
+- an interactive 3D Mumbai map with timeline replay, simulated factory plumes and monitor source attribution,
 - predictive intelligence with explicit model status,
 - a grounded AI analyst,
 - citizen reporting with private evidence,
@@ -34,6 +34,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Email | **SMTP transport verified; no recipient configured** — adding `SMTP_USER` and `SMTP_PASSWORD` (with `EMAIL_PROVIDER=gmail` for Gmail) enables real delivery. Without them, records remain `SIMULATED` and nothing is sent. Critical alerts are broadcast to every active account. |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |
+| Industrial source screen | **SIMULATED CATALOGUE** — 10 synthetic factory sources. Plumes and monitor shares are a distance/wind screening estimate, not measured apportionment or a regulatory finding. |
 | Database | PostgreSQL 18 + PostGIS 3.7 |
 
 No synthetic reading is presented as a CPCB reading. No forecast is presented as trained ML output. No automated finding is presented as an official regulatory determination.
