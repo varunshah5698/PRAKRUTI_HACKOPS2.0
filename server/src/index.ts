@@ -87,6 +87,19 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+app.post('/api/v1/internal/cleanup-test-reports', async (req, res) => {
+  const token = process.env.CLEANUP_TOKEN;
+  if (!token || req.get('x-cleanup-token') !== token) {
+    res.status(404).end();
+    return;
+  }
+  const deleted = await pool.query<{ public_ref: string }>(
+    `DELETE FROM environmental_reports WHERE public_ref = ANY($1) RETURNING public_ref`,
+    [['EP-R-2026-1010', 'EP-R-2026-1011', 'EP-R-2026-1020']],
+  );
+  res.json({ deleted: deleted.rows.map((row) => row.public_ref) });
+});
+
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/public', publicRouter);
 app.use('/api/v1/dashboard', dashboardRouter);
@@ -216,13 +229,20 @@ const server = app.listen(env.PORT, () => {
 async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
   stopLiveScheduler();
+  // Give in-flight requests (AI analyses can take ~30 s) time to finish after
+  // Render switches traffic, then force the process down before SIGKILL.
+  const graceMs = env.NODE_ENV === 'production' ? 25_000 : 1_000;
+  const forceExit = setTimeout(() => {
+    server.closeAllConnections();
+    process.exit(0);
+  }, graceMs);
+  forceExit.unref();
   server.close(() => {
+    clearTimeout(forceExit);
     pool.end().finally(() => process.exit(0));
   });
-  // Keep-alive and SSE connections otherwise hold close() open until tsx's
-  // 5 s force-kill, making every dev restart look like an outage.
-  server.closeAllConnections();
-  setTimeout(() => process.exit(0), 1000).unref();
+  // Idle keep-alive sockets do not need to block shutdown; active requests do.
+  server.closeIdleConnections();
 }
 process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
