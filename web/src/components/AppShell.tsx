@@ -239,6 +239,9 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
             <p className="truncate text-xs font-semibold text-[#142016]">{user?.name}</p>
             <p className="truncate text-[9px] uppercase tracking-[0.08em] text-[#66766b]">{user?.role.replace(/_/g, ' ')}</p>
           </div>
+          <Link to="/settings" aria-label="Settings" className="rounded-full p-1.5 text-[#5f7065] hover:bg-white/70 hover:text-[#142016]">
+            <Settings className="h-4 w-4" />
+          </Link>
           <button onClick={handleLogout} aria-label="Sign out" className="rounded-full p-1.5 text-[#a05a5e] hover:bg-[#fdeeee]">
             <LogOut className="h-4 w-4" />
           </button>

@@ -6,7 +6,7 @@
 npm test
 ```
 
-The test suite uses Vitest and currently has **29 passing tests** across six files (four server, two web):
+The test suite uses Vitest and currently has **31 passing tests** across seven files (five server, two web):
 
 | File | Coverage |
 |---|---|
@@ -14,6 +14,7 @@ The test suite uses Vitest and currently has **29 passing tests** across six fil
 | `server/src/services/forecast.test.ts` | Persistence baseline determinism, insufficient history, widening interval, zero-variance anomaly edge case |
 | `server/src/services/risk-engine.test.ts` | Air critical after persistence, no critical from a single spike, confidence separation/missing inputs, water mild vs severe, waste unverified vs repeat hotspot, industrial no legal threshold |
 | `server/src/services/compliance.test.ts` | Averaging mismatch, unit mismatch, stack vs effluent, comparable water reference |
+| `server/src/services/ai/analyst.test.ts` | AI evidence prompt shape, fallback behaviour and output boundaries |
 | `web/src/lib/api.test.ts` | API error envelope, credential handling, JSON/form request paths |
 | `web/src/store/auth.test.ts` | Session bootstrap, login state, logout cleanup |
 

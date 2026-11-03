@@ -249,7 +249,7 @@ Application: `/dashboard`, `/map`, `/map/stations/:id`, `/intelligence/predictio
 npm test
 ```
 
-22 server unit tests cover indicative AQI, the persistence baseline, anomaly edge cases, category-specific risk rules, confidence separation, and compliance comparability. 7 web tests cover API error handling and auth-store session behaviour. See `docs/TESTING.md`.
+24 server unit tests cover indicative AQI, the persistence baseline, anomaly edge cases, category-specific risk rules, confidence separation, compliance comparability and AI evidence boundaries. 7 web tests cover API error handling and auth-store session behaviour. See `docs/TESTING.md`.
 
 ## Documentation
 

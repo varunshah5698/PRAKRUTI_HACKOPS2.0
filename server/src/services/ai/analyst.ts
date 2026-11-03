@@ -556,6 +556,9 @@ export async function analyzeEvidenceImage(
       apiKey,
       model,
       gemini: isGemini(baseURL),
+      // Groq's on-demand tier rejects large output budgets with 429. River
+      // reasoning models need more room or the JSON is cut off mid-object.
+      maxTokens: baseURL.includes('river.ai') ? 2000 : 600,
     });
     const attempts = [
       attemptFor(visionConfig.baseURL, visionConfig.apiKey, visionConfig.model),
@@ -567,6 +570,7 @@ export async function analyzeEvidenceImage(
     for (const attempt of attempts) {
       let content = '';
       let parsed: Record<string, unknown> | null = null;
+      let finish = 'unknown';
       try {
         const response = attempt.gemini
           ? await fetch(`${attempt.base}/models/${encodeURIComponent(attempt.model)}:generateContent`, {
@@ -591,9 +595,7 @@ export async function analyzeEvidenceImage(
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${attempt.apiKey}` },
               body: JSON.stringify({
                 model: attempt.model,
-                // Groq's on-demand Qwen tier caps output at 1000 tokens/minute;
-                // asking for more is rejected outright with HTTP 429.
-                max_tokens: 600,
+                max_tokens: attempt.maxTokens,
                 temperature: 0.1,
                 messages: [
                   {
@@ -618,17 +620,19 @@ export async function analyzeEvidenceImage(
               finishReason?: string;
             }>;
           };
+          finish = data.candidates?.[0]?.finishReason ?? 'unknown';
           content =
             data.candidates?.[0]?.content?.parts
               ?.filter((part) => !part.thought)
               .map((part) => part.text ?? '')
               .join('') ?? '';
           if (!content) {
-            lastError = `Gemini vision returned no text (finish: ${data.candidates?.[0]?.finishReason ?? 'unknown'})`;
+            lastError = `Gemini vision returned no text (finish: ${finish})`;
             continue;
           }
         } else {
-          const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+          const data = (await response.json()) as { choices?: Array<{ message?: { content?: string }; finish_reason?: string }> };
+          finish = data.choices?.[0]?.finish_reason ?? 'unknown';
           content = data.choices?.[0]?.message?.content ?? '';
           if (!content) {
             lastError = 'Vision provider returned no text';
@@ -637,8 +641,7 @@ export async function analyzeEvidenceImage(
         }
         parsed = parseJson(content);
         if (!parsed) {
-          console.error('[vision] unparseable content:', content.length, JSON.stringify(content.slice(-240)));
-          lastError = 'Vision provider returned no parseable JSON';
+          lastError = `Vision provider returned no parseable JSON (finish: ${finish})`;
           continue;
         }
         return {
