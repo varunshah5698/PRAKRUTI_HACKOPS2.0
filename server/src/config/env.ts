@@ -76,19 +76,26 @@ export const riverConfig = {
   configured: env.RIVER_API_KEY.length > 0,
 };
 
-const fallbackProviderConfigured = Boolean(env.VISION_FALLBACK_BASE_URL && env.VISION_FALLBACK_API_KEY);
+const fallbackBaseURL = env.VISION_FALLBACK_BASE_URL || env.VISION_BASE_URL;
+// A River-hosted fallback can reuse RIVER_API_KEY, so a deployment does not need
+// a second copy of the same secret. Other providers still need their own key.
+const fallbackApiKey =
+  env.VISION_FALLBACK_API_KEY ||
+  (fallbackBaseURL.includes('river.ai') ? env.RIVER_API_KEY : env.VISION_API_KEY);
 
 export const visionConfig = {
   baseURL: env.VISION_BASE_URL,
   model: env.VISION_MODEL,
   apiKey: env.VISION_API_KEY,
-  fallbackBaseURL: fallbackProviderConfigured ? env.VISION_FALLBACK_BASE_URL : env.VISION_BASE_URL,
-  fallbackApiKey: fallbackProviderConfigured ? env.VISION_FALLBACK_API_KEY : env.VISION_API_KEY,
+  fallbackBaseURL,
+  fallbackApiKey,
   configured: Boolean(env.VISION_BASE_URL && env.VISION_MODEL && env.VISION_API_KEY),
 };
 
-export const emailConfigured =
-  env.EMAIL_PROVIDER === 'smtp' && Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
+// SMTP credentials are the switch: adding them enables real delivery even if
+// EMAIL_PROVIDER was left at its default. Without credentials the app stores
+// notifications as SIMULATED and never pretends an email was sent.
+export const emailConfigured = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
 
 export const appConfig = {
   timezone: env.APP_TIMEZONE,
