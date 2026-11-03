@@ -62,7 +62,7 @@ export async function getMapTimeline(filters: MapFilters) {
          LEFT JOIN LATERAL (
            -- Hourly means over 48h: the model needs 25 consecutive hourly values,
            -- and raw feeds are often 15-minute cadence.
-           SELECT date_trunc('hour', observed_at) AS observed_at, AVG(value)::float8 AS value
+           SELECT date_trunc('hour', observed_at, 'UTC') AS observed_at, AVG(value)::float8 AS value
            FROM environmental_observations
            WHERE station_id=s.id AND pollutant_code='pm25' AND quality_state <> 'INVALID'
              AND observed_at > now() - interval '48 hours'
