@@ -343,7 +343,7 @@ export function computeSourceImpact(
       note: 'Plume footprints are screening geometry derived from simulated sources and the latest wind. They are not a measured pollution surface or a regulatory impact zone.',
     },
     note:
-      'Source shares are a distance-and-wind screening estimate applied to simulated industrial sources. They show which monitors could be downwind of a source, not a measured apportionment.',
+      'Source shares are a distance-and-wind screening estimate applied to simulated industrial sources. Future frames use the available PM2.5 forecast where present. They show which monitors could be in a source plume, not a measured apportionment.',
     disclaimer:
       'SIMULATED SOURCES · SCREENING ONLY. No real facility is identified, no legal threshold is applied, and this is not a regulatory determination.',
   };

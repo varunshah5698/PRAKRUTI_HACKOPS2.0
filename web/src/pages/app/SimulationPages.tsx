@@ -1004,8 +1004,9 @@ export function SimulationSessionPage() {
               <span className="font-semibold text-[#305d6c]">{data.session.station_name}</span>
               {' · '}{data.session.locality_name ?? 'Mumbai'}{' · '}created by {data.session.created_by_name ?? '—'}{' · '}{formatDate(data.session.created_at)}
             </p>
-            <div className="mt-4 grid max-w-lg grid-cols-3 gap-2">
+            <div className="mt-4 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
               <Stat label="Timeline" value={`${currentStep}/${Math.max(0, totalSteps - 1)}`} note={`${events.length} events revealed`} />
+              <Stat label="Guidance" value={recommendations.length} note="with reasons" />
               <Stat label="Alerts" value={data.alerts.length} note="simulation-labelled" />
               <Stat label="Incidents" value={data.incidents.length} note="isolated records" />
             </div>
@@ -1123,6 +1124,12 @@ export function SimulationSessionPage() {
               <RecommendationCard key={item.id} item={item} />
             ))}
           </div>
+        ) : viewed && !viewed.recommendations ? (
+          <EmptyState
+            title="This replay predates the recommendation layer"
+            description="Start a new replay from the Replay lab to generate audience-specific guidance with its reasons and evidence."
+            icon={<Sparkles className="h-5 w-5" />}
+          />
         ) : (
           <EmptyState
             title="No recommendation for this filter"

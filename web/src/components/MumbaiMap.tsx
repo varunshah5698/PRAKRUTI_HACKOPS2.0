@@ -501,9 +501,10 @@ export function MumbaiMap({
         type: 'circle',
         source: 'ep-sources',
         paint: {
-          'circle-radius': ['case', ['get', 'selected'], 26, 19],
+          'circle-radius': ['case', ['get', 'selected'], 28, 21],
           'circle-color': ['get', 'color'],
-          'circle-opacity': ['case', ['get', 'selected'], 0.24, 0.1],
+          'circle-opacity': ['case', ['get', 'selected'], 0.28, 0.12],
+          'circle-blur': 1,
         },
       });
       map.addLayer({
