@@ -269,7 +269,7 @@ Authority registration creates a `PENDING_APPROVAL` account with no authority pe
 
 Public: `/`, `/about`, `/data-sources`, `/privacy`, `/terms`, `/report`, `/login`, `/register`, `/forgot-password`, `/reset-password`.
 
-Application: `/dashboard`, `/city`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
+Application: `/dashboard`, `/city`, `/news`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
 
 ## Tests
 

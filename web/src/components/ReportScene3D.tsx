@@ -93,11 +93,11 @@ const GROUND_RADIUS = 15.5;
 const TARGET = new THREE.Vector3(0, 1.25, 0);
 
 const CAMERA_PRESETS: CameraPreset[] = [
-  { theta: -0.55, phi: 1.02, radius: 18 },
-  { theta: -0.92, phi: 1.0, radius: 16 },
-  { theta: 0.32, phi: 0.94, radius: 17 },
-  { theta: -0.08, phi: 1.12, radius: 15.5 },
-  { theta: -0.68, phi: 0.98, radius: 18.5 },
+  { theta: -0.55, phi: 1.02, radius: 24 },
+  { theta: -0.92, phi: 1.0, radius: 22 },
+  { theta: 0.32, phi: 0.92, radius: 24 },
+  { theta: -0.08, phi: 1.12, radius: 21.5 },
+  { theta: -0.68, phi: 0.98, radius: 25 },
 ];
 
 const COMMUNITY_COLORS: Record<string, string> = {
@@ -238,7 +238,7 @@ export const ReportScene3D = forwardRef<ReportSceneHandle, Props>(function Repor
     }
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 120);
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
     const initialPreset = CAMERA_PRESETS[propsRef.current.step] ?? CAMERA_PRESETS[0];
     camera.position.copy(cameraPosition(initialPreset));
     camera.lookAt(TARGET);
@@ -264,8 +264,8 @@ export const ReportScene3D = forwardRef<ReportSceneHandle, Props>(function Repor
     controls.enableDamping = true;
     controls.dampingFactor = 0.075;
     controls.enablePan = false;
-    controls.minDistance = 8.5;
-    controls.maxDistance = 30;
+    controls.minDistance = 13;
+    controls.maxDistance = 38;
     controls.minPolarAngle = 0.32;
     controls.maxPolarAngle = 1.36;
     controls.autoRotateSpeed = 0.55;
@@ -557,7 +557,7 @@ export const ReportScene3D = forwardRef<ReportSceneHandle, Props>(function Repor
       for (const station of props.stations) {
         if (station.lat === null || station.lng === null) continue;
         const point = worldPoint(station.lat, station.lng, props.reportLat, props.reportLng);
-        const height = 0.6 + Math.min(1, station.severity) * 4.4;
+        const height = 1.0 + Math.min(1, station.severity) * 4.4;
         const group = new THREE.Group();
         group.position.set(point.x, 0, point.z);
 
@@ -804,7 +804,7 @@ export const ReportScene3D = forwardRef<ReportSceneHandle, Props>(function Repor
       const progress = new Float32Array(count);
       const speedScale = THREE.MathUtils.clamp(props.weather.wind_speed_kmh / 12, 0.45, 1.6);
       for (let index = 0; index < count; index += 1) {
-        offsets[index] = (Math.random() - 0.5) * 3.4;
+        offsets[index] = (Math.random() - 0.5) * 2.4;
         speeds[index] = (0.055 + Math.random() * 0.06) * speedScale;
         progress[index] = Math.random();
         const along = progress[index] * 16 - 8;
@@ -818,9 +818,9 @@ export const ReportScene3D = forwardRef<ReportSceneHandle, Props>(function Repor
         geometry,
         new THREE.PointsMaterial({
           color: 0x2d7c94,
-          size: 0.12,
+          size: 0.16,
           transparent: true,
-          opacity: 0.7,
+          opacity: 0.68,
           depthWrite: false,
           sizeAttenuation: true,
         }),
