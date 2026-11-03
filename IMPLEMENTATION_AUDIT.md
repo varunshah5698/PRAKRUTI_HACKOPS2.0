@@ -93,4 +93,4 @@ To use a different PostgreSQL/PostGIS instance, change `DATABASE_URL` and run `n
 
 ## Known audit gaps
 
-See `docs/LIMITATIONS.md` for the full list. The most important are: no direct CPCB/MPCB API, no anomaly model, no email provider, no malware scanner, no object storage, no formal legal review, and no production load/security testing.
+See `docs/LIMITATIONS.md` for the full list. The most important are: no direct CPCB/MPCB API, no anomaly model, no supplied email credentials, no malware scanner, no object storage, no formal legal review, and no production load/security testing.

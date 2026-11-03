@@ -53,8 +53,8 @@ Password `Demo@1234` for all:
 
 1. Open `/intelligence/predictions`.
 2. Select Chembur (or use the dropdown). Inspect current, forecast cards, band chart, progression.
-3. Confirm `ML MODELS NOT TRAINED`, `INTERVALS NOT CALIBRATED`, `SHAP UNAVAILABLE`.
-4. The warning decision card shows threshold, persistence, +3h baseline and `deterioration probability NOT AVAILABLE`.
+3. Demo stations are not in the model's OpenAQ training set, so confirm `PERSISTENCE_BASELINE_V1`, `INTERVALS NOT CALIBRATED`, `SHAP UNAVAILABLE`. Select an OpenAQ station with at least 25 hourly PM2.5 values to see `LIGHTGBM_TRAINED`, quantile intervals and SHAP.
+4. For a demo station the warning decision card shows threshold, persistence, +3h baseline and `deterioration probability NOT AVAILABLE`.
 5. Open `/alerts`, filter trigger = Predictive. The Chembur predictive alert is `EARLY_WARNING`, trigger PREDICTIVE, source baseline, `NOT_A_TRAINED_MODEL`.
 
 ## Demo D — Citizen report
