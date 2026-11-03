@@ -6,6 +6,15 @@ services:
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
+    # Docs and ML-only commits do not change this service; skipping them avoids
+    # restarting the API while people are using it.
+    buildFilter:
+      paths:
+        - server/**
+        - web/**
+        - package.json
+        - package-lock.json
+        - render.yaml
     envVars:
       - key: NODE_ENV
         value: production
