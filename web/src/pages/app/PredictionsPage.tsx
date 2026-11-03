@@ -150,7 +150,7 @@ export function PredictionsPage() {
             Air pollution is the primary predictive application.{' '}
             {trained
               ? 'A registered LightGBM model is active. Forecasts and quantile intervals come from that model; the model card and metrics must be reviewed before operational use.'
-              : 'No verified Mumbai historical training extract is active, so the LightGBM, quantile, deterioration-classifier and anomaly models are NOT TRAINED. The page exposes a labelled persistence baseline instead of inventing model skill.'}
+              : null}
           </p>
         </div>
         <div className="flex items-center gap-2">
