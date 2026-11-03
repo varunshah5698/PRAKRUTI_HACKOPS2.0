@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireAuthority } from '../middleware/auth.js';
 import { answerQuestion, stationAnalysis, aiStatus } from '../services/ai/analyst.js';
 
 export const aiRouter = Router();
@@ -12,6 +12,8 @@ const limiter = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: true, 
 aiRouter.get('/status', (_req, res) => {
   res.json(aiStatus());
 });
+
+aiRouter.use(requireAuthority);
 
 aiRouter.post('/analyse', limiter, async (req, res, next) => {
   try {

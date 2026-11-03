@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { query, one } from '../db/pool.js';
-import { requireAuth, AUTHORITY_ADMIN_ROLES, VERIFIERS } from '../middleware/auth.js';
+import { requireAuth, AUTHORITY, AUTHORITY_ADMIN_ROLES, VERIFIERS } from '../middleware/auth.js';
 import { forbidden, notFound } from '../middleware/errors.js';
 import { closeAlert } from '../services/alerts.js';
 import { audit } from '../lib/audit.js';
@@ -55,6 +55,7 @@ alertsRouter.get('/:id', async (req, res, next) => {
       [req.params.id],
     );
     if (!alert) throw notFound('Alert not found.');
+    const isAuthority = AUTHORITY.includes(req.user!.role);
     const [history, risks, incidents, notifications] = await Promise.all([
       query<Record<string, unknown>>(
         `SELECT h.from_state, h.to_state, h.reason, h.created_at, u.name AS actor_name
@@ -68,16 +69,20 @@ alertsRouter.get('/:id', async (req, res, next) => {
          FROM risk_assessments WHERE entity_type=$1 AND entity_id=$2 ORDER BY calculated_at DESC LIMIT 5`,
         [alert.entity_type, alert.entity_id],
       ),
-      query<Record<string, unknown>>(
-        `SELECT id, public_ref, title, status, risk_level, detected_at FROM environmental_incidents
-         WHERE source_alert_id=$1 OR (category=$2 AND locality_id=$3) ORDER BY detected_at DESC LIMIT 5`,
-        [alert.id, alert.category, alert.locality_id],
-      ),
-      query<Record<string, unknown>>(
-        `SELECT id, audience, template, status, created_at, sent_at, delivered_at, error, is_simulated
-         FROM notifications WHERE alert_id=$1 ORDER BY created_at DESC LIMIT 20`,
-        [alert.id],
-      ),
+      isAuthority
+        ? query<Record<string, unknown>>(
+            `SELECT id, public_ref, title, status, risk_level, detected_at FROM environmental_incidents
+             WHERE source_alert_id=$1 OR (category=$2 AND locality_id=$3) ORDER BY detected_at DESC LIMIT 5`,
+            [alert.id, alert.category, alert.locality_id],
+          )
+        : Promise.resolve([]),
+      isAuthority
+        ? query<Record<string, unknown>>(
+            `SELECT id, audience, template, status, created_at, sent_at, delivered_at, error, is_simulated
+             FROM notifications WHERE alert_id=$1 ORDER BY created_at DESC LIMIT 20`,
+            [alert.id],
+          )
+        : Promise.resolve([]),
     ]);
     res.json({ alert, history, riskAssessments: risks, linkedIncidents: incidents, notifications });
   } catch (error) {

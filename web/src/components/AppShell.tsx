@@ -37,10 +37,10 @@ const groups: Array<{
     label: 'Command',
     items: [
       { to: '/dashboard', label: 'Command centre', short: 'Home', icon: LayoutDashboard, end: true },
-      { to: '/atmosphere', label: 'Atmosphere lab', short: 'Air lab', icon: CloudSun },
+      { to: '/atmosphere', label: 'Atmosphere lab', short: 'Air lab', icon: CloudSun, roles: AUTHORITY_ROLES },
       { to: '/map', label: 'Mumbai map', short: 'Map', icon: Map },
-      { to: '/intelligence/predictions', label: 'Predictive intelligence', short: 'Predict', icon: BrainCircuit },
-      { to: '/ai-analyst', label: 'AI analyst', short: 'Analyst', icon: Sparkles },
+      { to: '/intelligence/predictions', label: 'Predictive intelligence', short: 'Predict', icon: BrainCircuit, roles: AUTHORITY_ROLES },
+      { to: '/ai-analyst', label: 'AI analyst', short: 'Analyst', icon: Sparkles, roles: AUTHORITY_ROLES },
     ],
   },
   {
@@ -49,8 +49,8 @@ const groups: Array<{
       { to: '/my-reports', label: 'My reports', short: 'Reports', icon: FileWarning, roles: ['PUBLIC'] },
       { to: '/reports', label: 'Citizen reports', short: 'Reports', icon: FileWarning, roles: AUTHORITY_ROLES },
       { to: '/alerts', label: 'Alerts', short: 'Alerts', icon: BellRing },
-      { to: '/incidents', label: 'Incidents', short: 'Incidents', icon: ShieldAlert },
-      { to: '/compliance', label: 'Compliance', short: 'Policy', icon: Scale },
+      { to: '/incidents', label: 'Incidents', short: 'Incidents', icon: ShieldAlert, roles: AUTHORITY_ROLES },
+      { to: '/compliance', label: 'Compliance', short: 'Policy', icon: Scale, roles: AUTHORITY_ROLES },
     ],
   },
   {

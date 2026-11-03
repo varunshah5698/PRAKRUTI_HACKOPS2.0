@@ -279,7 +279,7 @@ export function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState('air');
   const [refreshing, setRefreshing] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  const { user } = useAuth();
+  const { user, isAuthority } = useAuth();
   const navigate = useNavigate();
 
   const load = (quiet = false) => {
@@ -525,9 +525,11 @@ export function DashboardPage() {
 
             <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-[#dbe5d6] pt-3">
               <span className="text-[9px] text-[#66766b]">24h NAAQS screening reference 60 µg/m³ · missing periods not filled</span>
-              <Link to="/intelligence/predictions" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
-                Open predictions <ArrowRight className="h-3 w-3" />
-              </Link>
+              {isAuthority() ? (
+                <Link to="/intelligence/predictions" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
+                  Open predictions <ArrowRight className="h-3 w-3" />
+                </Link>
+              ) : null}
             </div>
           </div>
         </Card>
@@ -577,11 +579,11 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="grid grid-cols-2 divide-x divide-dashed divide-[#dbe5d6] overflow-hidden sm:grid-cols-4">
+      <Card className={`grid grid-cols-2 divide-x divide-dashed divide-[#dbe5d6] overflow-hidden ${isAuthority() ? 'sm:grid-cols-4' : 'sm:grid-cols-2'}`}>
         <KpiCell label="Monitoring stations" kpi={data.kpis.activeStations} icon={Gauge} />
         <KpiCell label="Locations under watch" kpi={data.kpis.locationsUnderWatch} icon={MapPin} />
-        <KpiCell label="Predictive warnings" kpi={data.kpis.predictiveWarnings} icon={BrainCircuit} />
-        <KpiCell label="Critical incidents" kpi={data.kpis.criticalIncidents} icon={Siren} />
+        {isAuthority() ? <KpiCell label="Predictive warnings" kpi={data.kpis.predictiveWarnings} icon={BrainCircuit} /> : null}
+        {isAuthority() ? <KpiCell label="Critical incidents" kpi={data.kpis.criticalIncidents} icon={Siren} /> : null}
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
@@ -815,6 +817,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
+      {isAuthority() ? (
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -866,6 +869,7 @@ export function DashboardPage() {
           </div>
         </Card>
       </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-12">
         <Card className="xl:col-span-7">
