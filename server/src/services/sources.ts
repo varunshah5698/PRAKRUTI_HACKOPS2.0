@@ -4,6 +4,7 @@ import { one, query } from '../db/pool.js';
 import type { DataSource } from '../config/data-sources.js';
 
 const ON_DEMAND_PUBLIC_SOURCES = new Set([
+  'met-no-weather',
   'open-meteo-marine',
   'open-meteo-flood',
   'open-meteo-archive',

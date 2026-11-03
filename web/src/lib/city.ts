@@ -55,6 +55,7 @@ export interface CityHistoryDay {
 
 export interface CityOverview {
   generatedAt: string;
+  weatherProvider: 'open-meteo' | 'met-no';
   point: { lat: number; lng: number; timezone: string };
   current: {
     time: string | null;

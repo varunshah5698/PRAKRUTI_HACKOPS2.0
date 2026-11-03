@@ -732,6 +732,7 @@ export function MapPage() {
   const [showSources, setShowSources] = useState(true);
   const [showPlumes, setShowPlumes] = useState(true);
   const [showImpactLinks, setShowImpactLinks] = useState(true);
+  const [sourceListExpanded, setSourceListExpanded] = useState(false);
   const [liveTick, setLiveTick] = useState(0);
   const liveFeed = useLiveFeed();
   const playRef = useRef<number | null>(null);
@@ -1208,7 +1209,7 @@ export function MapPage() {
                 <Badge tone="amber">{windLabel(sourceImpact.wind)}</Badge>
               </div>
               <div className="space-y-1.5 p-2.5">
-                {worstSources.slice(0, 4).map((source) => (
+                {worstSources.slice(0, sourceListExpanded ? 10 : 4).map((source) => (
                   <button
                     key={source.id}
                     type="button"
@@ -1232,13 +1233,22 @@ export function MapPage() {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedSourceId(worstSource?.id ?? null)}
-                className="flex w-full items-center justify-between border-t border-[#f0e2d5] px-4 py-2.5 text-[9px] font-semibold text-[#9a3412] transition hover:bg-white/60"
-              >
-                Open worst source · rank #{worstSource?.rank ?? '—'} <ArrowRight className="h-3 w-3" />
-              </button>
+              <div className="flex items-center justify-between border-t border-[#f0e2d5] px-4 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => setSourceListExpanded((expanded) => !expanded)}
+                  className="text-[9px] font-semibold text-[#8a5a3b] transition hover:text-[#7c2d12]"
+                >
+                  {sourceListExpanded ? 'Show top 4' : `Show all ${worstSources.length}`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSourceId(worstSource?.id ?? null)}
+                  className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#9a3412] transition hover:text-[#7c2d12]"
+                >
+                  Open worst · #{worstSource?.rank ?? '—'} <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           ) : null}
 

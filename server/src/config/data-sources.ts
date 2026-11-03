@@ -87,6 +87,16 @@ export const DATA_SOURCE_CATALOGUE = [
       'Modelled regional PM2.5/PM10 used only as labelled context. Never displayed as a CPCB station reading or official AQI.',
   },
   {
+    id: 'met-no-weather',
+    name: 'MET Norway location forecast',
+    category: 'weather',
+    provider: 'Norwegian Meteorological Institute',
+    documentationUrl: 'https://api.met.no/weatherapi/locationforecast/2.0/documentation',
+    attribution: 'Weather data from MET Norway (CC BY 4.0 / NLOD)',
+    configured: true,
+    notes: 'Keyless fallback for the Live City weather layer when Open-Meteo is rate-limited. UV and precipitation probability remain blank when MET Norway does not publish them.',
+  },
+  {
     id: 'open-meteo-marine',
     name: 'Open-Meteo marine conditions',
     category: 'coastal',

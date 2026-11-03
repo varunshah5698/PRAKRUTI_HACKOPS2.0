@@ -168,6 +168,194 @@ interface WeatherPayload {
   daily?: Record<string, unknown>;
 }
 
+interface MetNoPayload {
+  properties?: {
+    meta?: { updated_at?: string };
+    timeseries?: Array<{
+      time: string;
+      data: {
+        instant?: { details?: Record<string, number> };
+        next_1_hours?: { summary?: { symbol_code?: string }; details?: { precipitation_amount?: number } };
+        next_6_hours?: { summary?: { symbol_code?: string }; details?: { precipitation_amount?: number } };
+      };
+    }>;
+  };
+}
+
+const MUMBAI_TZ_OFFSET_MS = 5.5 * 60 * 60_000;
+
+/** Convert a UTC ISO instant to the local Mumbai wall-clock string used by Open-Meteo. */
+function toMumbaiWall(iso: string): string {
+  const time = new Date(iso).getTime();
+  if (!Number.isFinite(time)) return iso.slice(0, 16);
+  return new Date(time + MUMBAI_TZ_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+function symbolToWeatherCode(symbol?: string): number {
+  if (!symbol) return 3;
+  if (symbol.includes('thunder')) return 95;
+  if (symbol.includes('clearsky')) return 0;
+  if (symbol.includes('fair')) return 1;
+  if (symbol.includes('partlycloudy')) return 2;
+  if (symbol.includes('cloudy')) return 3;
+  if (symbol.includes('fog')) return 45;
+  if (symbol.includes('heavyrain')) return 65;
+  if (symbol.includes('lightrain')) return 61;
+  if (symbol.includes('rainshowers')) return symbol.includes('heavy') ? 82 : 63;
+  if (symbol.includes('sleet')) return 66;
+  if (symbol.includes('snow')) return 73;
+  if (symbol.includes('rain')) return 63;
+  return 3;
+}
+
+function apparentTemperature(celsius: number, humidity: number, windKmh: number): number {
+  const vapourPressure = (Math.min(100, Math.max(0, humidity)) / 100) * 6.105 * Math.exp((17.27 * celsius) / (237.7 + celsius));
+  return round(celsius + 0.33 * vapourPressure - 0.7 * (Math.max(0, windKmh) / 3.6) - 4, 1);
+}
+
+function sunTimes(date: string, lat: number, lng: number): { sunrise: string; sunset: string } {
+  // Compact NOAA-style approximation. Mumbai has no daylight-saving offset, so
+  // the IST correction is a fixed longitude shift from the 82.5°E meridian.
+  const [year, month, day] = date.split('-').map(Number);
+  const start = Date.UTC(year, month - 1, day);
+  const dayOfYear = Math.floor((start - Date.UTC(year, 0, 0)) / 86_400_000);
+  const declination = 23.44 * Math.sin((2 * Math.PI * (dayOfYear - 81)) / 365);
+  const latitudeRad = (lat * Math.PI) / 180;
+  const declinationRad = (declination * Math.PI) / 180;
+  const cosHour = -Math.tan(latitudeRad) * Math.tan(declinationRad);
+  const hourAngle = Math.acos(Math.max(-1, Math.min(1, cosHour))) * (180 / Math.PI);
+  const solarNoonMinutes = 12 * 60 + (82.5 - lng) * 4;
+  const sunriseMinutes = solarNoonMinutes - (hourAngle / 15) * 60;
+  const sunsetMinutes = solarNoonMinutes + (hourAngle / 15) * 60;
+  const asClock = (minutes: number) => {
+    const safe = ((Math.round(minutes) % 1440) + 1440) % 1440;
+    return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+  };
+  return { sunrise: `${date}T${asClock(sunriseMinutes)}`, sunset: `${date}T${asClock(sunsetMinutes)}` };
+}
+
+/**
+ * Keyless fallback used only when the Open-Meteo forecast endpoint is
+ * rate-limited. MET Norway is an open national weather service; its compact
+ * forecast does not publish UV or probability, so those fields stay null
+ * rather than being fabricated.
+ */
+async function fetchMetNoWeather(point: CityPoint): Promise<WeatherPayload> {
+  const url = new URL('https://api.met.no/weatherapi/locationforecast/2.0/compact');
+  url.searchParams.set('lat', String(point.lat));
+  url.searchParams.set('lon', String(point.lng));
+  const payload = await fetchJson<MetNoPayload>(url.toString(), {}, 15_000);
+  const series = payload.properties?.timeseries ?? [];
+  if (series.length === 0) throw unavailable('MET Norway returned no forecast for this point.');
+
+  const rows = series.slice(0, 120).map((entry) => {
+    const details = entry.data.instant?.details ?? {};
+    const symbol = entry.data.next_1_hours?.summary?.symbol_code ?? entry.data.next_6_hours?.summary?.symbol_code;
+    const localTime = toMumbaiWall(entry.time);
+    const hour = Number(localTime.slice(11, 13));
+    const temperature = num(details.air_temperature);
+    const humidity = num(details.relative_humidity);
+    const wind = num(details.wind_speed);
+    return {
+      time: localTime,
+      temperature,
+      humidity,
+      windKmh: wind === null ? null : round(wind * 3.6, 1),
+      windDirection: num(details.wind_from_direction),
+      pressure: num(details.air_pressure_at_sea_level),
+      cloud: num(details.cloud_area_fraction),
+      precipitation: num(entry.data.next_1_hours?.details?.precipitation_amount) ?? num(entry.data.next_6_hours?.details?.precipitation_amount),
+      weatherCode: symbolToWeatherCode(symbol),
+      isDay: symbol ? !symbol.endsWith('_night') : hour >= 6 && hour < 19,
+      apparent: temperature === null ? null : apparentTemperature(temperature, humidity ?? 0, (wind ?? 0) * 3.6),
+    };
+  });
+
+  const current = rows[0];
+  const dailyMap = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const date = row.time.slice(0, 10);
+    const bucket = dailyMap.get(date) ?? [];
+    bucket.push(row);
+    dailyMap.set(date, bucket);
+  }
+  const dailyDates = [...dailyMap.keys()].slice(0, 7);
+  const sun = Object.fromEntries(dailyDates.map((date) => [date, sunTimes(date, point.lat, point.lng)]));
+
+  return {
+    latitude: point.lat,
+    longitude: point.lng,
+    timezone: 'Asia/Kolkata',
+    current: {
+      time: current.time,
+      temperature_2m: current.temperature,
+      relative_humidity_2m: current.humidity,
+      apparent_temperature: current.apparent,
+      precipitation: current.precipitation,
+      rain: current.precipitation,
+      weather_code: current.weatherCode,
+      cloud_cover: current.cloud,
+      wind_speed_10m: current.windKmh,
+      wind_direction_10m: current.windDirection,
+      wind_gusts_10m: null,
+      uv_index: null,
+      is_day: current.isDay ? 1 : 0,
+      surface_pressure: current.pressure,
+    },
+    hourly: {
+      time: rows.map((row) => row.time),
+      temperature_2m: rows.map((row) => row.temperature),
+      relative_humidity_2m: rows.map((row) => row.humidity),
+      apparent_temperature: rows.map((row) => row.apparent),
+      precipitation_probability: rows.map(() => null),
+      precipitation: rows.map((row) => row.precipitation),
+      weather_code: rows.map((row) => row.weatherCode),
+      cloud_cover: rows.map((row) => row.cloud),
+      wind_speed_10m: rows.map((row) => row.windKmh),
+      wind_direction_10m: rows.map((row) => row.windDirection),
+      wind_gusts_10m: rows.map(() => null),
+      uv_index: rows.map(() => null),
+      is_day: rows.map((row) => (row.isDay ? 1 : 0)),
+    },
+    daily: {
+      time: dailyDates,
+      weather_code: dailyDates.map((date) => dailyMap.get(date)?.find((row) => row.time.includes('T12:'))?.weatherCode ?? dailyMap.get(date)?.[0]?.weatherCode ?? null),
+      temperature_2m_max: dailyDates.map((date) => {
+        const values = (dailyMap.get(date) ?? []).flatMap((row) => (row.temperature === null ? [] : [row.temperature]));
+        return values.length ? Math.max(...values) : null;
+      }),
+      temperature_2m_min: dailyDates.map((date) => {
+        const values = (dailyMap.get(date) ?? []).flatMap((row) => (row.temperature === null ? [] : [row.temperature]));
+        return values.length ? Math.min(...values) : null;
+      }),
+      apparent_temperature_max: dailyDates.map(() => null),
+      apparent_temperature_min: dailyDates.map(() => null),
+      sunrise: dailyDates.map((date) => sun[date]?.sunrise ?? null),
+      sunset: dailyDates.map((date) => sun[date]?.sunset ?? null),
+      uv_index_max: dailyDates.map(() => null),
+      precipitation_probability_max: dailyDates.map(() => null),
+      precipitation_sum: dailyDates.map((date) => {
+        const values = (dailyMap.get(date) ?? []).flatMap((row) => (row.precipitation === null ? [] : [row.precipitation]));
+        return values.length ? round(values.reduce((sum, value) => sum + value, 0), 1) : null;
+      }),
+      wind_speed_10m_max: dailyDates.map((date) => {
+        const values = (dailyMap.get(date) ?? []).flatMap((row) => (row.windKmh === null ? [] : [row.windKmh]));
+        return values.length ? Math.max(...values) : null;
+      }),
+      wind_gusts_10m_max: dailyDates.map(() => null),
+    },
+  };
+}
+
+async function fetchWeather(point: CityPoint): Promise<{ payload: WeatherPayload; provider: 'open-meteo' | 'met-no' }> {
+  try {
+    return { payload: await fetchJson<WeatherPayload>(weatherUrl(point)), provider: 'open-meteo' };
+  } catch (error) {
+    console.warn('[city] Open-Meteo forecast unavailable; trying MET Norway fallback.', error instanceof Error ? error.message : error);
+    return { payload: await fetchMetNoWeather(point), provider: 'met-no' };
+  }
+}
+
 interface AirPayload {
   latitude: number;
   longitude: number;
@@ -257,6 +445,7 @@ function mean(values: number[]): number | null {
 
 export interface CityOverview {
   generatedAt: string;
+  weatherProvider: 'open-meteo' | 'met-no';
   point: CityPoint & { timezone: string };
   current: {
     time: string | null;
@@ -345,10 +534,11 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
   assertMumbaiPoint(lat, lng);
   const point = { lat: round(lat, 5), lng: round(lng, 5) };
   return cached(`city:overview:${point.lat}:${point.lng}`, 5 * 60_000, async () => {
-    const [weather, air] = await Promise.all([
-      fetchJson<WeatherPayload>(weatherUrl(point)),
+    const [weatherResult, air] = await Promise.all([
+      fetchWeather(point),
       fetchJson<AirPayload>(airUrl(point)).catch(() => null),
     ]);
+    const weather = weatherResult.payload;
     const weatherCurrent = weather.current;
     if (!weatherCurrent?.time) throw unavailable('Open-Meteo returned no current weather for this point.');
 
@@ -473,6 +663,7 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
 
     return {
       generatedAt: new Date().toISOString(),
+      weatherProvider: weatherResult.provider,
       point: { ...point, timezone: weather.timezone ?? 'Asia/Kolkata' },
       current: {
         time: weatherCurrent.time ? String(weatherCurrent.time) : null,
@@ -508,13 +699,21 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
       daily,
       history,
       sources: [
-        {
-          id: 'open-meteo-weather',
-          label: 'Open-Meteo forecast',
-          url: 'https://open-meteo.com/en/docs',
-          license: 'CC BY 4.0',
-          note: 'Weather, UV and 7-day forecast. No API key.',
-        },
+        weatherResult.provider === 'met-no'
+          ? {
+              id: 'met-no-weather',
+              label: 'MET Norway location forecast',
+              url: 'https://api.met.no/',
+              license: 'CC BY 4.0 / NLOD',
+              note: 'Fallback used because the Open-Meteo forecast endpoint was unavailable. UV and probability stay blank when the provider does not publish them.',
+            }
+          : {
+              id: 'open-meteo-weather',
+              label: 'Open-Meteo forecast',
+              url: 'https://open-meteo.com/en/docs',
+              license: 'CC BY 4.0',
+              note: 'Weather, UV and 7-day forecast. No API key.',
+            },
         {
           id: 'open-meteo-cams',
           label: 'CAMS air quality via Open-Meteo',

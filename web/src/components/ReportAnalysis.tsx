@@ -169,7 +169,9 @@ function StationPanel({ station }: { station: StationInsight }) {
           <p className="text-[12px] font-semibold leading-tight text-[#1b2a1f]">{shortName(station.name)}</p>
           <p className="mt-0.5 text-[9px] text-[#66766b]">{station.typeLabel} · {Math.round(station.distance_m)} m away</p>
         </div>
-        <Badge tone={station.isSimulated ? 'amber' : 'teal'}>{station.isSimulated ? 'Sim' : 'Observed'}</Badge>
+        <Badge tone={station.comparisons.length === 0 ? 'neutral' : station.isSimulated ? 'amber' : 'teal'}>
+          {station.comparisons.length === 0 ? 'No reading' : station.isSimulated ? 'Sim' : 'Observed'}
+        </Badge>
       </div>
       <div className="mt-3 space-y-1">
         {station.comparisons.slice(0, 4).map((comparison) => (
@@ -178,7 +180,7 @@ function StationPanel({ station }: { station: StationInsight }) {
         {station.comparisons.length === 0 ? <p className="text-[10px] text-[#66766b]">No recent readings for this category.</p> : null}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[8px] text-[#718277]">
-        <span>Observed {station.observedAt ? timeAgo(station.observedAt) : '—'}</span>
+        <span>{station.observedAt ? `Observed ${timeAgo(station.observedAt)}` : 'No recent reading'}</span>
         {station.isStale ? <span className="font-semibold text-amber-700">Stale &gt; 6h</span> : null}
       </div>
       <Link to={`/map?station=${station.id}`} className="mt-3 inline-flex items-center gap-1 text-[9px] font-semibold text-[#2d7083] hover:text-[#1d5363]">
@@ -957,7 +959,9 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-[10px] font-semibold text-[#26362a]">{shortName(station.name)}</p>
-                          <p className="mt-0.5 text-[8px] text-[#718277]">{Math.round(station.distance_m)} m · {station.isSimulated ? 'Simulated' : 'Observed'}{station.isStale ? ' · stale' : ''}</p>
+                          <p className="mt-0.5 text-[8px] text-[#718277]">
+                            {Math.round(station.distance_m)} m · {station.comparisons.length === 0 ? 'No recent reading' : `${station.isSimulated ? 'Simulated' : 'Observed'}${station.isStale ? ' · stale' : ''}`}
+                          </p>
                         </div>
                         <span className="shrink-0 text-[8px] font-semibold" style={{ color: station.tone }}>{station.primary?.label ?? 'No recent'}</span>
                       </div>
@@ -983,9 +987,10 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
               </div>
               {weather ? (
                 <>
-                  <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                     {[
                       ['Wind', `${number(weather.raw.wind_speed_kmh, 0)} km/h`],
+                      ['Temp', `${number(weather.raw.temperature_c, 0)}°C`],
                       ['Humidity', `${number(weather.raw.relative_humidity, 0)}%`],
                       ['Rain', `${number(weather.raw.precipitation_mm ?? 0, 1)} mm`],
                     ].map(([label, value]) => (

@@ -428,7 +428,7 @@ function buildStation(category: ReportCategory, station: RawStation, stackMax: n
     distance_m: station.distance_m,
     observedAt,
     isSimulated,
-    isStale: ageHours(observedAt) > 6,
+    isStale: Boolean(observedAt) && ageHours(observedAt) > 6,
     comparisons,
     primary,
     severity: clamp(severity, 0.05, 1.5),
@@ -710,7 +710,7 @@ export function buildReportAnalysis(input: AnalysisInput): ReportAnalysis {
     ? `${nearbySameCategory.length} other same-category report${nearbySameCategory.length === 1 ? '' : 's'} sit within 500 m${nearbyVerified.length ? `, ${nearbyVerified.length} verified` : ''}. ${alerts.length ? `${alerts.length} open alert${alerts.length === 1 ? '' : 's'} match this category.` : 'No open category alert is linked.'} ${incidents.length ? `${incidents.length} incident${incidents.length === 1 ? '' : 's'} sit within 3 km.` : 'No nearby incident is recorded.'}`
     : 'No nearby report, alert or incident independently repeats the concern. That is a gap in corroboration, not evidence that nothing happened.';
   const weatherSentence = weather
-    ? `The nearest weather record shows ${formatNumber(weather.temperature_c, 0)}°C, ${formatNumber(weather.relative_humidity, 0)}% humidity and ${formatNumber(weather.wind_speed_kmh, 0)} km/h wind from ${windDirection(weather.wind_direction_deg)}. ${dispersion}${rain > 0.2 ? ' with some rain washout at the site.' : ' with no washout rain recorded.'}`
+    ? `The nearest weather record shows ${formatNumber(weather.temperature_c, 0)}°C, ${formatNumber(weather.relative_humidity, 0)}% humidity and ${formatNumber(weather.wind_speed_kmh, 0)} km/h wind from ${windDirection(weather.wind_direction_deg)}. ${dispersion}${rain > 0.2 ? '; some rain washout was recorded at the site.' : '; no washout rain was recorded.'}`
     : 'No nearby weather record is available, so dispersion at the reported time cannot be described.';
 
   const nextChecks: NextCheck[] = [];
