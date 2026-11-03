@@ -82,6 +82,10 @@ const fallbackBaseURL = env.VISION_FALLBACK_BASE_URL || env.VISION_BASE_URL;
 const fallbackApiKey =
   env.VISION_FALLBACK_API_KEY ||
   (fallbackBaseURL.includes('river.ai') ? env.RIVER_API_KEY : env.VISION_API_KEY);
+// Keep the cross-provider fallback working when only its base URL is configured.
+const fallbackModels =
+  env.VISION_FALLBACK_MODELS ||
+  (env.VISION_FALLBACK_BASE_URL.includes('river.ai') ? 'moonshotai/Kimi-K3,zai-org/GLM-5.3-Flash' : '');
 
 export const visionConfig = {
   baseURL: env.VISION_BASE_URL,
@@ -89,6 +93,7 @@ export const visionConfig = {
   apiKey: env.VISION_API_KEY,
   fallbackBaseURL,
   fallbackApiKey,
+  fallbackModels,
   configured: Boolean(env.VISION_BASE_URL && env.VISION_MODEL && env.VISION_API_KEY),
 };
 

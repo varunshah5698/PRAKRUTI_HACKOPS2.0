@@ -68,7 +68,7 @@ async function checkRiver() {
 
 async function checkVision() {
   if (!visionConfig.configured) return 'NOT_CONFIGURED (VISION_BASE_URL / VISION_MODEL / VISION_API_KEY)';
-  const fallbacks = env.VISION_FALLBACK_MODELS ? `; fallbacks: ${env.VISION_FALLBACK_MODELS}` : '';
+  const fallbacks = visionConfig.fallbackModels ? `; fallbacks: ${visionConfig.fallbackModels}` : '';
   return `CONFIGURED (${visionConfig.model}${fallbacks}); use a real citizen image in /report to verify the provider response format.`;
 }
 

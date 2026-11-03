@@ -549,7 +549,7 @@ export async function analyzeEvidenceImage(
   try {
     const base64 = buffer.toString('base64');
     const dataUrl = `data:${mimeType};base64,${base64}`;
-    const fallbackModels = env.VISION_FALLBACK_MODELS.split(',').map((model) => model.trim()).filter(Boolean);
+    const fallbackModels = visionConfig.fallbackModels.split(',').map((model) => model.trim()).filter(Boolean);
     const isGemini = (url: string) => url.includes('generativelanguage.googleapis.com') || url.includes('googleapis.com');
     const attemptFor = (baseURL: string, apiKey: string, model: string) => ({
       base: baseURL.replace(/\/$/, ''),
