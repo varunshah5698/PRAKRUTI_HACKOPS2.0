@@ -10,7 +10,7 @@ interface PendingRequest { id: string; name: string; email: string; department: 
 interface AiStatus { river: string; model: string | null; vision: string; visionModel: string | null }
 
 export function SettingsPage() {
-  const { user, loadMe, can } = useAuth();
+  const { user, loadMe, can, isAuthority } = useAuth();
   const [name, setName] = useState(user?.name ?? '');
   const [saving, setSaving] = useState(false);
   const [pending, setPending] = useState<PendingRequest[]>([]);
@@ -113,6 +113,7 @@ export function SettingsPage() {
         </Card>
       ) : null}
 
+      {isAuthority() ? (
       <Card>
         <CardHeader><CardTitle>Platform configuration</CardTitle><SettingsIcon className="h-4 w-4 text-[#6f7f74]" /></CardHeader>
         <div className="grid gap-3 p-4 sm:grid-cols-3">
@@ -131,6 +132,7 @@ export function SettingsPage() {
           ))}
         </div>
       </Card>
+      ) : null}
     </div>
   );
 }

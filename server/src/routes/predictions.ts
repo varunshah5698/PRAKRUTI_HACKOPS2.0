@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireAuthority } from '../middleware/auth.js';
 import { getStationSnapshots, getStationSeries, getLatestWeather } from '../services/station-data.js';
 import { anomalyScore } from '../services/forecast.js';
 import { getForecastsForStation } from '../services/forecast-service.js';
 import { mlConfigured, mlHealth } from '../services/ml.js';
 
 export const predictionsRouter = Router();
-predictionsRouter.use(requireAuth);
+predictionsRouter.use(requireAuth, requireAuthority);
 
 async function stationPrediction(stationId: string) {
   const snapshots = await getStationSnapshots('air');
@@ -160,7 +160,7 @@ predictionsRouter.get('/:stationId', async (req, res, next) => {
 });
 
 export const risksRouter = Router();
-risksRouter.use(requireAuth);
+risksRouter.use(requireAuth, requireAuthority);
 risksRouter.get('/', async (req, res, next) => {
   try {
     const category = typeof req.query.category === 'string' ? req.query.category : null;

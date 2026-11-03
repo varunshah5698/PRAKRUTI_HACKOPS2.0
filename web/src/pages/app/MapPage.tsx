@@ -29,6 +29,7 @@ import { LivePanel } from '../../components/LivePanel';
 import { useLiveFeed, useLiveStation } from '../../lib/liveFeed';
 import { api } from '../../lib/api';
 import { AQI_COLORS, CATEGORY_LABELS, categoryLabel, formatDate, number, timeAgo } from '../../lib/format';
+import { useAuth } from '../../store/auth';
 import { toast } from 'sonner';
 
 interface Locality { id: string; name: string; lat: number; lng: number }
@@ -168,6 +169,7 @@ function StationDrawer({
   const [ai, setAi] = useState<AiAnswer | null>(null);
   const [evidenceOpenByStation, setEvidenceOpenByStation] = useState<Record<string, boolean>>({});
   const [aiLoading, setAiLoading] = useState(false);
+  const { isAuthority } = useAuth();
   const live = useLiveStation(stationId);
   const { transport, status } = useLiveFeed();
   const evidenceOpen = stationId ? (evidenceOpenByStation[stationId] ?? true) : true;
@@ -274,7 +276,7 @@ function StationDrawer({
                 { id: 'overview', label: 'Overview' },
                 { id: 'analytics', label: 'Analytics' },
                 { id: 'forecast', label: 'Forecasts' },
-                { id: 'ai', label: 'AI analyses' },
+                ...(isAuthority() ? [{ id: 'ai', label: 'AI analyses' }] : []),
               ]}
             />
           </div>
@@ -441,7 +443,7 @@ function StationDrawer({
             </div>
           ) : null}
 
-          {tab === 'ai' ? (
+          {isAuthority() && tab === 'ai' ? (
             <div className="space-y-4 px-5 py-5">
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
@@ -522,6 +524,7 @@ function StationDrawer({
 export function MapPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthority } = useAuth();
   const now = useMemo(() => new Date(), []);
   const timeline = useMemo(() => buildTimeline(now), [now]);
   const [timelineIndex, setTimelineIndex] = useState(4);
@@ -719,11 +722,11 @@ export function MapPage() {
             <MumbaiMap
               stations={stations}
               reports={reports}
-              incidents={incidents}
+              incidents={isAuthority() ? incidents : []}
               selectedStationId={selectedStationId}
               onStationSelect={(id) => setSelectedStationId(id)}
-              onReportSelect={(id) => navigate(`/reports/${id}`)}
-              onIncidentSelect={(id) => navigate(`/incidents/${id}`)}
+              onReportSelect={isAuthority() ? (id) => navigate(`/reports/${id}`) : undefined}
+              onIncidentSelect={isAuthority() ? (id) => navigate(`/incidents/${id}`) : undefined}
               className="h-[calc(100vh-300px)] min-h-[480px] w-full"
               theme="light"
               showBuildings
@@ -806,18 +809,20 @@ export function MapPage() {
               <p className="mt-2 text-[9px] leading-relaxed text-[#66766b]">{String(data.forecastMeta.note ?? '')}</p>
             </div>
           ) : null}
-          <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
-            <DataLabel>Nearby reports</DataLabel>
-            <div className="mt-2 space-y-2">
-              {data?.reports.slice(0, 4).map((report) => (
-                <button key={report.id} onClick={() => navigate(`/reports/${report.id}`)} className="flex w-full items-center justify-between gap-2 text-left text-[10px] text-[#5a6a5f] hover:text-[#142016]">
-                  <span>{categoryLabel(report.category)} · {report.incident_type.replace(/_/g, ' ')}</span>
-                  <ChevronRight className="h-3 w-3 shrink-0" />
-                </button>
-              ))}
-              {data && data.reports.length === 0 ? <p className="text-[10px] text-[#66766b]">No reports in this view.</p> : null}
+          {isAuthority() ? (
+            <div className="rounded-2xl border border-[#dfe6db] bg-[#ffffff] p-4">
+              <DataLabel>Nearby reports</DataLabel>
+              <div className="mt-2 space-y-2">
+                {data?.reports.slice(0, 4).map((report) => (
+                  <button key={report.id} onClick={() => navigate(`/reports/${report.id}`)} className="flex w-full items-center justify-between gap-2 text-left text-[10px] text-[#5a6a5f] hover:text-[#142016]">
+                    <span>{categoryLabel(report.category)} · {report.incident_type.replace(/_/g, ' ')}</span>
+                    <ChevronRight className="h-3 w-3 shrink-0" />
+                  </button>
+                ))}
+                {data && data.reports.length === 0 ? <p className="text-[10px] text-[#66766b]">No reports in this view.</p> : null}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
 

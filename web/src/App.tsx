@@ -62,10 +62,11 @@ function StationRoute() {
   return <Navigate to={`/map?station=${stationId}`} replace />;
 }
 
-function ReportsRoute() {
-  const { user } = useAuth();
-  if (user?.role === 'PUBLIC') return <Navigate to="/my-reports" replace />;
-  return <ReportsPage />;
+function AccessGate({ access, children }: { access: 'authority' | 'citizen'; children: React.ReactNode }) {
+  const { user, isAuthority } = useAuth();
+  const allowed = access === 'authority' ? isAuthority() : user?.role === 'PUBLIC';
+  if (!allowed) return <Navigate to={access === 'authority' ? '/dashboard' : '/reports'} replace />;
+  return <>{children}</>;
 }
 
 function DataSourcesRoute() {
@@ -119,23 +120,23 @@ export default function App() {
         <Route index element={<DashboardPage />} />
       </Route>
       <Route element={<Protected><AppShell /></Protected>}>
-        <Route path="/atmosphere" element={<AtmospherePage />} />
+        <Route path="/atmosphere" element={<AccessGate access="authority"><AtmospherePage /></AccessGate>} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/map/stations/:stationId" element={<StationRoute />} />
-        <Route path="/intelligence/predictions" element={<PredictionsPage />} />
-        <Route path="/ai-analyst" element={<AiAnalystPage />} />
-        <Route path="/reports" element={<ReportsRoute />} />
-        <Route path="/my-reports" element={<MyReportsPage />} />
-        <Route path="/reports/:reportId" element={<ReportDetailPage />} />
+        <Route path="/intelligence/predictions" element={<AccessGate access="authority"><PredictionsPage /></AccessGate>} />
+        <Route path="/ai-analyst" element={<AccessGate access="authority"><AiAnalystPage /></AccessGate>} />
+        <Route path="/reports" element={<AccessGate access="authority"><ReportsPage /></AccessGate>} />
+        <Route path="/my-reports" element={<AccessGate access="citizen"><MyReportsPage /></AccessGate>} />
+        <Route path="/reports/:reportId" element={<AccessGate access="authority"><ReportDetailPage /></AccessGate>} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/alerts/:alertId" element={<AlertDetailPage />} />
-        <Route path="/incidents" element={<IncidentsPage />} />
-        <Route path="/incidents/:incidentId" element={<IncidentDetailPage />} />
-        <Route path="/compliance" element={<CompliancePage />} />
-        <Route path="/compliance/documents" element={<ComplianceDocumentsPage />} />
+        <Route path="/incidents" element={<AccessGate access="authority"><IncidentsPage /></AccessGate>} />
+        <Route path="/incidents/:incidentId" element={<AccessGate access="authority"><IncidentDetailPage /></AccessGate>} />
+        <Route path="/compliance" element={<AccessGate access="authority"><CompliancePage /></AccessGate>} />
+        <Route path="/compliance/documents" element={<AccessGate access="authority"><ComplianceDocumentsPage /></AccessGate>} />
         <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/simulation" element={<SimulationPage />} />
-        <Route path="/simulation/:sessionId" element={<SimulationSessionPage />} />
+        <Route path="/simulation" element={<AccessGate access="authority"><SimulationPage /></AccessGate>} />
+        <Route path="/simulation/:sessionId" element={<AccessGate access="authority"><SimulationSessionPage /></AccessGate>} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

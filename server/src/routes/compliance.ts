@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { query, one } from '../db/pool.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireAuthority } from '../middleware/auth.js';
 import { badRequest, notFound } from '../middleware/errors.js';
 import { compareObservation } from '../services/compliance.js';
 
 export const complianceRouter = Router();
-complianceRouter.use(requireAuth);
+complianceRouter.use(requireAuth, requireAuthority);
 
 complianceRouter.get('/standards', async (req, res, next) => {
   try {

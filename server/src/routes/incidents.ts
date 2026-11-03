@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { query, one } from '../db/pool.js';
-import { requireAuth, AUTHORITY, AUTHORITY_ADMIN_ROLES, VERIFIERS } from '../middleware/auth.js';
+import { requireAuth, requireAuthority, AUTHORITY, AUTHORITY_ADMIN_ROLES, VERIFIERS } from '../middleware/auth.js';
 import { badRequest, conflict, forbidden, notFound } from '../middleware/errors.js';
 import { INCIDENT_TRANSITIONS, type IncidentStatus } from '../types.js';
 import { audit } from '../lib/audit.js';
@@ -10,7 +10,7 @@ import { createIncidentUpdateNotifications } from '../services/notifications.js'
 import { isWithinMumbai } from '../services/geo.js';
 
 export const incidentsRouter = Router();
-incidentsRouter.use(requireAuth);
+incidentsRouter.use(requireAuth, requireAuthority);
 
 incidentsRouter.get('/', async (req, res, next) => {
   try {

@@ -116,7 +116,7 @@ export function AlertDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const { user, can } = useAuth();
+  const { user, can, isAuthority } = useAuth();
 
   const load = () => {
     if (!alertId) return;
@@ -234,6 +234,8 @@ export function AlertDetailPage() {
             </div>
           </Card>
 
+          {isAuthority() ? (
+          <>
           <Card>
             <CardHeader><CardTitle>Linked incidents</CardTitle><Badge tone="neutral">{data.linkedIncidents.length}</Badge></CardHeader>
             <div className="divide-y divide-[#e7ece3]">
@@ -261,6 +263,8 @@ export function AlertDetailPage() {
             </div>
             <p className="border-t border-[#e7ece3] px-4 py-2 text-[9px] leading-relaxed text-[#66766b]">SENT means the provider accepted the message. DELIVERED is only recorded from a provider webhook.</p>
           </Card>
+          </>
+          ) : null}
         </div>
       </div>
     </div>

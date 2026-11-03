@@ -71,3 +71,13 @@ describe('auth session cache', () => {
     expect(storage.get(CACHE_KEY)).toBe(JSON.stringify(user));
   });
 });
+
+describe('role access', () => {
+  it('keeps citizens out of authority views', () => {
+    useAuth.setState({ user: { ...user, role: 'PUBLIC' } });
+    expect(useAuth.getState().isAuthority()).toBe(false);
+
+    useAuth.setState({ user: { ...user, role: 'FIELD_OFFICER' } });
+    expect(useAuth.getState().isAuthority()).toBe(true);
+  });
+});

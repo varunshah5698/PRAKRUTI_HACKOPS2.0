@@ -451,8 +451,8 @@ function AtmosphereScene({
   layer: LayerKey;
   onLayerChange: (layer: LayerKey) => void;
 }) {
-  const [pose, setPose] = useState({ yaw: -24, pitch: 57 });
-  const [zoom, setZoom] = useState(1);
+  const [pose, setPose] = useState({ yaw: -22, pitch: 58 });
+  const [zoom, setZoom] = useState(1.25);
   const [selectedId, setSelectedId] = useState(stations[0]?.id ?? '');
   const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
   const nowPoint = simulation.points[HISTORY_HOURS];
@@ -477,9 +477,9 @@ function AtmosphereScene({
       const stationAqi = station.aqi ?? aqiFromPm25(stationPm) ?? scenePoint.aqi;
       const raw = layer === 'aqi' ? stationAqi : layer === 'pm25' ? stationPm : stationPm * 0.52 + 14;
       const value = clamp(raw * scale, 1, layer === 'aqi' ? 500 : 400);
-      const height = 24 + Math.pow(clamp(value / layerSpec.max, 0, 1), 0.82) * 172;
+      const height = 28 + Math.pow(clamp(value / layerSpec.max, 0, 1), 0.8) * 188;
       const x = 46 + ((station.lng - minLng) / lngSpan) * 468;
-      const y = 34 + ((maxLat - station.lat) / latSpan) * 252;
+      const y = 34 + ((maxLat - station.lat) / latSpan) * 232;
       return {
         station,
         value,
@@ -538,7 +538,7 @@ function AtmosphereScene({
 
       <div className="grid lg:grid-cols-[1fr_250px]">
         <div
-          className="atmo-scene h-[360px] sm:h-[410px]"
+          className="atmo-scene h-[400px] sm:h-[520px]"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={endDrag}
@@ -574,10 +574,10 @@ function AtmosphereScene({
                     key={bar.station.id}
                     className={`atmo-bar ${isSelected ? 'is-selected' : ''}`}
                     style={{
-                      left: bar.x - 13,
-                      top: bar.y - 13,
-                      width: 26,
-                      height: 26,
+                      left: bar.x - 14,
+                      top: bar.y - 14,
+                      width: 28,
+                      height: 28,
                       '--h': `${bar.height}px`,
                       '--bar': bar.color,
                     } as React.CSSProperties}
@@ -610,7 +610,7 @@ function AtmosphereScene({
           <div className="atmo-scene-controls">
             <button onClick={() => setZoom((value) => clamp(Number((value + 0.1).toFixed(2)), 0.7, 1.55))} aria-label="Zoom in"><Plus className="h-3.5 w-3.5" /></button>
             <button onClick={() => setZoom((value) => clamp(Number((value - 0.1).toFixed(2)), 0.7, 1.55))} aria-label="Zoom out"><Minus className="h-3.5 w-3.5" /></button>
-            <button onClick={() => { setPose({ yaw: -24, pitch: 57 }); setZoom(1); }} aria-label="Reset view"><RotateCcw className="h-3.5 w-3.5" /></button>
+            <button onClick={() => { setPose({ yaw: -22, pitch: 58 }); setZoom(1.25); }} aria-label="Reset view"><RotateCcw className="h-3.5 w-3.5" /></button>
           </div>
         </div>
 
@@ -672,7 +672,7 @@ function AtmosphereScene({
               <span className="text-[8px] text-[#8ba1a9]">{layerSpec.unit}</span>
             </div>
             <div className="mt-1.5 space-y-1">
-              {ranked.slice(0, 4).map((bar) => (
+              {ranked.slice(0, 3).map((bar) => (
                 <button key={bar.station.id} onClick={() => setSelectedId(bar.station.id)} className="flex w-full items-center gap-2 rounded-lg px-1 py-1 text-left transition hover:bg-white/70">
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: bar.color }} />
                   <span className="min-w-0 flex-1 truncate text-[9px] text-[#557480]">{bar.station.name.replace(' demo air monitor', '')}</span>
@@ -767,24 +767,34 @@ export function AtmospherePage() {
     return {
       grid: { ...chartGrid, top: 34, right: 24, bottom: 30 },
       tooltip: chartTooltip,
-      legend: { top: 0, left: 4, itemWidth: 10, itemHeight: 8, textStyle: { color: '#6e8490', fontSize: 10 } },
+      legend: {
+        top: 0,
+        left: 4,
+        itemWidth: 10,
+        itemHeight: 8,
+        textStyle: { color: '#6e8490', fontSize: 10 },
+        data: ['Modelled history', 'Simulated forecast', 'NAAQS 24h reference'],
+      },
       xAxis: {
         type: 'category',
         boundaryGap: false,
         data: times,
         ...chartAxis,
-        axisLabel: { ...chartAxis.axisLabel, interval: 11, color: '#78919a' },
+        axisLabel: {
+          ...chartAxis.axisLabel,
+          interval: 11,
+          color: '#78919a',
+          formatter: (value: string, index: number) => `${points[index]?.dayLabel.split(',')[0] ?? ''} ${value}`,
+        },
       },
       yAxis: {
         type: 'value',
-        name: 'PM2.5 µg/m³',
-        nameTextStyle: { color: '#78919a', fontSize: 9 },
         ...chartAxis,
         splitLine: { lineStyle: { color: '#e9f1f2', type: 'dashed' } },
       },
       series: [
         {
-          name: 'Uncertainty band',
+          name: '_bandLower',
           type: 'line',
           stack: 'confidence',
           data: lower,
@@ -792,9 +802,10 @@ export function AtmospherePage() {
           lineStyle: { opacity: 0 },
           areaStyle: { opacity: 0 },
           silent: true,
+          tooltip: { show: false },
         },
         {
-          name: 'Uncertainty band',
+          name: '_bandUpper',
           type: 'line',
           stack: 'confidence',
           data: band,
@@ -802,6 +813,7 @@ export function AtmospherePage() {
           lineStyle: { opacity: 0 },
           areaStyle: { color: 'rgba(45,124,148,.13)' },
           silent: true,
+          tooltip: { show: false },
         },
         {
           name: 'Modelled history',
@@ -940,8 +952,8 @@ export function AtmospherePage() {
       days.push(dayLabel(date));
       for (let hour = 0; hour < 24; hour += 1) {
         const traffic = Math.exp(-((hour - 9.5) ** 2) / 6) * 0.5 + Math.exp(-((hour - 19) ** 2) / 8) * 0.8 + 0.15;
-        const night = hour < 6 || hour > 21 ? 1.14 : 1;
-        const value = seed.basePm25 * (0.72 + traffic * busy) * night * (0.86 + pseudoNoise(day * 24 + hour, 5) * 0.3);
+        const night = hour < 6 || hour > 21 ? 1.22 : 1;
+        const value = seed.basePm25 * (0.7 + traffic * busy) * night * (0.75 + pseudoNoise(day * 24 + hour, 5) * 0.55);
         data.push([hour, day, Math.round(value)]);
       }
     }
@@ -962,8 +974,8 @@ export function AtmospherePage() {
         axisLabel: { ...chartAxis.axisLabel, color: '#78919a', fontSize: 9 },
       },
       visualMap: {
-        min: 20,
-        max: Math.max(140, Math.round(seed.basePm25 * 1.8)),
+        min: 15,
+        max: Math.max(90, Math.round(seed.basePm25 * 1.5)),
         calculable: false,
         orient: 'horizontal',
         left: 'center',
@@ -1040,9 +1052,12 @@ export function AtmospherePage() {
 
   const futureSlice = forecastPoints.slice(0, FORECAST_HOURS + 1);
   const futurePeak = Math.max(...futureSlice.map((point) => point.pm25));
+  const futurePeakAqi = aqiFromPm25(futurePeak) ?? 0;
   const futureAverage = mean(futureSlice.map((point) => point.pm25)) ?? 0;
   const exceedanceHours = futureSlice.filter((point) => point.pm25 >= 60).length;
   const confidence = Math.max(58, Math.round(93 - horizon * 0.42 - (scenario === 'stagnant' ? 6 : 0)));
+  const bestPoint = futureSlice.reduce((best, point) => (point.aqi < best.aqi ? point : best), futureSlice[0]);
+  const peakPoint = futureSlice.reduce((peak, point) => (point.aqi > peak.aqi ? point : peak), futureSlice[0]);
 
   return (
     <div className="atmo-page space-y-4">
@@ -1079,7 +1094,7 @@ export function AtmospherePage() {
 
       <div className="grid gap-4 xl:grid-cols-12">
         <section className="atmo-hero relative rounded-[30px] xl:col-span-8">
-          <div className="atmo-sun right-[11%] top-[-34px]" aria-hidden />
+          <div className="atmo-sun right-[29%] top-[-58px]" aria-hidden />
           <div className="atmo-cloud right-[24%] top-[22px] h-[16px] w-[76px]" aria-hidden />
           <div className="atmo-cloud right-[4%] top-[128px] h-[11px] w-[52px] opacity-60 [animation-delay:-8s]" aria-hidden />
           <div className="atmo-skyline" aria-hidden />
@@ -1172,6 +1187,21 @@ export function AtmospherePage() {
                 );
               })}
             </div>
+
+            <div className="mt-auto grid grid-cols-2 gap-2 pt-5 sm:grid-cols-4">
+              {[
+                { label: 'Cleanest window', value: bestPoint.label, note: `AQI ${bestPoint.aqi} · ${number(bestPoint.pm25, 0)} µg/m³`, tone: '#3f9a83' },
+                { label: 'Peak window', value: peakPoint.label, note: `AQI ${peakPoint.aqi} · ${number(peakPoint.pm25, 0)} µg/m³`, tone: '#c97445' },
+                { label: 'Dominant source', value: `${sourceMix[0].value}%`, note: sourceMix[0].name, tone: '#2d7c94' },
+                { label: 'Directional trust', value: `${confidence}%`, note: `simulated spread · H+${horizon}`, tone: '#6b8f9b' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/65 bg-white/35 px-3 py-2.5 backdrop-blur-sm">
+                  <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#6e8b95]">{item.label}</p>
+                  <p className="display mt-1 text-[16px] font-bold leading-none tracking-[-0.03em]" style={{ color: item.tone }}>{item.value}</p>
+                  <p className="mt-1 truncate text-[8px] text-[#6e8b95]">{item.note}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -1254,19 +1284,10 @@ export function AtmospherePage() {
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
-              <div className="rounded-xl bg-white/45 p-2">
-                <p className="text-[8px] text-[#8ba1a9]">Boundary layer</p>
-                <p className="text-[11px] font-semibold text-[#20424f]">{number(selectedPoint.boundaryLayer, 2)} km</p>
-              </div>
-              <div className="rounded-xl bg-white/45 p-2">
-                <p className="text-[8px] text-[#8ba1a9]">Wind</p>
-                <p className="text-[11px] font-semibold text-[#20424f]">{number(selectedPoint.wind, 0)} km/h</p>
-              </div>
-              <div className="rounded-xl bg-white/45 p-2">
-                <p className="text-[8px] text-[#8ba1a9]">Peak 48h</p>
-                <p className="text-[11px] font-semibold text-[#20424f]">{number(futurePeak, 0)} µg/m³</p>
-              </div>
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/45 px-3 py-2 text-[8px] text-[#78919a]">
+              <span>BLH <b className="text-[10px] text-[#20424f]">{number(selectedPoint.boundaryLayer, 2)} km</b></span>
+              <span>Wind <b className="text-[10px] text-[#20424f]">{number(selectedPoint.wind, 0)} km/h</b></span>
+              <span>Peak <b className="text-[10px] text-[#20424f]">{number(futurePeak, 0)} µg/m³</b></span>
             </div>
             <p className="mt-3 flex items-start gap-1.5 text-[8px] leading-relaxed text-[#8ba1a9]">
               <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
@@ -1300,7 +1321,7 @@ export function AtmospherePage() {
                 { label: 'Forecast peak', value: `${number(futurePeak, 0)}`, unit: 'µg/m³', tone: '#c97445' },
                 { label: '48h average', value: `${number(futureAverage, 0)}`, unit: 'µg/m³', tone: '#2d7c94' },
                 { label: 'Hours above 60', value: `${exceedanceHours}`, unit: `/ ${FORECAST_HOURS}h`, tone: exceedanceHours > 12 ? '#c97445' : '#3f9a83' },
-                { label: 'Scenario at peak', value: aqiCategory(futurePeak > 90 ? 220 : futurePeak > 60 ? 150 : 80), unit: 'category', tone: aqiColor(futurePeak > 90 ? 220 : futurePeak > 60 ? 150 : 80) },
+                { label: 'Peak category', value: aqiCategory(futurePeakAqi), unit: 'indicative', tone: aqiColor(futurePeakAqi) },
               ].map((item) => (
                 <div key={item.label} className="rounded-2xl border border-white/80 bg-white/50 p-3">
                   <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#78919a]">{item.label}</p>
@@ -1315,13 +1336,13 @@ export function AtmospherePage() {
                 <span className="text-[9px] text-[#78919a]">{hourLabel(forecastPoints[0]?.time ?? anchor)} → {hourLabel(forecastPoints[12]?.time ?? anchor)}</span>
               </div>
               <div className="mt-2 flex items-end gap-1">
-                {forecastPoints.slice(0, 12).map((point) => {
+                {forecastPoints.slice(0, 12).map((point, index) => {
                   const height = clamp((point.pm25 / Math.max(1, futurePeak)) * 72, 8, 72);
                   return (
                     <div key={point.time.toISOString()} className="group flex flex-1 flex-col items-center gap-1">
                       <span className="text-[7px] font-semibold text-transparent transition group-hover:text-[#557480]">{number(point.pm25, 0)}</span>
                       <div className="w-full rounded-full transition group-hover:opacity-80" style={{ height, background: `linear-gradient(180deg, ${aqiColor(point.aqi)}, ${hexAlpha(aqiColor(point.aqi), '88')})` }} />
-                      <span className="text-[7px] text-[#8ba1a9]">{point.label.replace(' ', '')}</span>
+                      <span className={`text-[7px] text-[#8ba1a9] ${index % 2 === 0 ? '' : 'opacity-0'}`}>{point.label.replace(' ', '')}</span>
                     </div>
                   );
                 })}
@@ -1330,6 +1351,21 @@ export function AtmospherePage() {
             <p className="mt-3 text-[8px] leading-relaxed text-[#8ba1a9]">
               The 48h band is an empirical spread widened with horizon; it is not a calibrated prediction interval. Missing or stale observations are not silently filled.
             </p>
+            <div className="mt-3 rounded-2xl border border-[#eadfc5] bg-[#fdf7e8] p-3">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#9b6a25]">Scenario advisory</p>
+              <p className="mt-1 text-[9px] leading-relaxed text-[#8a6c3e]">
+                {peakPoint.aqi > 150
+                  ? 'Sensitive groups should avoid prolonged outdoor exertion near the peak window; the general population may notice effects.'
+                  : peakPoint.aqi > 100
+                    ? 'Sensitive groups should reduce prolonged outdoor exertion near the peak window, especially during the evening build-up.'
+                    : 'Air quality stays relatively comfortable; normal outdoor activity is reasonable across the airshed.'}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {[`Peak ${peakPoint.label}`, `Cleanest ${bestPoint.label}`, `${exceedanceHours}h above 60`].map((label) => (
+                  <span key={label} className="rounded-full border border-[#e7d9b8] bg-white/60 px-2 py-0.5 text-[8px] font-medium text-[#8a6c3e]">{label}</span>
+                ))}
+              </div>
+            </div>
           </div>
         </Card>
       </div>

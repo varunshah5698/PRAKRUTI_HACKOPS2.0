@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { query, one } from '../db/pool.js';
-import { requireAuth, AUTHORITY, AUTHORITY_ADMIN_ROLES } from '../middleware/auth.js';
+import { requireAuth, requireAuthority, AUTHORITY, AUTHORITY_ADMIN_ROLES } from '../middleware/auth.js';
 import { badRequest, forbidden, notFound } from '../middleware/errors.js';
 import { SCENARIOS, generateSimulation, persistSimulationSteps } from '../services/simulation.js';
 import { createOrUpdateAlert } from '../services/alerts.js';
@@ -12,7 +12,7 @@ import { audit } from '../lib/audit.js';
 import type { RiskAssessmentResult } from '../types.js';
 
 export const simulationsRouter = Router();
-simulationsRouter.use(requireAuth);
+simulationsRouter.use(requireAuth, requireAuthority);
 
 simulationsRouter.get('/scenarios', (_req, res) => {
   res.json({

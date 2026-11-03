@@ -19,7 +19,7 @@ export function SourcesPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { can } = useAuth();
+  const { can, isAuthority } = useAuth();
 
   const load = () => {
     setLoading(true);
@@ -83,6 +83,7 @@ export function SourcesPage() {
         ))}
       </div>
 
+      {isAuthority() ? (
       <Card>
         <CardHeader><CardTitle>Recent ingestion jobs</CardTitle><Badge tone="neutral">{jobs.length}</Badge></CardHeader>
         {jobs.length === 0 ? <EmptyState title="No ingestion jobs" description="Trigger ingestion or wait for a scheduled job." /> : (
@@ -104,6 +105,7 @@ export function SourcesPage() {
           </div>
         )}
       </Card>
+      ) : null}
 
       <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.05] p-4 text-[10px] leading-relaxed text-amber-700/75">
         <ShieldAlert className="mb-1 h-3.5 w-3.5" />
