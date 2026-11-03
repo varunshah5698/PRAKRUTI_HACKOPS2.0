@@ -698,6 +698,7 @@ def main() -> None:
                 },
                 "coverage": {code: round(value, 4) for code, value in data["coverage"].items()},
                 "quality": data["quality"],
+                "weather": weather_quality,
             }
         )
 
@@ -719,7 +720,10 @@ def main() -> None:
                 if args.source == "archive"
                 else "OpenAQ v3 precomputed hourly measurements (provider CPCB; owners MPCB/BMC/IITM)"
             ),
-            "weather": "Open-Meteo ERA5 archive reanalysis, not a station measurement",
+            "weather": (
+                "Co-located OpenAQ station weather measurements where available; Open-Meteo ERA5 reanalysis fills missing hours. "
+                "Per-station measured fractions are recorded in stations[].weather."
+            ),
         },
         "stations": stations_meta,
         "rows": int(len(output)),
