@@ -5,6 +5,7 @@ Environmental intelligence, prediction and compliance workflows for Greater Mumb
 This is a working demonstration application, not a static dashboard. It connects:
 
 - an environmental command centre,
+- an immersive Atmosphere lab with 3D dispersion columns, scenario forecasting and model transparency,
 - an interactive 3D Mumbai map with timeline replay,
 - predictive intelligence with explicit model status,
 - a grounded AI analyst,
@@ -266,7 +267,7 @@ Authority registration creates a `PENDING_APPROVAL` account with no authority pe
 
 Public: `/`, `/about`, `/data-sources`, `/privacy`, `/terms`, `/report`, `/login`, `/register`, `/forgot-password`, `/reset-password`.
 
-Application: `/dashboard`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
+Application: `/dashboard`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
 
 ## Tests
 
