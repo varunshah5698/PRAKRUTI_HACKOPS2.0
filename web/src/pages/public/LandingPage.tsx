@@ -33,6 +33,7 @@ interface Overview {
   demoMode: boolean;
   stationDataMode?: 'SIMULATION' | 'MIXED' | 'LIVE_SOURCE';
   stationCounts?: { simulated: number; connectedSource: number };
+  staleStationCount?: number;
   stations: Array<{
     id: string;
     name: string;
@@ -224,7 +225,7 @@ export function LandingPage() {
             <div className="mt-8 grid max-w-[540px] grid-cols-3 gap-4 border-t border-ink/15 pt-5">
               <div>
                 <p className="display text-2xl font-bold">{number(demoStations, 0)}</p>
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Stations shown</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Current stations</p>
               </div>
               <div>
                 <p className="display text-2xl font-bold">{number(activeAlerts, 0)}</p>

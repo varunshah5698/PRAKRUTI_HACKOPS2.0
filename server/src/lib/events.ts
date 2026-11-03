@@ -33,3 +33,16 @@ export function emitEvent(type: string, payload: unknown): void {
 export function clientCount(): number {
   return clients.size;
 }
+
+// SSE streams never end on their own, so close them before a graceful shutdown
+// or they would hold the server open until the force-exit timer.
+export function closeEventClients(): void {
+  for (const client of clients) {
+    try {
+      client.res.end();
+    } catch {
+      // The stream is already closed.
+    }
+  }
+  clients.clear();
+}

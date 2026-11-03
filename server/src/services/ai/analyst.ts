@@ -356,6 +356,25 @@ If the message is a greeting, thanks or other casual small talk, reply warmly in
 Return JSON with keys: narrative (string), observed (string[]), predicted (string[]), reported (string[]), estimated (string[]), standards (string[]), limitations (string[]), nextActions (string[]). Leave a list empty when it is not relevant to the answer.`;
 }
 
+// The provider occasionally returns 429/5xx; retry briefly so one blip does not
+// discard an otherwise valid analysis.
+export async function fetchWithRetry(url: string, init: RequestInit, attempts = 3): Promise<Response> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, init);
+      if (response.ok) return response;
+      lastError = new Error(`River AI HTTP ${response.status}`);
+      if (response.status !== 429 && response.status < 500) break;
+    } catch (error) {
+      lastError = error;
+      if (error instanceof Error && error.name === 'AbortError') break;
+    }
+    if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+  }
+  throw lastError instanceof Error ? lastError : new Error('River AI request failed');
+}
+
 async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
   const url = `${riverConfig.baseURL.replace(/\/$/, '')}/chat/completions`;
   const body = JSON.stringify({
@@ -371,34 +390,15 @@ async function callRiver(evidence: EvidenceBundle): Promise<AiAnswer> {
       },
     ],
   });
-  let response: Awaited<ReturnType<typeof fetch>> | null = null;
-  let lastError: unknown = null;
-  // The provider occasionally returns 429/5xx; retry briefly so one blip does not
-  // discard an otherwise valid analysis.
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const current = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${riverConfig.apiKey}`,
-        },
-        body,
-        signal: AbortSignal.timeout(45_000),
-      });
-      if (current.ok) {
-        response = current;
-        break;
-      }
-      lastError = new Error(`River AI HTTP ${current.status}`);
-      if (current.status !== 429 && current.status < 500) break;
-    } catch (error) {
-      lastError = error;
-      if (error instanceof Error && error.name === 'AbortError') break;
-    }
-    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
-  }
-  if (!response) throw lastError instanceof Error ? lastError : new Error('River AI request failed');
+  const response = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${riverConfig.apiKey}`,
+    },
+    body,
+    signal: AbortSignal.timeout(45_000),
+  });
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
     model?: string;

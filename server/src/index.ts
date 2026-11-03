@@ -32,7 +32,7 @@ import { ingestOpenMeteoWeather } from './services/ingest.js';
 import { startLiveScheduler, stopLiveScheduler } from './services/live.js';
 import { evaluateAllStations, evaluateWasteLocalities } from './services/risk.js';
 import { syncAlertsFromStationAssessments, syncAlertsFromWasteAssessments } from './services/alerts.js';
-import { addEventClient, clientCount, removeEventClient } from './lib/events.js';
+import { addEventClient, clientCount, closeEventClients, removeEventClient } from './lib/events.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
