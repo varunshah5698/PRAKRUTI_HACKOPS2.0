@@ -32,6 +32,7 @@ import { CityPulseStrip } from '../../components/CityPulseStrip';
 import { RiskBadge, SourceBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock } from '../../components/ui';
 import { api } from '../../lib/api';
+import { aqiCategory } from '../../lib/aqi';
 import { AQI_COLORS, CATEGORY_LABELS, RISK_COLORS, categoryLabel, formatDate, formatTime, number, timeAgo, windDirection } from '../../lib/format';
 import { feelsLikeC, isNightInMumbai, weatherCondition } from '../../lib/weather';
 import { useAuth } from '../../store/auth';

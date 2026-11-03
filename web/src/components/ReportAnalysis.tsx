@@ -514,6 +514,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    setOrbit(false);
     drag.current = { x: event.clientX, y: event.clientY, yaw: pose.yaw, pitch: pose.pitch };
     setDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -696,7 +697,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                           className={`ra-community ${isSelected ? 'is-selected' : ''}`}
                           style={{ left: x - 10, top: y - 10, '--dot': color } as CSSProperties}
                           onPointerDown={(event) => event.stopPropagation()}
-                          onClick={(event) => { event.stopPropagation(); setSelected({ kind: 'community', id: community.id }); }}
+                          onClick={(event) => { event.stopPropagation(); setOrbit(false); setSelected({ kind: 'community', id: community.id }); }}
                           aria-label={`${community.incident_type.replace(/_/g, ' ')} report ${community.public_ref}, ${Math.round(community.distance_m)} metres away`}
                           aria-pressed={isSelected}
                         >
@@ -724,7 +725,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                             '--bar': station.tone,
                           } as CSSProperties}
                           onPointerDown={(event) => event.stopPropagation()}
-                          onClick={(event) => { event.stopPropagation(); setSelected({ kind: 'station', id: station.id }); }}
+                          onClick={(event) => { event.stopPropagation(); setOrbit(false); setSelected({ kind: 'station', id: station.id }); }}
                           aria-label={`${shortName(station.name)}, ${station.headline}, ${Math.round(station.distance_m)} metres away`}
                           aria-pressed={isSelected}
                         >
@@ -748,7 +749,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
                     '--bar': accent,
                   } as CSSProperties}
                   onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => { event.stopPropagation(); setSelected({ kind: 'report' }); }}
+                  onClick={(event) => { event.stopPropagation(); setOrbit(false); setSelected({ kind: 'report' }); }}
                   aria-label={`Report site ${report.public_ref}, ${categoryLabel(report.category)}, ${report.locality_name ?? 'Mumbai'}`}
                   aria-pressed={selected.kind === 'report'}
                 >
