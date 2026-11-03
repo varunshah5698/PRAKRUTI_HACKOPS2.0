@@ -569,7 +569,7 @@ export async function analyzeEvidenceImage(
     }
     return {
       status: 'COMPLETED',
-      provider: `google:${usedModel}`,
+      provider: isGemini ? `google:${usedModel}` : usedModel,
       output: {
         ...parsed,
         limitations: [
