@@ -14,7 +14,7 @@ Source status is shown in the application at `/data-sources` and via `GET /api/v
 | `open-meteo-cams` | CAMS regional air quality | CONNECTED | 20 (seed) | Modelled PM2.5/PM10, not a station measurement. |
 | `demo-network` | प्रकृति demo network | CONNECTED | 4,566 (seed) | All records `is_simulated=true`. |
 | `river-ai` | River AI | CONNECTED locally | — | `RIVER_API_KEY` is set in the gitignored `.env.local`; adapter verified against `zai-org/GLM-5.3-Flash`. Empty by default in `.env.example`; rule-based fallback remains if absent. |
-| `vision-ai` | AI image assessment | CONNECTED locally | — | River AI open-weight models `moonshotai/Kimi-K3` with `zai-org/GLM-5.3-Flash` fallback. Key is only in the gitignored `.env.local`; `.env.example` leaves the key empty. |
+| `vision-ai` | AI image assessment | CONNECTED locally | — | Open-weight models over an OpenAI-compatible endpoint: Groq `qwen/qwen3.8-27b` locally; River `moonshotai/Kimi-K3` with `zai-org/GLM-5.3-Flash` fallback verified. Key is only in the gitignored `.env.local`; `.env.example` leaves the key empty. |
 | `ml-service` | LightGBM forecasting service | NOT_CONFIGURED | — | Models NOT_TRAINED; persistence baseline only. |
 | `email` | Email delivery | NOT_CONFIGURED | — | Notifications stored as SIMULATED. |
 | `evidence-storage` | Evidence storage | CONNECTED | — | Local private storage. |
