@@ -591,7 +591,9 @@ export async function analyzeEvidenceImage(
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${attempt.apiKey}` },
               body: JSON.stringify({
                 model: attempt.model,
-                max_tokens: 1200,
+                // Groq's on-demand Qwen tier caps output at 1000 tokens/minute;
+                // asking for more is rejected outright with HTTP 429.
+                max_tokens: 600,
                 temperature: 0.1,
                 messages: [
                   {
