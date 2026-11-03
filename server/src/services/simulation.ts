@@ -233,6 +233,10 @@ export async function generateSimulation(params: {
           : verified === 1
             ? 'One verified report. Field verification still required.'
             : 'Unverified report only. No confirmed critical condition.';
+      values = {
+        verified_reports: { value: verified, unit: 'reports', qualityState: 'VALID', isSimulated: true },
+        unverified_reports: { value: unverified, unit: 'reports', qualityState: 'VALID', isSimulated: true },
+      };
     } else if (params.scenario.id === 'industrial_emission') {
       const progress = Math.min(1, step / 10);
       const stackPm = 40 + progress * 80 + (random() - 0.5) * 5;

@@ -85,6 +85,8 @@ const METRIC_LABELS: Record<string, string> = {
   stack_pm: 'Stack PM',
   stack_nox: 'Stack NOx',
   stack_so2: 'Stack SO₂',
+  verified_reports: 'Verified reports',
+  unverified_reports: 'Unverified reports',
 };
 
 const metricLabel = (code: string) => METRIC_LABELS[code] ?? code.replace(/_/g, ' ').toUpperCase();
@@ -337,7 +339,7 @@ export function SimulationPage() {
             </div>
           </Card>
 
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden self-start">
             <CardHeader>
               <div>
                 <CardTitle>Session settings</CardTitle>
