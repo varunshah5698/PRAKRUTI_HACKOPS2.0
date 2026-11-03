@@ -1,0 +1,199 @@
+import { env, emailConfigured } from '../config/env.js';
+import { one, query } from '../db/pool.js';
+import {
+  deliverEmail,
+  getAlertForEmail,
+  markNotificationStatus,
+  recordNotificationEvent,
+  renderAlertEmail,
+  renderIncidentUpdateEmail,
+  type IncidentForEmail,
+} from './email.js';
+
+interface Recipient {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  locality_id: string | null;
+  radius_km: number | null;
+  categories: string[];
+}
+
+async function publicRecipients(alertId: string, category: string): Promise<Recipient[]> {
+  return query<Recipient>(
+    `SELECT u.id, u.name, u.email, u.role::text, p.locality_id, p.radius_km::float8,
+            p.alert_categories AS categories
+     FROM users u
+     JOIN user_preferences p ON p.user_id = u.id
+     WHERE u.role = 'PUBLIC' AND u.account_status = 'ACTIVE'
+       AND p.notify_email = true AND p.consent_at IS NOT NULL
+       AND $2 = ANY(p.alert_categories)
+       AND (
+         p.locality_id IS NULL
+         OR p.locality_id = (SELECT locality_id FROM environmental_alerts WHERE id = $1)
+         OR (
+           p.radius_km IS NOT NULL
+           AND EXISTS (
+             SELECT 1 FROM localities pref, environmental_alerts a
+             WHERE pref.id = p.locality_id AND a.id = $1 AND a.locality_id IS NOT NULL
+               AND ST_DWithin(pref.location, (SELECT location FROM localities WHERE id = a.locality_id), p.radius_km * 1000)
+           )
+         )
+       )`,
+    [alertId, category],
+  );
+}
+
+export async function authorityRecipients(category: string): Promise<Recipient[]> {
+  return query<Recipient>(
+    `SELECT u.id, u.name, u.email, u.role::text, u.locality_id, NULL::float8 AS radius_km,
+            ARRAY['air','water','waste','industrial']::text[] AS categories
+     FROM users u
+     WHERE u.role IN ('FIELD_OFFICER','ENVIRONMENTAL_ANALYST','AUTHORITY_ADMIN','SYSTEM_ADMIN')
+       AND u.account_status = 'ACTIVE'
+       AND (u.jurisdiction IS NULL OR u.jurisdiction ILIKE '%mumbai%' OR u.jurisdiction = $1)`,
+    [category],
+  );
+}
+
+function templateFor(audience: 'PUBLIC' | 'AUTHORITY', level: string): string {
+  if (level === 'RECOVERY') return audience === 'PUBLIC' ? 'PUBLIC_RECOVERY' : 'AUTHORITY_RECOVERY';
+  if (audience === 'PUBLIC') return level === 'CRITICAL' ? 'PUBLIC_CRITICAL' : 'PUBLIC_EARLY_WARNING';
+  return level === 'CRITICAL' ? 'AUTHORITY_CRITICAL' : 'AUTHORITY_EARLY_WARNING';
+}
+
+async function createForRecipient(
+  alertId: string,
+  recipient: Recipient,
+  audience: 'PUBLIC' | 'AUTHORITY',
+  alertSimulated: boolean,
+  simulationSessionId: string | null,
+): Promise<boolean> {
+  const alert = await getAlertForEmail(alertId);
+  if (!alert) return false;
+  const template = templateFor(audience, alert.level);
+  const existing = await one<{ id: string }>(
+    `SELECT id FROM notifications
+     WHERE user_id=$1 AND alert_id=$2 AND template=$3 AND created_at > now() - interval '24 hours'`,
+    [recipient.id, alertId, template],
+  );
+  if (existing) return false;
+
+  const rendered = renderAlertEmail(alert, audience, template);
+  const isSimulated = alertSimulated || !emailConfigured || (env.DEMO_MODE && !env.DEMO_EMAIL_RECIPIENT);
+  const inserted = await one<{ id: string }>(
+    `INSERT INTO notifications
+       (user_id, alert_id, audience, channel, template, subject, body_html, status, is_simulated, simulation_session_id)
+     VALUES ($1,$2,$3,'EMAIL',$4,$5,$6,'SIMULATED',$7,$8)
+     RETURNING id`,
+    [recipient.id, alertId, audience, template, rendered.subject, rendered.html, isSimulated, simulationSessionId],
+  );
+  if (!inserted) return false;
+  await recordNotificationEvent(inserted.id, 'CREATED', {
+    audience,
+    template,
+    demoMode: env.DEMO_MODE,
+    recipientMasked: recipient.email.replace(/(^.).*(@.*$)/, '$1***$2'),
+  });
+
+  const delivery = await deliverEmail({
+    notificationId: inserted.id,
+    to: recipient.email,
+    subject: rendered.subject,
+    html: rendered.html,
+    isSimulated,
+  });
+  await markNotificationStatus(inserted.id, delivery.status, {
+    providerMessageId: delivery.messageId,
+    error: delivery.error,
+  });
+  await recordNotificationEvent(inserted.id, delivery.event);
+  return true;
+}
+
+export async function createNotificationsForAlert(
+  alertId: string,
+  options: { simulationSessionId?: string | null } = {},
+): Promise<{ publicCreated: number; authorityCreated: number }> {
+  const alert = await one<{
+    id: string;
+    category: string;
+    is_simulated: boolean;
+    simulation_session_id: string | null;
+    level: string;
+  }>('SELECT id, category, is_simulated, simulation_session_id, level FROM environmental_alerts WHERE id=$1', [alertId]);
+  if (!alert) return { publicCreated: 0, authorityCreated: 0 };
+
+  const sessionId = options.simulationSessionId ?? alert.simulation_session_id ?? null;
+  const [publicUsers, authorityUsers] = await Promise.all([
+    publicRecipients(alertId, alert.category),
+    authorityRecipients(alert.category),
+  ]);
+  let publicCreated = 0;
+  let authorityCreated = 0;
+  for (const user of publicUsers) {
+    if (await createForRecipient(alertId, user, 'PUBLIC', alert.is_simulated, sessionId)) publicCreated += 1;
+  }
+  for (const user of authorityUsers) {
+    if (await createForRecipient(alertId, user, 'AUTHORITY', alert.is_simulated, sessionId)) authorityCreated += 1;
+  }
+  return { publicCreated, authorityCreated };
+}
+
+export async function acknowledgeNotification(notificationId: string, userId: string): Promise<boolean> {
+  const row = await one<{ id: string }>(
+    `UPDATE notifications SET status='ACKNOWLEDGED', acknowledged_at=now()
+     WHERE id=$1 AND user_id=$2 RETURNING id`,
+    [notificationId, userId],
+  );
+  if (!row) return false;
+  await recordNotificationEvent(notificationId, 'ACKNOWLEDGED', { userId });
+  return true;
+}
+
+
+export async function createIncidentUpdateNotifications(incidentId: string, update: string): Promise<number> {
+  const incident = await one<IncidentForEmail & { is_simulated: boolean; simulation_session_id: string | null }>(
+    `SELECT i.id, i.public_ref, i.title, i.category, i.status, i.risk_level, i.is_simulated,
+            i.simulation_session_id, l.name AS locality_name, u.name AS assigned_to_name
+     FROM environmental_incidents i
+     LEFT JOIN localities l ON l.id=i.locality_id
+     LEFT JOIN users u ON u.id=i.assigned_to
+     WHERE i.id=$1`,
+    [incidentId],
+  );
+  if (!incident) return 0;
+  const recipients = await authorityRecipients(incident.category);
+  const rendered = renderIncidentUpdateEmail(incident, update);
+  let created = 0;
+  for (const recipient of recipients) {
+    const recent = await one<{ id: string }>(
+      `SELECT id FROM notifications WHERE user_id=$1 AND incident_id=$2 AND template='AUTHORITY_INCIDENT_UPDATE'
+       AND created_at > now() - interval '5 minutes'`,
+      [recipient.id, incident.id],
+    );
+    if (recent) continue;
+    const isSimulated = incident.is_simulated || !emailConfigured || (env.DEMO_MODE && !env.DEMO_EMAIL_RECIPIENT);
+    const row = await one<{ id: string }>(
+      `INSERT INTO notifications
+         (user_id, incident_id, audience, channel, template, subject, body_html, status, is_simulated, simulation_session_id)
+       VALUES ($1,$2,'AUTHORITY','EMAIL','AUTHORITY_INCIDENT_UPDATE',$3,$4,'SIMULATED',$5,$6)
+       RETURNING id`,
+      [recipient.id, incident.id, rendered.subject, rendered.html, isSimulated, incident.simulation_session_id],
+    );
+    if (!row) continue;
+    await recordNotificationEvent(row.id, 'CREATED', { template: 'AUTHORITY_INCIDENT_UPDATE', incidentId: incident.id });
+    const delivery = await deliverEmail({
+      notificationId: row.id,
+      to: recipient.email,
+      subject: rendered.subject,
+      html: rendered.html,
+      isSimulated,
+    });
+    await markNotificationStatus(row.id, delivery.status, { providerMessageId: delivery.messageId, error: delivery.error });
+    await recordNotificationEvent(row.id, delivery.event);
+    created += 1;
+  }
+  return created;
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+server/storage/evidence/*
+!server/storage/evidence/.gitkeep
+*.log
+.DS_Store
+coverage/
+ml/.venv/
+ml/artifacts/*.joblib
+ml/data/*.csv
+tmp/

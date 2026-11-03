@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: enviropulse
+      POSTGRES_PASSWORD: enviropulse_local_only
+      POSTGRES_DB: enviropulse
+    ports:
+      - "5433:5432"
+    volumes:
+      - enviropulse_pgdata:/var/lib/postgresql/data
+
+volumes:
+  enviropulse_pgdata:

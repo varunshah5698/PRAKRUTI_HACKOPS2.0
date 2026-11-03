@@ -1,0 +1,236 @@
+[
+ {
+  "name": "Colaba",
+  "lat": 18.915091,
+  "lon": 72.8259691,
+  "osm_type": "node",
+  "osm_id": 1640184983,
+  "display_name": "Colaba, A Ward, Mumbai Zone 1, Mumbai City District, Maharashtra, 400005, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Fort",
+  "lat": 18.9219661,
+  "lon": 72.8345657,
+  "osm_type": "way",
+  "osm_id": 28845634,
+  "display_name": "Gateway of India - \u0917\u0947\u091f\u0935\u0947 \u0911\u092b \u0907\u0902\u0921\u093f\u092f\u093e, Apollo Bandar, Koli Nagar, A Ward, Mumbai Zone 1, Mumbai, Mumbai City District, Maharashtra, 400039, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Marine Drive",
+  "lat": 18.9557281,
+  "lon": 72.8127131,
+  "osm_type": "way",
+  "osm_id": 40444798,
+  "display_name": "Marine Drive, Gamdevi, D Ward, Mumbai Zone 1, Mumbai City District, Maharashtra, 400036, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Churchgate",
+  "lat": 18.9354797,
+  "lon": 72.8271741,
+  "osm_type": "node",
+  "osm_id": 4260136290,
+  "display_name": "Churchgate, Scarsdale Street, Churchgate, Fort, A Ward, Mumbai Zone 1, Mumbai City District, Maharashtra, 400020, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Worli",
+  "lat": 18.9988405,
+  "lon": 72.8170327,
+  "osm_type": "way",
+  "osm_id": 353802422,
+  "display_name": "Worli Police Quarters, Worli, Dr Annie Besant Road, Nehru Nagar, G/S Ward, Mumbai Zone 2, Mumbai, Mumbai City District, Maharashtra, 400018, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Lower Parel",
+  "lat": 18.99568,
+  "lon": 72.8302756,
+  "osm_type": "node",
+  "osm_id": 621911847,
+  "display_name": "Lower Parel, Delisle Road ROB, BDD Chawl, Lower Parel, G/S Ward, Mumbai Zone 2, Mumbai City District, Maharashtra, 400013, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Dadar",
+  "lat": 19.0173761,
+  "lon": 72.8430265,
+  "osm_type": "node",
+  "osm_id": 2630075003,
+  "display_name": "Dadar, Dadasaheb Phalke Marg, Matunga East, F/N Ward, Mumbai Zone 2, Mumbai City District, Maharashtra, 400014, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Mahim",
+  "lat": 19.0427721,
+  "lon": 72.8407925,
+  "osm_type": "way",
+  "osm_id": 194654625,
+  "display_name": "St, Michael's Church, Mori Road, Mahim Parsi Colony, Mahim, G/N Ward, Mumbai Zone 2, Mumbai, Mumbai City District, Maharashtra, 400016, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Bandra",
+  "lat": 19.0549792,
+  "lon": 72.8402203,
+  "osm_type": "node",
+  "osm_id": 2630075000,
+  "display_name": "Bandra, Gurunanak Marg (Turner Road), Lal Mati (Lal Mitti), Khar, H/W Ward, Mumbai Zone 3, Mumbai, Mumbai Suburban District, Maharashtra, 400050, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Khar",
+  "lat": 19.0682411,
+  "lon": 72.8400412,
+  "osm_type": "node",
+  "osm_id": 347138797,
+  "display_name": "Khar Road, Chitrakar Durandhar Road (2nd Road), Khar, H/W Ward, Mumbai Zone 3, Mumbai, Mumbai Suburban District, Maharashtra, 400052, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Santacruz",
+  "lat": 19.0789383,
+  "lon": 72.8446344,
+  "osm_type": "node",
+  "osm_id": 12408808753,
+  "display_name": "M R Medical, Santacruz, Road No 11, Anand Nagar, Golibar, H/E Ward, Mumbai Zone 3, Mumbai, Mumbai Suburban District, Maharashtra, 400055, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Juhu",
+  "lat": 19.1070215,
+  "lon": 72.8275275,
+  "osm_type": "node",
+  "osm_id": 1640244289,
+  "display_name": "Juhu, K/W Ward, Mumbai Zone 3, Mumbai, Mumbai Suburban District, Maharashtra, 400058, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Andheri",
+  "lat": 19.1196976,
+  "lon": 72.8464205,
+  "osm_type": "node",
+  "osm_id": 5696928866,
+  "display_name": "Andheri, Masjid Galli, Gaondevi Dongri, Andheri West, K/W Ward, Mumbai Zone 3, Mumbai, Mumbai Suburban District, Maharashtra, 400069, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Powai",
+  "lat": 19.1187195,
+  "lon": 72.9073476,
+  "osm_type": "node",
+  "osm_id": 4759418251,
+  "display_name": "Powai, S Ward, Mumbai Zone 6, Mumbai, Mumbai Suburban District, Maharashtra, 400076, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Vikhroli",
+  "lat": 19.1114795,
+  "lon": 72.928021,
+  "osm_type": "node",
+  "osm_id": 4258411797,
+  "display_name": "Vikhroli, \u092a\u0940. \u0938\u094b\u092e\u0928 \u092e\u093e\u0930\u094d\u0917, Hariyali, Vikhroli West, S Ward, Mumbai Zone 6, Mumbai, Mumbai Suburban District, Maharashtra, 400083, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Ghatkopar",
+  "lat": 19.0856928,
+  "lon": 72.9083668,
+  "osm_type": "node",
+  "osm_id": 4264539430,
+  "display_name": "Ghatkopar, Station Road, Kapol Wadi, Ghatkopar East, N Ward, Mumbai Zone 6, Mumbai, Mumbai Suburban District, Maharashtra, 400086, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Kurla",
+  "lat": 19.0652797,
+  "lon": 72.8793805,
+  "osm_type": "node",
+  "osm_id": 2663447640,
+  "display_name": "Kurla, Kurla FOB 4, Naware Baug Jagruti Nagar, Kurla East, L Ward, Mumbai Zone 5, Mumbai, Mumbai Suburban District, Maharashtra, 400024, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Bandra Kurla Complex",
+  "lat": 19.0606629,
+  "lon": 72.8546797,
+  "osm_type": "node",
+  "osm_id": 5221297179,
+  "display_name": "Bandra Kurla Complex, Ramakrishna Paramahansa Marg, Sant Dnyaneshwar Nagar, Bandra East, H/E Ward, Mumbai Zone 3, Mumbai, Mumbai Suburban District, Maharashtra, 400051, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Chembur",
+  "lat": 19.054818,
+  "lon": 72.8979713,
+  "osm_type": "node",
+  "osm_id": 632314632,
+  "display_name": "Chembur, M/W Ward, Mumbai Zone 5, Mumbai, Mumbai Suburban District, Maharashtra, 400012, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Trombay",
+  "lat": 19.033651,
+  "lon": 72.9503637,
+  "osm_type": "node",
+  "osm_id": 1366794662,
+  "display_name": "Trombay, V.N. Purav Marg, Trombay Koliwada, Cheeta Camp, M/E Ward, Mumbai Zone 5, Mumbai, Mumbai Suburban District, Maharashtra, 400094, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Govandi",
+  "lat": 19.0553688,
+  "lon": 72.9150702,
+  "osm_type": "node",
+  "osm_id": 3205733664,
+  "display_name": "Govandi, B S Devashi Marg, Samrat Ashok Nagar, Govandi West, M/E Ward, Mumbai Zone 5, Mumbai, Mumbai Suburban District, Maharashtra, 400043, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Malad",
+  "lat": 19.1867193,
+  "lon": 72.8485884,
+  "osm_type": "node",
+  "osm_id": 3347034598,
+  "display_name": "Malad, Kasturba Road, Rai Pada, Malad West, P/N Ward, Mumbai Zone 4, Mumbai, Mumbai Suburban District, Maharashtra, 400064, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Goregaon",
+  "lat": 19.1648688,
+  "lon": 72.8495492,
+  "osm_type": "node",
+  "osm_id": 3347034961,
+  "display_name": "Goregaon, Station Road, Jawahar Nagar, Goregaon East, P/S Ward, Mumbai Zone 4, Mumbai, Mumbai Suburban District, Maharashtra, 400062, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Kandivali",
+  "lat": 19.2042334,
+  "lon": 72.8518862,
+  "osm_type": "node",
+  "osm_id": 7552344493,
+  "display_name": "Kandivali, Bajaj Marg, Chanakya Nagar, Poisar, R/S Ward, Mumbai Zone 4, Mumbai Suburban District, Maharashtra, 400067, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Borivali",
+  "lat": 19.2313925,
+  "lon": 72.8408607,
+  "osm_type": "node",
+  "osm_id": 5219622344,
+  "display_name": "Borivali (West), Link Road, Ashtavinayak Nagar, Shimpoli, R/C Ward, Mumbai Zone 4, Mumbai Suburban District, Maharashtra, 400091, India",
+  "within_mumbai_bbox": true
+ },
+ {
+  "name": "Mulund",
+  "lat": 19.1721366,
+  "lon": 72.9566971,
+  "osm_type": "node",
+  "osm_id": 1643351703,
+  "display_name": "Mulund, Platform 4, Vijay Nagar, Mulund East, T Ward, Mumbai Zone 6, Mumbai, Mumbai Suburban District, Maharashtra, 400081, India",
+  "within_mumbai_bbox": true
+ }
+]
