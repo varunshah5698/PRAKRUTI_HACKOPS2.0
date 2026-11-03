@@ -189,26 +189,46 @@ function Skyline() {
     [236, 58, 12], [249, 78, 15], [265, 46, 10], [276, 60, 13], [290, 42, 9], [300, 68, 14],
   ];
   return (
-    <div className="relative h-[86px] overflow-hidden">
+    <div className="relative h-full min-h-[94px] overflow-hidden">
       <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="h-full w-full" aria-hidden>
         <defs>
           <linearGradient id="skyline-fade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-            <stop offset="70%" stopColor="#ffffff" stopOpacity="0.62" />
-            <stop offset="100%" stopColor="#dbe8d6" stopOpacity="0.08" />
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="58%" stopColor="#f4f9ef" stopOpacity="0.94" />
+            <stop offset="100%" stopColor="#bed4b5" stopOpacity="0.9" />
           </linearGradient>
         </defs>
         {buildings.map(([x, h, w], index) => (
           <g key={index}>
             <rect x={x} y={96 - h} width={w} height={h} rx="1.5" fill="url(#skyline-fade)" />
             {[...Array(Math.max(1, Math.floor(h / 15)))].map((_, row) => (
-              <rect key={row} x={x + 3} y={96 - h + 6 + row * 13} width={Math.max(2, w - 6)} height="2.5" rx="1" fill="#c9dcc2" opacity="0.5" />
+              <rect key={row} x={x + 3} y={96 - h + 6 + row * 13} width={Math.max(2, w - 6)} height="2.5" rx="1" fill="#ffffff" opacity="0.64" />
             ))}
           </g>
         ))}
-        <rect x="0" y="94" width="320" height="2" fill="#c3d7bb" opacity="0.45" />
+        <rect x="0" y="94" width="320" height="2" fill="#9fb995" opacity="0.4" />
       </svg>
     </div>
+  );
+}
+
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values.map((value, index) => `${(index / (values.length - 1)) * 100},${36 - ((value - min) / range) * 29}`).join(' ');
+  return (
+    <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="mt-3 h-[86px] w-full" aria-hidden>
+      <defs>
+        <linearGradient id="pm-spark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#7fbe62" stopOpacity="0.34" />
+          <stop offset="100%" stopColor="#7fbe62" stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,40 ${points} 100,40`} fill="url(#pm-spark)" />
+      <polyline points={points} fill="none" stroke="#4e9b3f" strokeWidth="1.7" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -408,7 +428,7 @@ export function DashboardPage() {
             <p className="mt-1 text-[9px] leading-relaxed text-[#8a988e]">
               {weather ? `${number(weather.wind_direction_deg, 0)}° wind · ${formatDate(weather.observed_at)}` : 'No current weather observation.'}
             </p>
-            <div className="mt-3">
+            <div className="mt-3 min-h-[94px] flex-1">
               <Skyline />
             </div>
             <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
@@ -474,7 +494,15 @@ export function DashboardPage() {
               })}
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-[#dbe5d6] pt-3">
+            <div className="mt-4 border-t border-dashed border-[#dbe5d6] pt-2">
+              <div className="flex items-center justify-between">
+                <DataLabel>48 hour shape</DataLabel>
+                <span className="text-[8px] uppercase tracking-[0.1em] text-[#8a988e]">Hourly mean</span>
+              </div>
+              <Sparkline values={pm25Series.slice(-24).map((point) => point.value)} />
+            </div>
+
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-[#dbe5d6] pt-3">
               <span className="text-[9px] text-[#74847a]">24h NAAQS screening reference 60 µg/m³ · missing periods not filled</span>
               <Link to="/intelligence/predictions" className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#3f7d2a] hover:text-[#2f5f20]">
                 Open predictions <ArrowRight className="h-3 w-3" />
