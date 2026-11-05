@@ -3,6 +3,7 @@ import { query, one } from '../db/pool.js';
 import { deliverEmail, markNotificationStatus, recordNotificationEvent, renderWeatherAlertEmail } from './email.js';
 import { validateWeatherReading } from './weather-status.js';
 import { recordEmail, recordFailure, recordHeartbeat, recordSuccess } from './telemetry.js';
+import { withWorkerLock } from './worker-lock.js';
 
 export type WeatherSeverity = 'NORMAL' | 'MODERATE' | 'HIGH' | 'CRITICAL';
 
@@ -641,14 +642,18 @@ async function runMonitor(): Promise<void> {
   if (monitorRunning) return;
   monitorRunning = true;
   try {
-    const result = await monitorCitizenWeather();
-    const retries = await retryFailedCitizenEmails();
-    await recordHeartbeat('worker:citizen-weather', { ...result, retries });
-    if (result.citizens > 0 || retries.retried > 0) {
-      console.log(
-        `[citizen-weather] locations=${result.locations} citizens=${result.citizens} readings=${result.readings} events=${result.events} emails=${result.emails} retries=${retries.retried}/${retries.sent}`,
-      );
-    }
+    const executed = await withWorkerLock('worker:citizen-weather', async () => {
+      const result = await monitorCitizenWeather();
+      const retries = await retryFailedCitizenEmails();
+      await recordHeartbeat('worker:citizen-weather', { ...result, retries });
+      if (result.citizens > 0 || retries.retried > 0) {
+        console.log(
+          `[citizen-weather] locations=${result.locations} citizens=${result.citizens} readings=${result.readings} events=${result.events} emails=${result.emails} retries=${retries.retried}/${retries.sent}`,
+        );
+      }
+      return true;
+    });
+    if (!executed) return;
   } catch (error) {
     console.error('[citizen-weather] cycle failed', error);
   } finally {

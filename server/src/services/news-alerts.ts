@@ -3,6 +3,7 @@ import { query, one } from '../db/pool.js';
 import { deliverEmail, markNotificationStatus, recordNotificationEvent, renderCriticalNewsEmail } from './email.js';
 import { getEnvironmentalNews, isCriticalNews, type NewsItem } from './news.js';
 import { recordEmail, recordFailure, recordHeartbeat } from './telemetry.js';
+import { withWorkerLock } from './worker-lock.js';
 
 const MAX_AGE_MS = 72 * 60 * 60_000;
 
@@ -109,11 +110,15 @@ async function runNewsMonitor(): Promise<void> {
   if (newsRunning) return;
   newsRunning = true;
   try {
-    const result = await monitorCriticalNews();
-    await recordHeartbeat('worker:critical-news', result);
-    if (result.items > 0 || result.emails > 0 || result.failed > 0) {
-      console.log(`[critical-news] items=${result.items} emails=${result.emails} failed=${result.failed}`);
-    }
+    const executed = await withWorkerLock('worker:critical-news', async () => {
+      const result = await monitorCriticalNews();
+      await recordHeartbeat('worker:critical-news', result);
+      if (result.items > 0 || result.emails > 0 || result.failed > 0) {
+        console.log(`[critical-news] items=${result.items} emails=${result.emails} failed=${result.failed}`);
+      }
+      return true;
+    });
+    if (!executed) return;
   } catch (error) {
     console.error('[critical-news] cycle failed', error);
   } finally {
