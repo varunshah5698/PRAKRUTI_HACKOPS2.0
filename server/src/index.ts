@@ -231,6 +231,11 @@ async function startSchedulers() {
 const server = app.listen(env.PORT, () => {
   console.log(`प्रकृति API listening on http://localhost:${env.PORT}`);
   console.log(`Demo mode: ${env.DEMO_MODE ? 'ON' : 'OFF'} · storage: ${appConfig.storageRoot}`);
+  if (env.NODE_ENV === 'production' && emailConfigured && process.env.RENDER === 'true') {
+    console.warn(
+      '[email] Render free web services block outbound SMTP ports 25/465/587. If sends time out, upgrade the instance or use an HTTPS email API.',
+    );
+  }
   startSchedulers().catch((error) => console.error('[scheduler-start]', error));
   void backfillSimulationRecommendations()
     .then(({ sessions, events }) => {

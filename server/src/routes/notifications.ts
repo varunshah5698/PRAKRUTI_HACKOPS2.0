@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { badRequest, forbidden, notFound } from '../middleware/errors.js';
 import { emailConfigured, emailProviderLabel, env } from '../config/env.js';
 import { acknowledgeNotification } from '../services/notifications.js';
+import { recordEmail, recordFailure } from '../services/telemetry.js';
 import {
   deliverEmail,
   getAlertForEmail,
@@ -170,6 +171,7 @@ notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit
       }
     }
     if (!emailConfigured) {
+      await recordFailure('email:citizen-alerts', 'Email provider NOT_CONFIGURED.');
       res.status(503).json({
         error: {
           code: 'NOT_CONFIGURED',
@@ -202,6 +204,7 @@ notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit
       error: delivery.error,
     });
     await recordNotificationEvent(inserted.id, delivery.event);
+    await recordEmail(delivery.status !== 'FAILED', delivery.error);
 
     res.status(delivery.status === 'FAILED' ? 502 : 200).json({
       status: delivery.status,

@@ -361,9 +361,12 @@ names or coordinates; provider detail is sanitised.
 The Live City map combines NASA EONET, GDACS and USGS events. GDACS alert levels
 are not local official warnings; each row links to the original report.
 
-**Deployment note:** on Render's free plan an idle web service is suspended, and
-the in-process worker stops with it. Use an always-on instance (or a separate
-scheduler) if alerts must run continuously.
+**Deployment note:** Render's free web services suspend when idle and block
+outbound SMTP ports 25/465/587. The in-process worker therefore stops while the
+service sleeps, and Gmail SMTP sends from a free instance time out. Use an
+always-on paid instance for continuous monitoring and SMTP, or send through an
+HTTPS email API. The admin health endpoint records the SMTP failure; the app does
+not report the message as delivered.
 
 ## Demo accounts
 
