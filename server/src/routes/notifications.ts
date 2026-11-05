@@ -156,6 +156,10 @@ notificationsRouter.put('/preferences', async (req, res, next) => {
 
 notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: true, legacyHeaders: false }), async (req, res, next) => {
   try {
+    const body = z.object({ to: z.string().trim().email().max(200).optional() }).parse(req.body ?? {});
+    if (body.to && req.user!.role !== 'SYSTEM_ADMIN') {
+      throw forbidden('Only a system administrator can send a test email to another address.');
+    }
     if (req.user!.role === 'PUBLIC') {
       const account = await one<{ email_verified: boolean }>('SELECT email_verified FROM users WHERE id=$1', [req.user!.id]);
       if (!account?.email_verified) {
@@ -188,7 +192,7 @@ notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit
 
     const delivery = await deliverEmail({
       notificationId: inserted.id,
-      to: req.user!.email,
+      to: body.to ?? req.user!.email,
       subject: rendered.subject,
       html: rendered.html,
       isSimulated: false,
@@ -201,7 +205,7 @@ notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit
 
     res.status(delivery.status === 'FAILED' ? 502 : 200).json({
       status: delivery.status,
-      recipient: delivery.recipient ?? req.user!.email,
+      recipient: delivery.recipient ?? body.to ?? req.user!.email,
       messageId: delivery.messageId,
       error: delivery.error,
       demoMode: env.DEMO_MODE,
