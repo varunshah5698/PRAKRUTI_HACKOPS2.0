@@ -34,6 +34,7 @@ import { syncSourceCatalogue } from './services/sources.js';
 import { ingestOpenMeteoWeather } from './services/ingest.js';
 import { startLiveScheduler, stopLiveScheduler } from './services/live.js';
 import { startCitizenWeatherScheduler, stopCitizenWeatherScheduler } from './services/citizen-weather.js';
+import { startNewsAlertScheduler, stopNewsAlertScheduler } from './services/news-alerts.js';
 import { evaluateAllStations, evaluateWasteLocalities } from './services/risk.js';
 import { syncAlertsFromStationAssessments, syncAlertsFromWasteAssessments } from './services/alerts.js';
 import { addEventClient, clientCount, closeEventClients, removeEventClient } from './lib/events.js';
@@ -95,6 +96,7 @@ app.get('/api/health', async (_req, res) => {
       emailConfigured,
       googleConfigured,
       citizenMonitorEnabled: env.CITIZEN_MONITOR_ENABLED,
+      newsMonitorEnabled: env.NEWS_MONITOR_ENABLED,
       time: new Date().toISOString(),
     });
   } catch {
@@ -204,6 +206,7 @@ async function startSchedulers() {
   await syncSourceCatalogue();
   startLiveScheduler();
   startCitizenWeatherScheduler();
+  startNewsAlertScheduler();
   // Hourly forecast grids: the providers republish them on the hour, so a
   // 6-hourly refresh is enough between live current-reading polls.
   setInterval(() => {
@@ -249,6 +252,7 @@ async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
   stopLiveScheduler();
   stopCitizenWeatherScheduler();
+  stopNewsAlertScheduler();
   closeEventClients();
   // Give in-flight requests (AI analyses can take ~30 s) time to finish after
   // Render switches traffic, then force the process down before SIGKILL.

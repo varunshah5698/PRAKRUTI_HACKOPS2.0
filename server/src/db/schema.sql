@@ -527,10 +527,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed boolean NOT NULL
 CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_idx ON users (google_sub) WHERE google_sub IS NOT NULL;
 
 ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS weather_notifications boolean NOT NULL DEFAULT false;
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS news_notifications boolean NOT NULL DEFAULT true;
 ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS latitude double precision;
 ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS longitude double precision;
 ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS location_label text;
 ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS weather_consent_at timestamptz;
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS news_consent_at timestamptz;
 CREATE INDEX IF NOT EXISTS user_preferences_weather_idx
   ON user_preferences (weather_notifications) WHERE weather_notifications = true;
 
@@ -579,9 +581,14 @@ CREATE TABLE IF NOT EXISTS weather_events (
 CREATE INDEX IF NOT EXISTS weather_events_location_idx ON weather_events (location_key, last_seen_at DESC);
 
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS weather_event_id uuid REFERENCES weather_events(id) ON DELETE SET NULL;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS news_item_id text;
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS attempt_count integer NOT NULL DEFAULT 0;
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS next_retry_at timestamptz;
 CREATE UNIQUE INDEX IF NOT EXISTS notifications_weather_event_user_idx
   ON notifications (weather_event_id, user_id) WHERE weather_event_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS notifications_news_item_user_idx
+  ON notifications (news_item_id, user_id) WHERE news_item_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS notifications_news_idx
+  ON notifications (created_at DESC) WHERE template = 'NEWS_ALERT';
 CREATE INDEX IF NOT EXISTS notifications_retry_idx
   ON notifications (next_retry_at) WHERE status = 'FAILED' AND next_retry_at IS NOT NULL;

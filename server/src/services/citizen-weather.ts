@@ -476,7 +476,7 @@ export async function refreshCitizenLocation(userId: string): Promise<{ updated:
   return { updated: true, severity: classification.severity };
 }
 
-export async function retryFailedWeatherEmails(): Promise<{ retried: number; sent: number }> {
+export async function retryFailedCitizenEmails(): Promise<{ retried: number; sent: number }> {
   const rows = await query<{
     id: string;
     user_id: string;
@@ -487,7 +487,7 @@ export async function retryFailedWeatherEmails(): Promise<{ retried: number; sen
   }>(
     `SELECT n.id, n.user_id, u.email, n.subject, n.body_html, n.attempt_count
      FROM notifications n JOIN users u ON u.id=n.user_id
-     WHERE n.template='WEATHER_ALERT' AND n.status='FAILED' AND n.next_retry_at IS NOT NULL
+     WHERE n.template IN ('WEATHER_ALERT','NEWS_ALERT') AND n.status='FAILED' AND n.next_retry_at IS NOT NULL
        AND n.next_retry_at <= now() AND n.attempt_count < $1
        AND u.account_status='ACTIVE' AND u.email_verified=true
      ORDER BY n.next_retry_at LIMIT 50`,
@@ -531,7 +531,7 @@ async function runMonitor(): Promise<void> {
   monitorRunning = true;
   try {
     const result = await monitorCitizenWeather();
-    const retries = await retryFailedWeatherEmails();
+    const retries = await retryFailedCitizenEmails();
     if (result.citizens > 0 || retries.retried > 0) {
       console.log(
         `[citizen-weather] locations=${result.locations} citizens=${result.citizens} readings=${result.readings} events=${result.events} emails=${result.emails} retries=${retries.retried}/${retries.sent}`,

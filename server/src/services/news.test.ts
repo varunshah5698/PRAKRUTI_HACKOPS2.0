@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseNewsFeed, type NewsSource } from './news.js';
+import { isCriticalNews, parseNewsFeed, type NewsItem, type NewsSource } from './news.js';
 
 const source: NewsSource = {
   name: 'The Guardian',
@@ -57,5 +57,22 @@ describe('environmental news feed parser', () => {
       <item><title>Firecracker ban returns</title><link>https://example.com/firecracker</link></item>
     </channel></rss>`;
     expect(parseNewsFeed(feed, local).map((item) => item.title)).toEqual(['Firecracker ban returns']);
+  });
+
+  it('only treats safety-relevant stories as critical news', () => {
+    const item = (title: string, summary = ''): NewsItem => ({
+      id: title,
+      title,
+      summary,
+      url: 'https://example.com',
+      imageUrl: null,
+      source: 'Test',
+      topic: 'Mumbai',
+      publishedAt: null,
+    });
+    expect(isCriticalNews(item('Mumbai flood warning issued for low-lying areas'))).toBe(true);
+    expect(isCriticalNews(item('Gas leak reported near Chembur'))).toBe(true);
+    expect(isCriticalNews(item('New garden opens in Bandra'))).toBe(false);
+    expect(isCriticalNews(item('Weekend guide: best cafes in Mumbai'))).toBe(false);
   });
 });

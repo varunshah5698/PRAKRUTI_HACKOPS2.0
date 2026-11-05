@@ -301,6 +301,44 @@ export function renderWeatherAlertEmail(input: WeatherAlertEmailInput): { subjec
   };
 }
 
+export interface CriticalNewsEmailInput {
+  name: string;
+  title: string;
+  summary: string;
+  source: string;
+  url: string;
+  publishedAt: string | null;
+}
+
+export function renderCriticalNewsEmail(input: CriticalNewsEmailInput): { subject: string; html: string } {
+  const published = input.publishedAt
+    ? new Date(input.publishedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+    : 'Timestamp not supplied by the publisher';
+  return {
+    subject: `CRITICAL ENVIRONMENT NEWS — ${input.source}`,
+    html: shell(
+      'Critical environmental news',
+      `Hello ${input.name}, a critical environmental story has been published by ${input.source}.`,
+      `${detailRows([
+        ['Headline', input.title],
+        ['Source', input.source],
+        ['Published', published],
+        ['Summary', input.summary || 'The publisher did not supply a summary.'],
+      ])}
+      <p style="margin:18px 0 0">
+        <a href="${escapeHtml(input.url)}" style="display:inline-block;background:#111310;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600">
+          Read the full report
+        </a>
+      </p>
+      <div style="background:#fff8ec;border-left:3px solid #e88a43;padding:12px 14px;font-size:13px;line-height:1.55;margin-top:18px">
+        <strong>What to do</strong><br>
+        Read the source report and follow local authority guidance. This is a news alert, not an official regulatory determination or a confirmed local measurement.
+      </div>`,
+      'This alert was generated because the story matched the critical environmental news filter. Verify the publisher report before acting.',
+    ),
+  };
+}
+
 export function renderTestEmail(name: string): { subject: string; html: string } {
   const provider = isGmailTransport() ? 'Gmail' : 'SMTP';
   return {

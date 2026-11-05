@@ -320,6 +320,25 @@ source. They are not official IMD/CWC warnings; no authoritative Indian warning
 feed is configured. Flood alerts mean "extreme rainfall / flood risk", not an
 official flood warning.
 
+### Live news and critical-news alerts
+
+The newsroom aggregates seven RSS sources: The Guardian (air pollution), The
+Hindu (Mumbai and energy/environment), Mongabay India, Hindustan Times Mumbai,
+The Indian Express, and BBC India. Local/general feeds are filtered to
+environmental stories; the endpoint returns up to 30 recent items and refreshes
+every five minutes.
+
+`NEWS_MONITOR_ENABLED=true` starts a server-side critical-news worker. It
+fetches the same feeds every 15 minutes and emails opted-in citizens when a
+story matches a safety filter such as flood, cyclone, severe pollution, gas
+leak, heatwave or a major fire. It stores the item id, suppresses duplicate
+stories per user, limits each user to one news email per cooldown window, and
+retries failed sends with the same Gmail transport. Citizens can turn critical
+news emails on or off from the dashboard; enabling requires explicit consent.
+
+News alerts are labelled as news, never as official measurements or regulatory
+determinations.
+
 **Deployment note:** on Render's free plan an idle web service is suspended, and
 the in-process worker stops with it. Use an always-on instance (or a separate
 scheduler) if alerts must run continuously.

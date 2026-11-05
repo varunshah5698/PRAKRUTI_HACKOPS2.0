@@ -83,15 +83,18 @@ citizenRouter.get('/dashboard', async (req, res, next) => {
       last_login_at: string | null;
       created_at: string;
       weather_notifications: boolean;
+      news_notifications: boolean;
       latitude: number | null;
       longitude: number | null;
       location_label: string | null;
       weather_consent_at: string | null;
+      news_consent_at: string | null;
     }>(
       `SELECT u.id, u.name, u.email, u.email_verified, u.avatar_url, u.onboarding_completed, u.last_login_at, u.created_at,
               COALESCE(p.weather_notifications,false) AS weather_notifications,
+              COALESCE(p.news_notifications,true) AS news_notifications,
               p.latitude::float8 AS latitude, p.longitude::float8 AS longitude,
-              p.location_label, p.weather_consent_at
+              p.location_label, p.weather_consent_at, p.news_consent_at
        FROM users u LEFT JOIN user_preferences p ON p.user_id=u.id
        WHERE u.id=$1`,
       [req.user!.id],
@@ -144,7 +147,7 @@ citizenRouter.get('/dashboard', async (req, res, next) => {
       created_at: string;
     }>(
       `SELECT id, subject, status, sent_at, delivered_at, error, created_at
-       FROM notifications WHERE user_id=$1 AND template='WEATHER_ALERT'
+       FROM notifications WHERE user_id=$1 AND template IN ('WEATHER_ALERT','NEWS_ALERT')
        ORDER BY created_at DESC LIMIT 10`,
       [req.user!.id],
     );
@@ -160,10 +163,12 @@ citizenRouter.get('/dashboard', async (req, res, next) => {
         lastLoginAt: profile.last_login_at,
         createdAt: profile.created_at,
         weatherNotifications: profile.weather_notifications,
+        newsNotifications: profile.news_notifications,
         latitude: profile.latitude,
         longitude: profile.longitude,
         locationLabel: profile.location_label,
         weatherConsentAt: profile.weather_consent_at,
+        newsConsentAt: profile.news_consent_at,
       },
       weather: reading
         ? {
@@ -201,24 +206,40 @@ citizenRouter.put('/profile', async (req, res, next) => {
         latitude: z.number().min(-90).max(90),
         longitude: z.number().min(-180).max(180),
         weatherNotifications: z.boolean(),
+        newsNotifications: z.boolean().optional(),
         consent: z.boolean().default(false),
       })
       .strict()
       .parse(req.body);
-    if (body.weatherNotifications && !body.consent) {
-      throw badRequest('Explicit consent is required for weather email alerts.');
-    }
-    if (body.weatherNotifications) {
-      const account = await one<{ email_verified: boolean }>('SELECT email_verified FROM users WHERE id=$1', [req.user!.id]);
-      if (!account?.email_verified) {
-        throw badRequest('A verified email address is required before enabling weather email alerts. Sign in with Google.');
-      }
-    }
-    const previous = await one<{ latitude: number | null; longitude: number | null; location_label: string | null }>(
-      `SELECT latitude::float8 AS latitude, longitude::float8 AS longitude, location_label
+    const previous = await one<{
+      latitude: number | null;
+      longitude: number | null;
+      location_label: string | null;
+      weather_notifications: boolean;
+      news_notifications: boolean;
+      weather_consent_at: string | null;
+      news_consent_at: string | null;
+    }>(
+      `SELECT latitude::float8 AS latitude, longitude::float8 AS longitude, location_label,
+              COALESCE(weather_notifications,false) AS weather_notifications,
+              COALESCE(news_notifications,true) AS news_notifications,
+              weather_consent_at, news_consent_at
        FROM user_preferences WHERE user_id=$1`,
       [req.user!.id],
     );
+    const nextNews = body.newsNotifications ?? previous?.news_notifications ?? true;
+    const consentNeeded =
+      (body.weatherNotifications && !previous?.weather_consent_at) ||
+      (nextNews && !previous?.news_consent_at);
+    if (consentNeeded && !body.consent) {
+      throw badRequest('Explicit consent is required for weather or critical-news email alerts.');
+    }
+    if (body.weatherNotifications || nextNews) {
+      const account = await one<{ email_verified: boolean }>('SELECT email_verified FROM users WHERE id=$1', [req.user!.id]);
+      if (!account?.email_verified) {
+        throw badRequest('A verified email address is required before enabling email alerts. Sign in with Google.');
+      }
+    }
     const changed =
       !previous ||
       previous.latitude === null ||
@@ -229,22 +250,31 @@ citizenRouter.put('/profile', async (req, res, next) => {
 
     await query(
       `INSERT INTO user_preferences
-         (user_id, weather_notifications, latitude, longitude, location_label, weather_consent_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,now())
+         (user_id, weather_notifications, news_notifications, latitude, longitude, location_label,
+          weather_consent_at, news_consent_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now())
        ON CONFLICT (user_id) DO UPDATE SET
          weather_notifications=EXCLUDED.weather_notifications,
+         news_notifications=EXCLUDED.news_notifications,
          latitude=EXCLUDED.latitude,
          longitude=EXCLUDED.longitude,
          location_label=EXCLUDED.location_label,
-         weather_consent_at=CASE WHEN EXCLUDED.weather_notifications THEN now() ELSE user_preferences.weather_consent_at END,
+         weather_consent_at=CASE
+           WHEN EXCLUDED.weather_notifications THEN COALESCE(EXCLUDED.weather_consent_at, user_preferences.weather_consent_at, now())
+           ELSE user_preferences.weather_consent_at END,
+         news_consent_at=CASE
+           WHEN EXCLUDED.news_notifications THEN COALESCE(EXCLUDED.news_consent_at, user_preferences.news_consent_at, now())
+           ELSE user_preferences.news_consent_at END,
          updated_at=now()`,
       [
         req.user!.id,
         body.weatherNotifications,
+        nextNews,
         body.latitude,
         body.longitude,
         body.locationLabel,
         body.weatherNotifications && body.consent ? new Date().toISOString() : null,
+        nextNews && body.consent ? new Date().toISOString() : null,
       ],
     );
     await query(
@@ -281,7 +311,7 @@ citizenRouter.get('/notifications', async (req, res, next) => {
   try {
     const rows = await query<Record<string, unknown>>(
       `SELECT id, subject, status, sent_at, delivered_at, error, weather_event_id, created_at
-       FROM notifications WHERE user_id=$1 AND template='WEATHER_ALERT'
+       FROM notifications WHERE user_id=$1 AND template IN ('WEATHER_ALERT','NEWS_ALERT')
        ORDER BY created_at DESC LIMIT 50`,
       [req.user!.id],
     );

@@ -11,15 +11,26 @@ import {
   Send,
   Thermometer,
   Wind,
+  ExternalLink,
 } from 'lucide-react';
 import { Badge, Button, Card, CardHeader, CardTitle } from '../../components/ui';
 import { api, ApiError } from '../../lib/api';
+import { timeAgo } from '../../lib/format';
 
 interface WeatherClassification {
   severity: 'NORMAL' | 'MODERATE' | 'HIGH' | 'CRITICAL';
   condition: string;
   measuredValue: number | null;
   unit: string | null;
+}
+
+interface NewsItem {
+  id: string;
+  title: string;
+  url: string;
+  summary: string;
+  source: string;
+  publishedAt: string | null;
 }
 
 interface DashboardPayload {
@@ -30,10 +41,12 @@ interface DashboardPayload {
     emailVerified: boolean;
     onboardingCompleted: boolean;
     weatherNotifications: boolean;
+    newsNotifications: boolean;
     latitude: number | null;
     longitude: number | null;
     locationLabel: string | null;
     weatherConsentAt: string | null;
+    newsConsentAt: string | null;
   };
   weather: {
     observed_at: string;
@@ -99,6 +112,8 @@ export function CitizenDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
+  const [newsEnabled, setNewsEnabled] = useState(true);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -108,6 +123,7 @@ export function CitizenDashboardPage() {
       const payload = await api.get<DashboardPayload>('/citizen/dashboard');
       setData(payload);
       setEnabled(payload.profile.weatherNotifications);
+      setNewsEnabled(payload.profile.newsNotifications);
       if (!payload.profile.onboardingCompleted || payload.profile.latitude === null || payload.profile.longitude === null) {
         navigate('/citizen/onboarding', { replace: true });
       }
@@ -120,6 +136,10 @@ export function CitizenDashboardPage() {
 
   useEffect(() => {
     void load();
+    void api
+      .get<{ items: NewsItem[] }>('/news')
+      .then((result) => setNews(result.items.slice(0, 5)))
+      .catch(() => setNews([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -128,8 +148,10 @@ export function CitizenDashboardPage() {
       navigate('/citizen/onboarding');
       return;
     }
-    if (enabled && !consent && !data.profile.weatherConsentAt) {
-      setError('Tick the consent box before enabling weather emails.');
+    const consentNeeded =
+      (enabled && !data.profile.weatherConsentAt) || (newsEnabled && !data.profile.newsConsentAt);
+    if (consentNeeded && !consent) {
+      setError('Tick the consent box before enabling weather or critical-news emails.');
       return;
     }
     setSaving(true);
@@ -141,9 +163,15 @@ export function CitizenDashboardPage() {
         latitude: data.profile.latitude,
         longitude: data.profile.longitude,
         weatherNotifications: enabled,
-        consent: enabled,
+        newsNotifications: newsEnabled,
+        consent,
       });
-      setNotice(enabled ? 'Weather email alerts are enabled for this location.' : 'Weather email alerts are disabled.');
+      setNotice(
+        [
+          enabled ? 'Weather email alerts are enabled.' : 'Weather email alerts are disabled.',
+          newsEnabled ? 'Critical news alerts are enabled.' : 'Critical news alerts are disabled.',
+        ].join(' '),
+      );
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save notification preferences.');
@@ -159,7 +187,7 @@ export function CitizenDashboardPage() {
     try {
       await api.post('/citizen/refresh');
       await load();
-      setNotice('Live weather refreshed from Open-Meteo.');
+      setNotice('Live weather refreshed from the weather provider.');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not refresh weather.');
     } finally {
@@ -320,7 +348,23 @@ export function CitizenDashboardPage() {
               </span>
             </label>
 
-            {enabled && !data.profile.weatherConsentAt ? (
+            <label className="flex items-start gap-3 text-sm text-ink/70">
+              <input
+                type="checkbox"
+                checked={newsEnabled}
+                onChange={(event) => setNewsEnabled(event.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
+              />
+              <span>
+                <span className="font-semibold text-ink">Critical environmental news</span>
+                <span className="mt-0.5 block text-[11px] leading-relaxed text-ink/40">
+                  Emails when a live news story matches a safety keyword (flood, cyclone, severe pollution, gas leak,
+                  heatwave, major fire). Deduplicated and rate-limited.
+                </span>
+              </span>
+            </label>
+
+            {(enabled && !data.profile.weatherConsentAt) || (newsEnabled && !data.profile.newsConsentAt) ? (
               <label className="flex items-start gap-3 rounded-xl border border-[#ecd79a] bg-[#fff9e8] px-3 py-2.5 text-[11px] leading-relaxed text-[#7a5a16]">
                 <input
                   type="checkbox"
@@ -328,7 +372,7 @@ export function CitizenDashboardPage() {
                   onChange={(event) => setConsent(event.target.checked)}
                   className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
                 />
-                I consent to automated weather alert emails at my verified address.
+                I consent to automated weather and critical environmental news emails at my verified address.
               </label>
             ) : null}
 
@@ -360,12 +404,45 @@ export function CitizenDashboardPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Latest environmental news</CardTitle>
+          <Link to="/news" className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/40 hover:text-ink/70">
+            Open newsroom
+          </Link>
+        </CardHeader>
+        <div className="divide-y divide-[#eef2ea] px-5 py-2">
+          {news.length === 0 ? (
+            <p className="py-4 text-sm text-ink/40">News feeds are temporarily unavailable.</p>
+          ) : (
+            news.map((item) => (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start justify-between gap-4 py-3 transition-colors hover:text-[#356b2a]"
+              >
+                <span>
+                  <span className="block text-sm font-semibold leading-snug text-ink/80">{item.title}</span>
+                  <span className="mt-1 block text-[10px] uppercase tracking-[0.1em] text-ink/35">
+                    {item.source}
+                    {item.publishedAt ? ` · ${timeAgo(item.publishedAt)}` : ''}
+                  </span>
+                </span>
+                <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-ink/25" />
+              </a>
+            ))
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Notification history</CardTitle>
-          <span className="text-[10px] uppercase tracking-[0.12em] text-ink/30">Weather only</span>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-ink/30">Weather & critical news</span>
         </CardHeader>
         <div className="overflow-x-auto px-5 py-4">
           {data.notifications.length === 0 ? (
-            <p className="text-sm text-ink/40">No weather alerts sent yet.</p>
+            <p className="text-sm text-ink/40">No weather or critical-news alerts sent yet.</p>
           ) : (
             <table className="w-full min-w-[560px] text-left text-[11px]">
               <thead className="text-[9px] uppercase tracking-[0.12em] text-ink/30">

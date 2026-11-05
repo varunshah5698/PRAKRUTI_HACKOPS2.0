@@ -106,6 +106,14 @@ services:
         value: '360'
       - key: CITIZEN_MONITOR_MAX_RETRIES
         value: '5'
+      - key: NEWS_MONITOR_ENABLED
+        value: 'true'
+      - key: NEWS_MONITOR_INTERVAL_SECONDS
+        value: '900'
+      - key: NEWS_MONITOR_COOLDOWN_MINUTES
+        value: '360'
+      - key: NEWS_MONITOR_MAX_ITEMS
+        value: '3'
 
   - type: web
     name: prakruti-ml

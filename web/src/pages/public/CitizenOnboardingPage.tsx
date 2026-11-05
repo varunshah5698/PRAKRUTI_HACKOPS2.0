@@ -20,6 +20,7 @@ interface DashboardPayload {
     email: string;
     onboardingCompleted: boolean;
     weatherNotifications: boolean;
+    newsNotifications: boolean;
     latitude: number | null;
     longitude: number | null;
     locationLabel: string | null;
@@ -37,6 +38,7 @@ export function CitizenOnboardingPage() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [weatherNotifications, setWeatherNotifications] = useState(true);
+  const [newsNotifications, setNewsNotifications] = useState(true);
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,6 +56,7 @@ export function CitizenOnboardingPage() {
         setLatitude(data.profile.latitude === null ? '' : String(data.profile.latitude));
         setLongitude(data.profile.longitude === null ? '' : String(data.profile.longitude));
         setWeatherNotifications(data.profile.weatherNotifications);
+        setNewsNotifications(data.profile.newsNotifications);
       })
       .catch((err) => {
         if (active) setError(err instanceof ApiError ? err.message : 'Could not load your citizen profile.');
@@ -129,8 +132,8 @@ export function CitizenOnboardingPage() {
       setError('Enter valid latitude and longitude.');
       return;
     }
-    if (weatherNotifications && !consent) {
-      setError('Tick the consent box to receive weather email alerts, or turn alerts off.');
+    if ((weatherNotifications || newsNotifications) && !consent) {
+      setError('Tick the consent box to receive weather or critical-news email alerts, or turn alerts off.');
       return;
     }
     setSaving(true);
@@ -141,6 +144,7 @@ export function CitizenOnboardingPage() {
         latitude: lat,
         longitude: lng,
         weatherNotifications,
+        newsNotifications,
         consent,
       });
       await loadMe();
@@ -283,6 +287,21 @@ export function CitizenOnboardingPage() {
                   </span>
                 </span>
               </label>
+              <label className="mt-3 flex items-start gap-3 border-t border-dashed border-[#e3ebe0] pt-3 text-sm text-ink/70">
+                <input
+                  type="checkbox"
+                  checked={newsNotifications}
+                  onChange={(event) => setNewsNotifications(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
+                />
+                <span>
+                  <span className="font-semibold text-ink">Email me critical environmental news</span>
+                  <span className="mt-0.5 block text-[11px] leading-relaxed text-ink/40">
+                    Sends the latest live story when it matches a safety filter such as flood, cyclone, severe
+                    pollution, gas leak, heatwave or a major fire. Duplicate stories and repeated emails are suppressed.
+                  </span>
+                </span>
+              </label>
               <label className="mt-3 flex items-start gap-3 border-t border-dashed border-[#e3ebe0] pt-3 text-[12px] text-ink/60">
                 <input
                   type="checkbox"
@@ -291,8 +310,8 @@ export function CitizenOnboardingPage() {
                   className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
                 />
                 <span>
-                  I consent to receive automated weather alert emails at my verified address. I can disable this at any
-                  time from the citizen dashboard.
+                  I consent to receive automated weather and critical environmental news emails at my verified address.
+                  I can disable either one at any time from the citizen dashboard.
                 </span>
               </label>
             </div>

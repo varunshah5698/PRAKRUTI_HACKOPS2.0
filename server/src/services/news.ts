@@ -28,10 +28,10 @@ export interface NewsFeed {
 const CACHE_TTL_MS = 5 * 60_000;
 const RETRY_AFTER_FAILURE_MS = 60_000;
 const FEED_TIMEOUT_MS = 10_000;
-const MAX_ITEMS = 12;
+const MAX_ITEMS = 30;
 
 const MUMBAI_ENVIRONMENT =
-  /\b(air|pollution|pollut\w*|smog|aqi|environment\w*|climate|emission\w*|waste|garbage|sewage|water|flood\w*|rain\w*|drought|heat|dust|tree\w*|mangrove\w*|coastal|firecrack\w*|green|eco|monsoon)\b/i;
+  /\b(air pollution|pollut\w*|smog|aqi|environment\w*|climate|emission\w*|waste|garbage|sewage|water|flood\w*|rain\w*|drought|heatwave|heat wave|dust|mangrove\w*|coastal|firecrack\w*|monsoon|wildlife|forest\w*|biodiversity|conservation)\b/i;
 
 const FEEDS: NewsSource[] = [
   {
@@ -45,7 +45,44 @@ const FEEDS: NewsSource[] = [
     topic: 'Mumbai',
     filter: MUMBAI_ENVIRONMENT,
   },
+  {
+    name: 'The Hindu',
+    url: 'https://www.thehindu.com/sci-tech/energy-and-environment/feeder/default.rss',
+    topic: 'Environment',
+  },
+  {
+    name: 'Mongabay India',
+    url: 'https://india.mongabay.com/feed/',
+    topic: 'Environment',
+  },
+  {
+    name: 'Hindustan Times',
+    url: 'https://www.hindustantimes.com/feeds/rss/cities/mumbai-news/rssfeed.xml',
+    topic: 'Mumbai',
+    filter: MUMBAI_ENVIRONMENT,
+  },
+  {
+    name: 'The Indian Express',
+    url: 'https://indianexpress.com/feed/',
+    topic: 'India',
+    filter: MUMBAI_ENVIRONMENT,
+  },
+  {
+    name: 'BBC News',
+    url: 'https://feeds.bbci.co.uk/news/world/asia/india/rss.xml',
+    topic: 'India',
+    filter: MUMBAI_ENVIRONMENT,
+  },
 ];
+
+// Deliberately strict: only safety-relevant stories generate an email. A
+// generic "pollution" story stays in the news feed but does not notify users.
+const CRITICAL_NEWS =
+  /\b(critical|severe|extreme|emergency|hazardous|red alert|orange alert|cyclone|flood\w*|landslide|gas leak|toxic|chemical leak|oil spill|explosion|blaze|major fire|heatwave|heat wave|air quality (severe|very poor|hazardous)|smog|water contamination|evacuat\w*|deaths?|killed|schools? (shut|closed)|section 144|health emergency)\b/i;
+
+export function isCriticalNews(item: NewsItem): boolean {
+  return CRITICAL_NEWS.test(`${item.title} ${item.summary}`);
+}
 
 const ENTITIES: Record<string, string> = {
   amp: '&',
