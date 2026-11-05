@@ -123,6 +123,10 @@ const e2eLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 2, standardHeaders:
 
 adminRouter.post('/e2e/weather-alert', e2eLimiter, async (req, res, next) => {
   try {
+    if (!env.E2E_TEST_ENABLED) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint not found.' } });
+      return;
+    }
     const body = z
       .object({ aEmail: z.string().trim().email().max(200), bEmail: z.string().trim().email().max(200) })
       .strict()
@@ -197,6 +201,7 @@ adminRouter.post('/e2e/weather-alert', e2eLimiter, async (req, res, next) => {
     const phase1 = await runPhase(46, 30, true);
     const phase2 = await runPhase(46, 30, true);
     const phase3 = await runPhase(48, 30, false);
+    await query(`UPDATE user_preferences SET weather_notifications=false, updated_at=now() WHERE user_id IN ($1,$2)`, [aId, bId]);
 
     const history = await query<{
       user_id: string;
@@ -261,7 +266,7 @@ adminRouter.post('/e2e/weather-alert', e2eLimiter, async (req, res, next) => {
           createdAt: row.created_at,
         };
       }),
-      note: 'Controlled E2E fixture. No real weather observation, real citizen, or real emergency condition was used. Citizen A is opted out after phase 3; the test domain is excluded from the production worker.',
+      note: 'Controlled E2E fixture. No real weather observation, real citizen, or real emergency condition was used. Both test accounts are opted out after the run; the test domain is excluded from the production worker.',
     });
   } catch (error) {
     next(error);

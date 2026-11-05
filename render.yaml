@@ -122,7 +122,7 @@ services:
         value: '3'
       # Temporary admin-only fixture endpoint for the production E2E test.
       - key: E2E_TEST_ENABLED
-        value: 'true'
+        value: 'false'
       - key: E2E_TEST_DOMAIN
         value: fldubai.com
 

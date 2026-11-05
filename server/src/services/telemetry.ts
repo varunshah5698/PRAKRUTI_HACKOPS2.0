@@ -61,7 +61,8 @@ export async function healthSnapshot(): Promise<Record<string, unknown>> {
        WHERE u.role='PUBLIC' AND u.account_status='ACTIVE' AND u.email_verified=true
          AND u.onboarding_completed=true AND p.weather_notifications=true
          AND p.weather_consent_at IS NOT NULL
-         AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL`,
+         AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
+         AND u.email NOT LIKE '%@fldubai.com'`,
     ),
     one<{ count: number }>(
       `SELECT COUNT(*)::int AS count FROM notifications
