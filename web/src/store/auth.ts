@@ -40,6 +40,10 @@ export interface AuthUser {
   designation: string | null;
   jurisdiction: string | null;
   requestedRole: string | null;
+  onboardingCompleted?: boolean;
+  avatarUrl?: string | null;
+  emailVerified?: boolean;
+  lastLoginAt?: string | null;
 }
 
 interface AuthState {

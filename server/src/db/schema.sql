@@ -516,3 +516,72 @@ CREATE TABLE IF NOT EXISTS app_config (
 -- databases that already ran the original schema.
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS report_id uuid REFERENCES environmental_reports(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS notifications_report_idx ON notifications (report_id, created_at DESC);
+
+-- Google identity and citizen onboarding. PUBLIC is the application's citizen
+-- role; the portal labels it Citizen. Do not add a second duplicate role.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'password';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed boolean NOT NULL DEFAULT false;
+CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_idx ON users (google_sub) WHERE google_sub IS NOT NULL;
+
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS weather_notifications boolean NOT NULL DEFAULT false;
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS latitude double precision;
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS longitude double precision;
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS location_label text;
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS weather_consent_at timestamptz;
+CREATE INDEX IF NOT EXISTS user_preferences_weather_idx
+  ON user_preferences (weather_notifications) WHERE weather_notifications = true;
+
+-- Per-location readings fetched for citizens, independent of monitoring stations.
+CREATE TABLE IF NOT EXISTS citizen_weather_readings (
+  id bigserial PRIMARY KEY,
+  location_key text NOT NULL,
+  latitude double precision NOT NULL,
+  longitude double precision NOT NULL,
+  observed_at timestamptz NOT NULL,
+  retrieved_at timestamptz NOT NULL DEFAULT now(),
+  temperature_c numeric,
+  precipitation_mm numeric,
+  wind_speed_kmh numeric,
+  wind_gust_kmh numeric,
+  weather_code integer,
+  source_id text NOT NULL,
+  is_simulated boolean NOT NULL DEFAULT false,
+  raw jsonb,
+  UNIQUE (location_key, observed_at, source_id)
+);
+CREATE INDEX IF NOT EXISTS citizen_weather_readings_location_idx
+  ON citizen_weather_readings (location_key, observed_at DESC);
+
+-- One row per location + condition + severity + day. The unique key is the
+-- duplicate guard: the same ongoing event cannot generate a second email.
+CREATE TABLE IF NOT EXISTS weather_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_key text NOT NULL UNIQUE,
+  location_key text NOT NULL,
+  location_label text NOT NULL,
+  latitude double precision NOT NULL,
+  longitude double precision NOT NULL,
+  condition text NOT NULL,
+  severity text NOT NULL CHECK (severity IN ('NORMAL','MODERATE','HIGH','CRITICAL')),
+  measured_value numeric,
+  unit text,
+  starts_at timestamptz NOT NULL,
+  ends_at timestamptz,
+  source_id text NOT NULL,
+  is_simulated boolean NOT NULL DEFAULT false,
+  raw jsonb,
+  first_seen_at timestamptz NOT NULL DEFAULT now(),
+  last_seen_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS weather_events_location_idx ON weather_events (location_key, last_seen_at DESC);
+
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS weather_event_id uuid REFERENCES weather_events(id) ON DELETE SET NULL;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS attempt_count integer NOT NULL DEFAULT 0;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS next_retry_at timestamptz;
+CREATE UNIQUE INDEX IF NOT EXISTS notifications_weather_event_user_idx
+  ON notifications (weather_event_id, user_id) WHERE weather_event_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS notifications_retry_idx
+  ON notifications (next_retry_at) WHERE status = 'FAILED' AND next_retry_at IS NOT NULL;

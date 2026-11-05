@@ -8,7 +8,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { ZodError } from 'zod';
-import { env, appConfig } from './config/env.js';
+import { env, appConfig, emailConfigured, googleConfigured } from './config/env.js';
 import { pool, query } from './db/pool.js';
 import { ApiError } from './middleware/errors.js';
 import { optionalAuth, requireAuth } from './middleware/auth.js';
@@ -28,10 +28,12 @@ import { sourcesRouter, governanceRouter } from './routes/sources.js';
 import { liveRouter } from './routes/live.js';
 import { newsRouter } from './routes/news.js';
 import { cityRouter } from './routes/city.js';
+import { citizenRouter } from './routes/citizen.js';
 import { getDashboard } from './services/dashboard.js';
 import { syncSourceCatalogue } from './services/sources.js';
 import { ingestOpenMeteoWeather } from './services/ingest.js';
 import { startLiveScheduler, stopLiveScheduler } from './services/live.js';
+import { startCitizenWeatherScheduler, stopCitizenWeatherScheduler } from './services/citizen-weather.js';
 import { evaluateAllStations, evaluateWasteLocalities } from './services/risk.js';
 import { syncAlertsFromStationAssessments, syncAlertsFromWasteAssessments } from './services/alerts.js';
 import { addEventClient, clientCount, closeEventClients, removeEventClient } from './lib/events.js';
@@ -90,6 +92,9 @@ app.get('/api/health', async (_req, res) => {
       database: 'connected',
       demoMode: env.DEMO_MODE,
       sseClients: clientCount(),
+      emailConfigured,
+      googleConfigured,
+      citizenMonitorEnabled: env.CITIZEN_MONITOR_ENABLED,
       time: new Date().toISOString(),
     });
   } catch {
@@ -116,6 +121,7 @@ app.use('/api/v1/sources', sourcesRouter);
 app.use('/api/v1/live', liveRouter);
 app.use('/api/v1/news', newsRouter);
 app.use('/api/v1/city', cityRouter);
+app.use('/api/v1/citizen', citizenRouter);
 app.use('/api/v1/governance', governanceRouter);
 
 app.get('/api/v1/environment/categories', requireAuth, async (_req, res, next) => {
@@ -197,6 +203,7 @@ async function startSchedulers() {
   );
   await syncSourceCatalogue();
   startLiveScheduler();
+  startCitizenWeatherScheduler();
   // Hourly forecast grids: the providers republish them on the hour, so a
   // 6-hourly refresh is enough between live current-reading polls.
   setInterval(() => {
@@ -241,6 +248,7 @@ const server = app.listen(env.PORT, () => {
 async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
   stopLiveScheduler();
+  stopCitizenWeatherScheduler();
   closeEventClients();
   // Give in-flight requests (AI analyses can take ~30 s) time to finish after
   // Render switches traffic, then force the process down before SIGKILL.

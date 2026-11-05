@@ -252,6 +252,78 @@ npm run integrations:check
 
 It checks the database, data.gov.in, OpenAQ, River AI, vision configuration, SMTP and the ML service without printing secrets. A missing key remains `NOT_CONFIGURED`; it never crashes the app.
 
+## Citizen Portal, Google Sign-In and weather alerts
+
+The citizen portal is at `/citizen/login`. It uses Google OpenID Connect, not a
+client-side mock. `PUBLIC` is the application's citizen role; the portal labels
+it "Citizen" and never accepts a role from the browser.
+
+### Google OAuth
+
+1. Create a Google Cloud OAuth 2.0 Web client.
+2. Add the exact redirect URI, for example:
+   `http://localhost:4100/api/v1/auth/google/callback`
+3. Set:
+   ```env
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   GOOGLE_REDIRECT_URI=   # empty derives <FRONTEND_URL>/api/v1/auth/google/callback
+   ```
+4. Restart the API. `GET /api/v1/auth/google/start` returns 503-style
+   configuration feedback when the credentials are absent; it never fakes a
+   sign-in.
+
+New Google accounts are created as `PUBLIC`, with `email_verified=true` and
+`google_sub` from the verified ID token. Existing accounts are linked by
+verified email; authority roles are never downgraded. First-time citizens are
+sent to `/citizen/onboarding`; returning citizens go to `/citizen/dashboard`.
+
+### Gmail delivery
+
+The existing Nodemailer service is reused. Use a Google App Password:
+
+```env
+EMAIL_PROVIDER=gmail
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-16-character-app-password
+DEMO_MODE=false
+```
+
+The recipient is always the authenticated citizen's verified email from
+PostgreSQL. No endpoint accepts a recipient from the browser. Without SMTP
+credentials, weather alerts are recorded as `FAILED` with
+`Email provider NOT_CONFIGURED`; they are never marked `SENT` or `DELIVERED`.
+
+### Background monitor
+
+`CITIZEN_MONITOR_ENABLED=true` starts a server-side worker in the API process.
+It reads opted-in citizens and saved coordinates from PostgreSQL, batches up to
+50 locations per Open-Meteo request, falls back to MET Norway when Open-Meteo is
+rate-limited, stores readings/events, and emails HIGH/CRITICAL events. It runs
+whether or not a browser is open.
+
+- `CITIZEN_MONITOR_INTERVAL_SECONDS` (default 300)
+- `CITIZEN_MONITOR_MIN_SEVERITY` (default `HIGH`)
+- `CITIZEN_MONITOR_COOLDOWN_MINUTES` (default 360)
+- `CITIZEN_MONITOR_MAX_RETRIES` (default 5)
+
+Deduplication uses `weather_events.event_key` (location + condition + severity +
+cooldown bucket) and a unique `(weather_event_id, user_id)` index. A higher
+severity creates a new event and therefore an escalation email. Failed sends
+are retried with backoff up to the configured limit.
+
+Weather conditions are threshold-based measurements, labelled with their
+source. They are not official IMD/CWC warnings; no authoritative Indian warning
+feed is configured. Flood alerts mean "extreme rainfall / flood risk", not an
+official flood warning.
+
+**Deployment note:** on Render's free plan an idle web service is suspended, and
+the in-process worker stops with it. Use an always-on instance (or a separate
+scheduler) if alerts must run continuously.
+
 ## Demo accounts
 
 Password for all seeded accounts: `Demo@1234`

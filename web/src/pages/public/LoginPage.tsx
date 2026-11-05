@@ -430,10 +430,24 @@ export function LoginPage() {
                   key={account.id}
                   type="button"
                   className="ep-demo-option"
-                  aria-label={`Fill ${account.label} demo credentials`}
+                  aria-label={
+                    account.id === 'citizen'
+                      ? 'Open the Citizen Portal sign-in'
+                      : `Fill ${account.label} demo credentials`
+                  }
                   aria-pressed={activeDemo === account.id}
-                  title={`Fill the documented ${account.label} demo credentials`}
-                  onClick={() => fillDemo(account)}
+                  title={
+                    account.id === 'citizen'
+                      ? 'Open the Citizen Portal and sign in with Google'
+                      : `Fill the documented ${account.label} demo credentials`
+                  }
+                  onClick={() => {
+                    if (account.id === 'citizen') {
+                      navigate('/citizen/login');
+                      return;
+                    }
+                    fillDemo(account);
+                  }}
                 >
                   {account.label}
                 </button>

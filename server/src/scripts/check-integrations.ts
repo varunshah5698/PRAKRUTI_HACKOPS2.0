@@ -84,14 +84,19 @@ async function checkVision() {
 }
 
 async function checkEmail() {
-  if (!emailConfigured) return 'NOT_CONFIGURED (SMTP_HOST / SMTP_USER / SMTP_PASSWORD)';
+  if (!emailConfigured) return 'NOT_CONFIGURED (SMTP_USER / SMTP_PASSWORD; SMTP_HOST for non-Gmail)';
   try {
-    const transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
-      auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
-    });
+    const gmail = env.EMAIL_PROVIDER === 'gmail' || env.SMTP_HOST.toLowerCase().endsWith('gmail.com');
+    const transporter = nodemailer.createTransport(
+      gmail
+        ? { service: 'gmail', auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } }
+        : {
+            host: env.SMTP_HOST,
+            port: env.SMTP_PORT,
+            secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
+            auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+          },
+    );
     await transporter.verify();
     return `SMTP VERIFIED${env.DEMO_MODE ? `; demo recipient ${env.DEMO_EMAIL_RECIPIENT || 'NOT SET'}` : ''}`;
   } catch (error) {

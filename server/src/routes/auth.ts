@@ -3,7 +3,8 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { env } from '../config/env.js';
+import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
+import { env, googleConfigured, googleRedirectUri } from '../config/env.js';
 import { one, query } from '../db/pool.js';
 import { AUTH_COOKIE, requireAuth, signToken, type AuthUser } from '../middleware/auth.js';
 import { badRequest, conflict, forbidden, notFound, unauthorized } from '../middleware/errors.js';
@@ -20,6 +21,21 @@ const cookieOptions = {
   path: '/',
 };
 
+const OAUTH_COOKIE = 'ep_oauth';
+const oauthCookieOptions = {
+  ...cookieOptions,
+  path: '/api/v1/auth/google',
+  maxAge: 10 * 60_000,
+};
+
+function frontendUrl(path: string): string {
+  return `${env.FRONTEND_URL.replace(/\/+$/, '')}${path}`;
+}
+
+function oauthError(code: string) {
+  return frontendUrl(`/citizen/login?error=${encodeURIComponent(code)}`);
+}
+
 async function loadUser(userId: string) {
   return one<{
     id: string;
@@ -32,10 +48,14 @@ async function loadUser(userId: string) {
     designation: string | null;
     jurisdiction: string | null;
     requested_role: string | null;
+    onboarding_completed: boolean;
+    avatar_url: string | null;
+    email_verified: boolean;
+    last_login_at: string | null;
     created_at: string;
   }>(
     `SELECT id, name, email, role::text, account_status, locality_id, department, designation, jurisdiction,
-            requested_role, created_at
+            requested_role, onboarding_completed, avatar_url, email_verified, last_login_at, created_at
      FROM users WHERE id=$1`,
     [userId],
   );
@@ -151,6 +171,7 @@ authRouter.post('/login', authLimiter, async (req, res, next) => {
     };
     const token = signToken(authUser, body.rememberMe ? '7d' : '12h');
     res.cookie(AUTH_COOKIE, token, { ...cookieOptions, ...(body.rememberMe ? { maxAge: 7 * 86_400_000 } : {}) });
+    await query('UPDATE users SET last_login_at=now() WHERE id=$1', [user.id]);
     await audit({ actorId: user.id, action: 'LOGIN', entityType: 'user', entityId: user.id, ip: req.ip });
     res.json({ user: authUser });
   } catch (error) {
@@ -160,7 +181,178 @@ authRouter.post('/login', authLimiter, async (req, res, next) => {
 
 authRouter.post('/logout', (req, res) => {
   res.clearCookie(AUTH_COOKIE, cookieOptions);
+  res.clearCookie(OAUTH_COOKIE, oauthCookieOptions);
   res.json({ message: 'Signed out.' });
+});
+
+authRouter.get('/providers', (_req, res) => {
+  res.json({ google: googleConfigured });
+});
+
+/**
+ * Google OpenID Connect authorization-code flow with PKCE. The verified ID
+ * token is the only source of identity; no role or email is accepted from the
+ * browser. New Google accounts always receive the application's PUBLIC
+ * (citizen) role, never an authority role.
+ */
+authRouter.get('/google/start', authLimiter, (req, res) => {
+  if (!googleConfigured) {
+    res.redirect(oauthError('google_not_configured'));
+    return;
+  }
+  const state = crypto.randomBytes(24).toString('base64url');
+  const verifier = crypto.randomBytes(32).toString('base64url');
+  const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+  res.cookie(
+    OAUTH_COOKIE,
+    Buffer.from(JSON.stringify({ state, verifier })).toString('base64url'),
+    oauthCookieOptions,
+  );
+  const client = new OAuth2Client({
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    redirectUri: googleRedirectUri,
+  });
+  const url = client.generateAuthUrl({
+    access_type: 'online',
+    scope: ['openid', 'email', 'profile'],
+    prompt: 'select_account',
+    state,
+    code_challenge: challenge,
+    code_challenge_method: CodeChallengeMethod.S256,
+  });
+  res.redirect(url);
+});
+
+authRouter.get('/google/callback', authLimiter, async (req, res) => {
+  const clearOauthCookie = () => res.clearCookie(OAUTH_COOKIE, oauthCookieOptions);
+  try {
+    if (!googleConfigured) {
+      clearOauthCookie();
+      res.redirect(oauthError('google_not_configured'));
+      return;
+    }
+    if (typeof req.query.error === 'string') {
+      clearOauthCookie();
+      res.redirect(oauthError(req.query.error === 'access_denied' ? 'google_cancelled' : 'google_failed'));
+      return;
+    }
+    const state = z.string().min(10).parse(req.query.state);
+    const code = z.string().min(10).parse(req.query.code);
+    const raw = req.cookies?.[OAUTH_COOKIE] as string | undefined;
+    if (!raw) {
+      res.redirect(oauthError('google_state'));
+      return;
+    }
+    const stored = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as {
+      state?: string;
+      verifier?: string;
+    };
+    clearOauthCookie();
+    if (!stored.state || !stored.verifier || stored.state.length !== state.length || !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(stored.state))) {
+      res.redirect(oauthError('google_state'));
+      return;
+    }
+
+    const client = new OAuth2Client({
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: googleRedirectUri,
+    });
+    const { tokens } = await client.getToken({ code, codeVerifier: stored.verifier, redirect_uri: googleRedirectUri });
+    if (!tokens.id_token) throw new Error('Google did not return an ID token.');
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token, audience: env.GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+    if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+      res.redirect(oauthError('google_email_unverified'));
+      return;
+    }
+    const email = payload.email.toLowerCase();
+    const name = (payload.name || email.split('@')[0]).slice(0, 120);
+    const picture = payload.picture ?? null;
+
+    const existing = await one<{
+      id: string;
+      role: AuthUser['role'];
+      account_status: string;
+      locality_id: string | null;
+      onboarding_completed: boolean;
+      google_sub: string | null;
+    }>(
+      `SELECT id, role::text AS role, account_status, locality_id, onboarding_completed, google_sub
+       FROM users WHERE google_sub=$1 OR lower(email)=$2
+       ORDER BY CASE WHEN google_sub=$1 THEN 0 ELSE 1 END LIMIT 1`,
+      [payload.sub, email],
+    );
+
+    let userId: string;
+    let role: AuthUser['role'];
+    let onboardingCompleted: boolean;
+    let localityId: string | null;
+    if (existing) {
+      if (existing.account_status !== 'ACTIVE') {
+        res.redirect(oauthError('account_inactive'));
+        return;
+      }
+      userId = existing.id;
+      role = existing.role;
+      onboardingCompleted = existing.onboarding_completed;
+      localityId = existing.locality_id;
+      await query(
+        `UPDATE users SET google_sub=COALESCE(google_sub,$2), email_verified=true, avatar_url=COALESCE($3,avatar_url),
+           last_login_at=now(), auth_provider='google', updated_at=now()
+         WHERE id=$1`,
+        [userId, payload.sub, picture],
+      );
+      await query(
+        `INSERT INTO user_preferences (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
+        [userId],
+      );
+    } else {
+      const randomPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+      const inserted = await one<{ id: string }>(
+        `INSERT INTO users (name, email, password_hash, role, account_status, email_verified, google_sub,
+           auth_provider, avatar_url, last_login_at, onboarding_completed)
+         VALUES ($1,$2,$3,'PUBLIC','ACTIVE',true,$4,'google',$5,now(),false) RETURNING id`,
+        [name, email, randomPassword, payload.sub, picture],
+      );
+      if (!inserted) throw new Error('Could not create the citizen account.');
+      userId = inserted.id;
+      role = 'PUBLIC';
+      onboardingCompleted = false;
+      localityId = null;
+      await query(`INSERT INTO user_preferences (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [userId]);
+      await audit({
+        actorId: userId,
+        action: 'USER_REGISTERED',
+        entityType: 'user',
+        entityId: userId,
+        after: { email, role: 'PUBLIC', provider: 'google' },
+        ip: req.ip,
+      });
+    }
+
+    const authUser: AuthUser = {
+      id: userId,
+      name,
+      email,
+      role,
+      accountStatus: 'ACTIVE',
+      localityId,
+    };
+    const token = signToken(authUser, '7d');
+    res.cookie(AUTH_COOKIE, token, { ...cookieOptions, maxAge: 7 * 86_400_000 });
+    await audit({ actorId: userId, action: 'LOGIN', entityType: 'user', entityId: userId, after: { provider: 'google' }, ip: req.ip });
+    if (role !== 'PUBLIC') {
+      res.redirect(frontendUrl('/dashboard'));
+      return;
+    }
+    res.redirect(frontendUrl(onboardingCompleted ? '/citizen/dashboard' : '/citizen/onboarding'));
+  } catch (error) {
+    console.error('[google-oauth]', error);
+    clearOauthCookie();
+    if (!res.headersSent) res.redirect(oauthError('google_failed'));
+  }
 });
 
 authRouter.get('/session', async (req, res, next) => {
@@ -191,6 +383,10 @@ authRouter.get('/session', async (req, res, next) => {
         designation: user.designation,
         jurisdiction: user.jurisdiction,
         requestedRole: user.requested_role,
+        onboardingCompleted: user.onboarding_completed,
+        avatarUrl: user.avatar_url,
+        emailVerified: user.email_verified,
+        lastLoginAt: user.last_login_at,
         createdAt: user.created_at,
       },
       preferences: prefs,
@@ -221,6 +417,10 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
         designation: user.designation,
         jurisdiction: user.jurisdiction,
         requestedRole: user.requested_role,
+        onboardingCompleted: user.onboarding_completed,
+        avatarUrl: user.avatar_url,
+        emailVerified: user.email_verified,
+        lastLoginAt: user.last_login_at,
         createdAt: user.created_at,
       },
       preferences: prefs,

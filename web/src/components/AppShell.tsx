@@ -40,6 +40,7 @@ const groups: Array<{
     label: 'Command',
     items: [
       { to: '/dashboard', label: 'Command centre', short: 'Home', icon: LayoutDashboard, end: true },
+      { to: '/citizen/dashboard', label: 'Citizen weather', short: 'Weather', icon: CloudSun, roles: ['PUBLIC'] },
       { to: '/atmosphere', label: 'Atmosphere lab', short: 'Air lab', icon: CloudSun, roles: AUTHORITY_ROLES },
       { to: '/map', label: 'Mumbai map', short: 'Map', icon: Map },
       { to: '/city', label: 'Live city pulse', short: 'Pulse', icon: CloudSun },
@@ -70,6 +71,7 @@ const groups: Array<{
 
 const titles: Array<[string, string]> = [
   ['/dashboard', 'Environmental command centre'],
+  ['/citizen/dashboard', 'Citizen weather & alerts'],
   ['/atmosphere', 'Atmosphere lab · 3D air intelligence'],
   ['/map', 'Mumbai map'],
   ['/city', 'Live city pulse'],
@@ -123,8 +125,9 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   }, []);
 
   const handleLogout = async () => {
+    const citizen = user?.role === 'PUBLIC';
     await logout();
-    navigate('/login');
+    navigate(citizen ? '/citizen/login' : '/login');
   };
 
   const visibleGroups = groups.map((group) => ({

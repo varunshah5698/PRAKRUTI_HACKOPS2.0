@@ -57,7 +57,7 @@ export async function main() {
           corrective_actions, investigation_notes, incident_assignments, environmental_incidents,
           alert_history, environmental_alerts, risk_factor_breakdowns, risk_assessments,
           ml_predictions, model_registry, ai_assessments, report_evidence, environmental_reports,
-          weather_observations, environmental_observations, pollutant_types, station_health,
+          weather_observations, citizen_weather_readings, weather_events, environmental_observations, pollutant_types, station_health,
           monitoring_stations, password_resets, user_preferences, users, wards, localities,
           data_sources, app_config
         CASCADE;

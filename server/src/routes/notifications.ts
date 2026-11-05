@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import { query, one } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { badRequest, forbidden, notFound } from '../middleware/errors.js';
@@ -148,8 +149,17 @@ notificationsRouter.put('/preferences', async (req, res, next) => {
   }
 });
 
-notificationsRouter.post('/test-email', async (req, res, next) => {
+notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: true, legacyHeaders: false }), async (req, res, next) => {
   try {
+    if (req.user!.role === 'PUBLIC') {
+      const account = await one<{ email_verified: boolean }>('SELECT email_verified FROM users WHERE id=$1', [req.user!.id]);
+      if (!account?.email_verified) {
+        res.status(403).json({
+          error: { code: 'EMAIL_UNVERIFIED', message: 'Sign in with Google to verify your email before sending alerts.' },
+        });
+        return;
+      }
+    }
     if (!emailConfigured) {
       res.status(503).json({
         error: {

@@ -216,6 +216,11 @@ export function LandingPage() {
                   Report an environmental concern
                 </Button>
               </Link>
+              <Link to="/citizen/login">
+                <Button variant="outline" size="lg" className="w-full border-ink/20 sm:w-auto">
+                  Citizen weather portal <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
               <Link to="/login">
                 <Button variant="ghost" size="lg" className="w-full sm:w-auto">
                   Authority login <ArrowRight className="h-4 w-4" />
@@ -604,6 +609,7 @@ export function LandingPage() {
               <div className="flex flex-col gap-2.5">
                 <Link to="/dashboard"><Button variant="dark" size="lg" className="w-full justify-between">Environmental monitoring dashboard <ArrowUpRight className="h-4 w-4" /></Button></Link>
                 <Link to="/report"><Button variant="outline" size="lg" className="w-full justify-between border-white bg-white text-ink hover:bg-white/90">Public reporting <ArrowUpRight className="h-4 w-4" /></Button></Link>
+                <Link to="/citizen/login"><Button variant="outline" size="lg" className="w-full justify-between border-ink/25">Citizen weather portal <ArrowUpRight className="h-4 w-4" /></Button></Link>
                 <Link to="/login"><Button variant="outline" size="lg" className="w-full justify-between border-ink/25">Authority login <ArrowUpRight className="h-4 w-4" /></Button></Link>
                 <p className="mt-1 text-center text-[10px] text-ink/40">Demo accounts are listed on the login page.</p>
               </div>

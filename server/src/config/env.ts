@@ -48,10 +48,19 @@ const EnvSchema = z.object({
   EMAIL_API_KEY: z.string().default(''),
   SMTP_HOST: z.string().default(''),
   SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z.string().default('').transform((v) => v.toLowerCase() === 'true'),
   SMTP_USER: z.string().default(''),
   SMTP_PASSWORD: z.string().default(''),
   EMAIL_FROM: z.string().default('प्रकृति <alerts@enviropulse.local>'),
   EMAIL_WEBHOOK_SECRET: z.string().default(''),
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  GOOGLE_REDIRECT_URI: z.string().default(''),
+  CITIZEN_MONITOR_ENABLED: z.string().default('true').transform((v) => v.toLowerCase() === 'true'),
+  CITIZEN_MONITOR_INTERVAL_SECONDS: z.coerce.number().int().min(60).max(3600).default(300),
+  CITIZEN_MONITOR_MIN_SEVERITY: z.enum(['NORMAL', 'MODERATE', 'HIGH', 'CRITICAL']).default('HIGH'),
+  CITIZEN_MONITOR_COOLDOWN_MINUTES: z.coerce.number().int().min(60).max(1440).default(360),
+  CITIZEN_MONITOR_MAX_RETRIES: z.coerce.number().int().min(1).max(20).default(5),
   STORAGE_DRIVER: z.string().default('local'),
   STORAGE_ENDPOINT: z.string().default(''),
   STORAGE_BUCKET: z.string().default(''),
@@ -117,6 +126,15 @@ export const emailConfigured = Boolean(
 );
 
 export const emailProviderLabel = !emailConfigured ? 'NOT_CONFIGURED' : gmailTransport ? 'GMAIL' : 'SMTP';
+
+export const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+export const googleRedirectUri =
+  env.GOOGLE_REDIRECT_URI.trim() ||
+  `${env.FRONTEND_URL.replace(/\/+$/, '')}/api/v1/auth/google/callback`;
+
+if (env.NODE_ENV === 'production' && !emailConfigured) {
+  console.error('[config] Email is NOT_CONFIGURED. Weather alerts will be recorded but never sent.');
+}
 
 export const appConfig = {
   timezone: env.APP_TIMEZONE,

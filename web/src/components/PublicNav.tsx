@@ -43,6 +43,11 @@ export function PublicNav() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#32a879]" />
             Mumbai only
           </PublicBadge>
+          <Link to={user ? (user.role === 'PUBLIC' ? '/citizen/dashboard' : '/dashboard') : '/citizen/login'}>
+            <Button variant="ghost" size="sm" className="h-9">
+              Citizen
+            </Button>
+          </Link>
           <Link to={user ? '/dashboard' : '/login'}>
             <Button variant="outline" size="sm" className="h-9">
               {user ? 'Open command centre' : 'Authority login'}
@@ -77,6 +82,11 @@ export function PublicNav() {
               ),
             )}
             <div className="mt-2 grid grid-cols-2 gap-2">
+              <Link to={user ? (user.role === 'PUBLIC' ? '/citizen/dashboard' : '/dashboard') : '/citizen/login'} onClick={() => setOpen(false)}>
+                <Button variant="outline" className="w-full">
+                  Citizen
+                </Button>
+              </Link>
               <Link to={user ? '/dashboard' : '/login'} onClick={() => setOpen(false)}>
                 <Button variant="outline" className="w-full">
                   {user ? 'Dashboard' : 'Login'}

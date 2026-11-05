@@ -1,0 +1,292 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
+import { query, one } from '../db/pool.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { badRequest, notFound } from '../middleware/errors.js';
+import { emailConfigured, emailProviderLabel, env, googleConfigured } from '../config/env.js';
+import { classifyWeather, locationKey, refreshCitizenLocation, type WeatherSeverity } from '../services/citizen-weather.js';
+
+export const citizenRouter = Router();
+
+const citizenLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 120, standardHeaders: true, legacyHeaders: false });
+const placesLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
+
+const placeCache = new Map<string, { at: number; results: PlaceResult[] }>();
+interface PlaceResult {
+  id: string;
+  name: string;
+  label: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  admin1: string | null;
+  timezone: string | null;
+}
+
+citizenRouter.get('/places', placesLimiter, requireAuth, async (req, res, next) => {
+  try {
+    const q = z.string().trim().min(2).max(80).parse(req.query.q);
+    const key = q.toLowerCase();
+    const cached = placeCache.get(key);
+    if (cached && Date.now() - cached.at < 60 * 60_000) {
+      res.json({ query: q, results: cached.results, provider: 'Open-Meteo geocoding' });
+      return;
+    }
+    const url = new URL('https://geocoding-api.open-meteo.com/v1/search');
+    url.searchParams.set('name', q);
+    url.searchParams.set('count', '10');
+    url.searchParams.set('language', 'en');
+    url.searchParams.set('countryCode', 'IN');
+    const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+    if (!response.ok) throw new Error(`Geocoding failed (${response.status})`);
+    const payload = (await response.json()) as {
+      results?: Array<{
+        id: number;
+        name: string;
+        latitude: number;
+        longitude: number;
+        country: string;
+        admin1?: string;
+        timezone?: string;
+      }>;
+    };
+    const results = (payload.results ?? []).map((row) => ({
+      id: `geo-${row.id}`,
+      name: row.name,
+      label: [row.admin1, row.country].filter(Boolean).join(', '),
+      latitude: row.latitude,
+      longitude: row.longitude,
+      country: row.country,
+      admin1: row.admin1 ?? null,
+      timezone: row.timezone ?? null,
+    }));
+    placeCache.set(key, { at: Date.now(), results });
+    if (placeCache.size > 500) placeCache.clear();
+    res.json({ query: q, results, provider: 'Open-Meteo geocoding' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+citizenRouter.use(citizenLimiter, requireAuth, requireRole('PUBLIC'));
+
+citizenRouter.get('/dashboard', async (req, res, next) => {
+  try {
+    const profile = await one<{
+      id: string;
+      name: string;
+      email: string;
+      email_verified: boolean;
+      avatar_url: string | null;
+      onboarding_completed: boolean;
+      last_login_at: string | null;
+      created_at: string;
+      weather_notifications: boolean;
+      latitude: number | null;
+      longitude: number | null;
+      location_label: string | null;
+      weather_consent_at: string | null;
+    }>(
+      `SELECT u.id, u.name, u.email, u.email_verified, u.avatar_url, u.onboarding_completed, u.last_login_at, u.created_at,
+              COALESCE(p.weather_notifications,false) AS weather_notifications,
+              p.latitude::float8 AS latitude, p.longitude::float8 AS longitude,
+              p.location_label, p.weather_consent_at
+       FROM users u LEFT JOIN user_preferences p ON p.user_id=u.id
+       WHERE u.id=$1`,
+      [req.user!.id],
+    );
+    if (!profile) throw notFound('Citizen profile not found.');
+
+    const key = profile.latitude !== null && profile.longitude !== null
+      ? locationKey(profile.latitude, profile.longitude)
+      : null;
+    const reading = key
+      ? await one<{
+          observed_at: string;
+          temperature_c: number | null;
+          precipitation_mm: number | null;
+          wind_speed_kmh: number | null;
+          wind_gust_kmh: number | null;
+          weather_code: number | null;
+          source_id: string;
+        }>(
+          `SELECT observed_at, temperature_c::float8 AS temperature_c, precipitation_mm::float8 AS precipitation_mm,
+                  wind_speed_kmh::float8 AS wind_speed_kmh, wind_gust_kmh::float8 AS wind_gust_kmh,
+                  weather_code, source_id
+           FROM citizen_weather_readings WHERE location_key=$1 ORDER BY observed_at DESC LIMIT 1`,
+          [key],
+        )
+      : null;
+    const events = key
+      ? await query<{
+          id: string;
+          condition: string;
+          severity: WeatherSeverity;
+          measured_value: number | null;
+          unit: string | null;
+          starts_at: string;
+          last_seen_at: string;
+        }>(
+          `SELECT id, condition, severity, measured_value::float8 AS measured_value, unit, starts_at, last_seen_at
+           FROM weather_events WHERE location_key=$1 AND last_seen_at > now() - interval '24 hours'
+           ORDER BY last_seen_at DESC LIMIT 5`,
+          [key],
+        )
+      : [];
+    const notifications = await query<{
+      id: string;
+      subject: string;
+      status: string;
+      sent_at: string | null;
+      delivered_at: string | null;
+      error: string | null;
+      created_at: string;
+    }>(
+      `SELECT id, subject, status, sent_at, delivered_at, error, created_at
+       FROM notifications WHERE user_id=$1 AND template='WEATHER_ALERT'
+       ORDER BY created_at DESC LIMIT 10`,
+      [req.user!.id],
+    );
+
+    res.json({
+      profile: {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        emailVerified: profile.email_verified,
+        avatarUrl: profile.avatar_url,
+        onboardingCompleted: profile.onboarding_completed,
+        lastLoginAt: profile.last_login_at,
+        createdAt: profile.created_at,
+        weatherNotifications: profile.weather_notifications,
+        latitude: profile.latitude,
+        longitude: profile.longitude,
+        locationLabel: profile.location_label,
+        weatherConsentAt: profile.weather_consent_at,
+      },
+      weather: reading
+        ? {
+            ...reading,
+            classification: classifyWeather({
+              temperatureC: reading.temperature_c,
+              precipitationMm: reading.precipitation_mm,
+              windSpeedKmh: reading.wind_speed_kmh,
+              windGustKmh: reading.wind_gust_kmh,
+              weatherCode: reading.weather_code,
+            }),
+          }
+        : null,
+      events,
+      notifications,
+      provider: {
+        emailConfigured,
+        emailProvider: emailProviderLabel,
+        demoMode: env.DEMO_MODE,
+        googleConfigured,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+citizenRouter.put('/profile', async (req, res, next) => {
+  try {
+    const body = z
+      .object({
+        name: z.string().trim().min(2).max(120).optional(),
+        localityId: z.string().uuid().nullable().optional(),
+        locationLabel: z.string().trim().min(2).max(160),
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        weatherNotifications: z.boolean(),
+        consent: z.boolean().default(false),
+      })
+      .strict()
+      .parse(req.body);
+    if (body.weatherNotifications && !body.consent) {
+      throw badRequest('Explicit consent is required for weather email alerts.');
+    }
+    if (body.weatherNotifications) {
+      const account = await one<{ email_verified: boolean }>('SELECT email_verified FROM users WHERE id=$1', [req.user!.id]);
+      if (!account?.email_verified) {
+        throw badRequest('A verified email address is required before enabling weather email alerts. Sign in with Google.');
+      }
+    }
+    const previous = await one<{ latitude: number | null; longitude: number | null; location_label: string | null }>(
+      `SELECT latitude::float8 AS latitude, longitude::float8 AS longitude, location_label
+       FROM user_preferences WHERE user_id=$1`,
+      [req.user!.id],
+    );
+    const changed =
+      !previous ||
+      previous.latitude === null ||
+      previous.longitude === null ||
+      Math.abs(previous.latitude - body.latitude) > 0.0001 ||
+      Math.abs(previous.longitude - body.longitude) > 0.0001 ||
+      previous.location_label !== body.locationLabel;
+
+    await query(
+      `INSERT INTO user_preferences
+         (user_id, weather_notifications, latitude, longitude, location_label, weather_consent_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,now())
+       ON CONFLICT (user_id) DO UPDATE SET
+         weather_notifications=EXCLUDED.weather_notifications,
+         latitude=EXCLUDED.latitude,
+         longitude=EXCLUDED.longitude,
+         location_label=EXCLUDED.location_label,
+         weather_consent_at=CASE WHEN EXCLUDED.weather_notifications THEN now() ELSE user_preferences.weather_consent_at END,
+         updated_at=now()`,
+      [
+        req.user!.id,
+        body.weatherNotifications,
+        body.latitude,
+        body.longitude,
+        body.locationLabel,
+        body.weatherNotifications && body.consent ? new Date().toISOString() : null,
+      ],
+    );
+    await query(
+      `UPDATE users SET
+         name=COALESCE($2,name),
+         locality_id=COALESCE($3,locality_id),
+         onboarding_completed=true,
+         updated_at=now()
+       WHERE id=$1`,
+      [req.user!.id, body.name ?? null, body.localityId ?? null],
+    );
+
+    // A changed location must take effect without waiting for the next global
+    // cycle. The worker reads preferences from PostgreSQL, never from a browser.
+    if (changed) {
+      void refreshCitizenLocation(req.user!.id).catch((error) => console.error('[citizen-weather-refresh]', error));
+    }
+    res.json({ message: 'Citizen location and notification preferences saved.', locationChanged: changed });
+  } catch (error) {
+    next(error);
+  }
+});
+
+citizenRouter.post('/refresh', async (req, res, next) => {
+  try {
+    const result = await refreshCitizenLocation(req.user!.id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+citizenRouter.get('/notifications', async (req, res, next) => {
+  try {
+    const rows = await query<Record<string, unknown>>(
+      `SELECT id, subject, status, sent_at, delivered_at, error, weather_event_id, created_at
+       FROM notifications WHERE user_id=$1 AND template='WEATHER_ALERT'
+       ORDER BY created_at DESC LIMIT 50`,
+      [req.user!.id],
+    );
+    res.json({ notifications: rows });
+  } catch (error) {
+    next(error);
+  }
+});

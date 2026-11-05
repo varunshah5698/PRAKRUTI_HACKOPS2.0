@@ -9,11 +9,14 @@ import { DataSourcesPage as PublicDataSourcesPage } from './pages/public/DataSou
 import { PrivacyPage, TermsPage } from './pages/public/PrivacyTerms';
 import { PublicReportPage } from './pages/public/PublicReportPage';
 import { LoginPage } from './pages/public/LoginPage';
+import { CitizenLoginPage } from './pages/public/CitizenLoginPage';
+import { CitizenOnboardingPage } from './pages/public/CitizenOnboardingPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/public/PasswordPages';
 import { Logo } from './components/Logo';
 
 const DashboardPage = lazy(() => import('./pages/app/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const CitizenDashboardPage = lazy(() => import('./pages/app/CitizenDashboardPage').then((m) => ({ default: m.CitizenDashboardPage })));
 const AtmospherePage = lazy(() => import('./pages/app/AtmospherePage').then((m) => ({ default: m.AtmospherePage })));
 const MapPage = lazy(() => import('./pages/app/MapPage').then((m) => ({ default: m.MapPage })));
 const CityPulsePage = lazy(() => import('./pages/app/CityPulsePage').then((m) => ({ default: m.CityPulsePage })));
@@ -62,6 +65,14 @@ function Protected({ children }: { children: React.ReactNode }) {
 function StationRoute() {
   const { stationId } = useParams();
   return <Navigate to={`/map?station=${stationId}`} replace />;
+}
+
+function CitizenProtected({ children }: { children: React.ReactNode }) {
+  const { user, initialized } = useAuth();
+  if (!initialized) return <Splash />;
+  if (!user) return <Navigate to="/citizen/login" replace />;
+  if (user.role !== 'PUBLIC') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 }
 
 function AccessGate({ access, children }: { access: 'authority' | 'citizen'; children: React.ReactNode }) {
@@ -113,6 +124,8 @@ export default function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/report" element={<PublicReportPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/citizen/login" element={<CitizenLoginPage />} />
+      <Route path="/citizen/onboarding" element={<CitizenProtected><CitizenOnboardingPage /></CitizenProtected>} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -120,6 +133,9 @@ export default function App() {
 
       <Route path="/dashboard" element={<Protected><AppShell /></Protected>}>
         <Route index element={<DashboardPage />} />
+      </Route>
+      <Route path="/citizen/dashboard" element={<CitizenProtected><AppShell /></CitizenProtected>}>
+        <Route index element={<CitizenDashboardPage />} />
       </Route>
       <Route element={<Protected><AppShell /></Protected>}>
         <Route path="/atmosphere" element={<AccessGate access="authority"><AtmospherePage /></AccessGate>} />
