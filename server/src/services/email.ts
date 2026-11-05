@@ -229,10 +229,16 @@ export function resolvedFromAddress(): string {
 }
 
 function createTransport() {
+  const timeouts = {
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+  };
   if (isGmailTransport()) {
     return nodemailer.createTransport({
       service: 'gmail',
       auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+      ...timeouts,
     });
   }
   return nodemailer.createTransport({
@@ -240,6 +246,7 @@ function createTransport() {
     port: env.SMTP_PORT,
     secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
     auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
+    ...timeouts,
   });
 }
 
@@ -375,12 +382,17 @@ export async function deliverEmail(params: {
   }
   try {
     const transporter = createTransport();
-    const info = await transporter.sendMail({
-      from: resolvedFromAddress(),
-      to: recipient,
-      subject: env.DEMO_MODE ? `[DEMO] ${params.subject}` : params.subject,
-      html: params.html,
-    });
+    const info = await Promise.race([
+      transporter.sendMail({
+        from: resolvedFromAddress(),
+        to: recipient,
+        subject: env.DEMO_MODE ? `[DEMO] ${params.subject}` : params.subject,
+        html: params.html,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP send timed out after 25 seconds.')), 25_000).unref(),
+      ),
+    ]);
     const accepted = (info.accepted ?? []).map(String);
     const rejected = (info.rejected ?? []).map(String);
     if (rejected.length > 0 || accepted.length === 0) {
