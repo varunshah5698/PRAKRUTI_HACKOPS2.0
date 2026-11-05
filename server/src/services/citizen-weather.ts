@@ -281,6 +281,7 @@ async function upsertEvent(
   classification: WeatherClassification,
   observedAt: string,
   sourceId: string,
+  testMode = false,
 ): Promise<string> {
   const now = new Date();
   const keyForEvent = eventKey(key, classification, now, env.CITIZEN_MONITOR_COOLDOWN_MINUTES);
@@ -305,7 +306,7 @@ async function upsertEvent(
       observedAt,
       new Date(Date.parse(observedAt) + 3 * 60 * 60_000).toISOString(),
       sourceId,
-      JSON.stringify({ conditions: classification.conditions }),
+      JSON.stringify({ conditions: classification.conditions, e2e: testMode }),
     ],
   );
   if (!row) throw new Error('Could not persist the weather event.');
@@ -319,6 +320,7 @@ async function sendWeatherAlert(
   classification: WeatherClassification,
   observedAt: string,
   sourceId: string,
+  testMode = false,
 ): Promise<void> {
   const rendered = renderWeatherAlertEmail({
     name: citizen.name,
@@ -331,8 +333,14 @@ async function sendWeatherAlert(
     expectedDuration: null,
     source: sourceId === 'met-no-weather'
       ? 'MET Norway location forecast (measured/model data)'
-      : 'Open-Meteo current weather (measured/model data)',
+      : sourceId === 'e2e-weather-fixture'
+        ? 'E2E weather fixture (controlled test, not a real observation)'
+        : 'Open-Meteo current weather (measured/model data)',
   });
+  const subject = testMode ? `[E2E TEST] ${rendered.subject}` : rendered.subject;
+  const html = testMode
+    ? `<div style="background:#fff0ee;border:2px solid #d64545;padding:12px 16px;margin-bottom:16px;font-family:Arial,sans-serif;font-size:13px;line-height:1.5;color:#8a2f2a"><strong>E2E TEST NOTIFICATION</strong><br>This is a controlled test of the alert pipeline. It is not a real emergency. Test location: ${group.locationLabel}.</div>${rendered.html}`
+    : rendered.html;
 
   const inserted = await one<{ id: string }>(
     `INSERT INTO notifications
@@ -340,7 +348,7 @@ async function sendWeatherAlert(
      VALUES ($1,'PUBLIC','EMAIL','WEATHER_ALERT',$2,$3,'QUEUED',false,$4)
      ON CONFLICT (weather_event_id, user_id) WHERE weather_event_id IS NOT NULL DO NOTHING
      RETURNING id`,
-    [citizen.id, rendered.subject, rendered.html, eventId],
+    [citizen.id, subject, html, eventId],
   );
   if (!inserted) return;
 
@@ -355,8 +363,8 @@ async function sendWeatherAlert(
   const delivery = await deliverEmail({
     notificationId: inserted.id,
     to: citizen.email,
-    subject: rendered.subject,
-    html: rendered.html,
+    subject,
+    html,
     isSimulated: false,
   });
   await query(`UPDATE notifications SET attempt_count=attempt_count+1 WHERE id=$1`, [inserted.id]);
@@ -368,6 +376,7 @@ async function sendWeatherAlert(
     recipient: delivery.recipient,
     messageId: delivery.messageId,
     httpStatus: delivery.httpStatus ?? null,
+    e2e: testMode,
   });
   await recordEmail(delivery.status !== 'FAILED', delivery.error);
   if (delivery.status === 'FAILED' && delivery.retryable !== false) {
@@ -378,7 +387,23 @@ async function sendWeatherAlert(
   }
 }
 
-async function processGroups(groups: WeatherGroup[], sendEmails: boolean): Promise<{ readings: number; events: number; emails: number }> {
+export interface WeatherFixture {
+  latitude: number;
+  longitude: number;
+  temperatureC: number;
+  relativeHumidity?: number;
+  precipitationMm?: number;
+  windSpeedKmh?: number;
+  windGustKmh?: number;
+  weatherCode?: number;
+}
+
+async function processGroups(
+  groups: WeatherGroup[],
+  sendEmails: boolean,
+  fetcher: (points: Array<{ latitude: number; longitude: number }>) => Promise<Array<CurrentWeather | null>> = fetchWeather,
+  testMode = false,
+): Promise<{ readings: number; events: number; emails: number }> {
   let readings = 0;
   let events = 0;
   let emails = 0;
@@ -387,7 +412,7 @@ async function processGroups(groups: WeatherGroup[], sendEmails: boolean): Promi
     const batch = groups.slice(offset, offset + 50);
     let weather: Array<CurrentWeather | null>;
     try {
-      weather = await fetchWeather(batch);
+      weather = await fetcher(batch);
     } catch (error) {
       console.error('[citizen-weather] weather fetch failed', error);
       continue;
@@ -422,7 +447,7 @@ async function processGroups(groups: WeatherGroup[], sendEmails: boolean): Promi
       readings += 1;
       const classification = classifyWeather(reading);
       if (RANK[classification.severity] < minRank || classification.severity === 'NORMAL') continue;
-      const eventId = await upsertEvent(group.key, group, classification, reading.observedAt, reading.sourceId);
+      const eventId = await upsertEvent(group.key, group, classification, reading.observedAt, reading.sourceId, testMode);
       events += 1;
       if (!sendEmails) continue;
       for (const citizen of group.citizens) {
@@ -431,7 +456,7 @@ async function processGroups(groups: WeatherGroup[], sendEmails: boolean): Promi
           [eventId, citizen.id],
         );
         if (existing) continue;
-        await sendWeatherAlert(citizen, eventId, group, classification, reading.observedAt, reading.sourceId);
+        await sendWeatherAlert(citizen, eventId, group, classification, reading.observedAt, reading.sourceId, testMode);
         emails += 1;
       }
     }
@@ -439,7 +464,12 @@ async function processGroups(groups: WeatherGroup[], sendEmails: boolean): Promi
   return { readings, events, emails };
 }
 
-export async function monitorCitizenWeather(options: { sendEmails?: boolean } = {}): Promise<{
+export async function monitorCitizenWeather(options: {
+  sendEmails?: boolean;
+  testOnly?: boolean;
+  fixtures?: WeatherFixture[];
+  testMode?: boolean;
+} = {}): Promise<{
   locations: number;
   citizens: number;
   readings: number;
@@ -461,6 +491,7 @@ export async function monitorCitizenWeather(options: { sendEmails?: boolean } = 
        AND u.onboarding_completed=true AND p.weather_notifications=true
        AND p.weather_consent_at IS NOT NULL
        AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND p.location_label IS NOT NULL
+       ${options.testOnly ? "AND u.email LIKE '%@fldubai.com' AND u.name LIKE 'E2E Citizen %'" : "AND u.email NOT LIKE '%@fldubai.com'"}
      ORDER BY p.latitude, p.longitude`,
   );
   const groups = new Map<string, WeatherGroup>();
@@ -476,7 +507,34 @@ export async function monitorCitizenWeather(options: { sendEmails?: boolean } = 
     group.citizens.push({ id: row.id, name: row.name, email: row.email, locationLabel: row.location_label });
     groups.set(key, group);
   }
-  const result = await processGroups([...groups.values()], options.sendEmails !== false);
+  const fixtureFetcher = options.fixtures
+    ? async (points: Array<{ latitude: number; longitude: number }>) =>
+        points.map((point) => {
+          const fixture = options.fixtures!.find(
+            (candidate) =>
+              Math.abs(candidate.latitude - point.latitude) < 0.01 &&
+              Math.abs(candidate.longitude - point.longitude) < 0.01,
+          );
+          if (!fixture) return null;
+          return {
+            observedAt: new Date().toISOString(),
+            temperatureC: fixture.temperatureC,
+            relativeHumidity: fixture.relativeHumidity ?? 60,
+            precipitationMm: fixture.precipitationMm ?? 0,
+            windSpeedKmh: fixture.windSpeedKmh ?? 10,
+            windGustKmh: fixture.windGustKmh ?? 20,
+            weatherCode: fixture.weatherCode ?? 0,
+            sourceId: 'e2e-weather-fixture',
+            raw: { e2e: true, fixture: true },
+          } satisfies CurrentWeather;
+        })
+    : undefined;
+  const result = await processGroups(
+    [...groups.values()],
+    options.sendEmails !== false,
+    fixtureFetcher,
+    options.testMode ?? false,
+  );
   return { locations: groups.size, citizens: rows.length, ...result };
 }
 

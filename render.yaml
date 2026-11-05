@@ -120,6 +120,11 @@ services:
         value: '360'
       - key: NEWS_MONITOR_MAX_ITEMS
         value: '3'
+      # Temporary admin-only fixture endpoint for the production E2E test.
+      - key: E2E_TEST_ENABLED
+        value: 'true'
+      - key: E2E_TEST_DOMAIN
+        value: fldubai.com
 
   - type: web
     name: prakruti-ml

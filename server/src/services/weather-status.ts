@@ -9,12 +9,14 @@ export interface WeatherSourceMeta {
 const SOURCES: Record<string, WeatherSourceMeta> = {
   'open-meteo-weather': { provider: 'Open-Meteo', dataSourceType: 'CURRENT_CONDITIONS' },
   'met-no-weather': { provider: 'MET Norway', dataSourceType: 'HOURLY_FORECAST' },
+  'e2e-weather-fixture': { provider: 'E2E weather fixture', dataSourceType: 'CURRENT_CONDITIONS' },
   'demo-network': { provider: 'Demo network', dataSourceType: 'SIMULATED' },
 };
 
 const LIVE_WINDOW_MS: Record<string, number> = {
   'open-meteo-weather': 90 * 60_000,
   'met-no-weather': 3 * 60 * 60_000,
+  'e2e-weather-fixture': 60 * 60_000,
   'demo-network': 30 * 60_000,
 };
 

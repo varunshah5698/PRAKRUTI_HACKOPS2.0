@@ -68,6 +68,8 @@ const EnvSchema = z.object({
   NEWS_MONITOR_INTERVAL_SECONDS: z.coerce.number().int().min(120).max(3600).default(900),
   NEWS_MONITOR_COOLDOWN_MINUTES: z.coerce.number().int().min(60).max(2880).default(360),
   NEWS_MONITOR_MAX_ITEMS: z.coerce.number().int().min(1).max(10).default(3),
+  E2E_TEST_ENABLED: z.string().default('false').transform((v) => v.toLowerCase() === 'true'),
+  E2E_TEST_DOMAIN: z.string().default('fldubai.com'),
   STORAGE_DRIVER: z.string().default('local'),
   STORAGE_ENDPOINT: z.string().default(''),
   STORAGE_BUCKET: z.string().default(''),
