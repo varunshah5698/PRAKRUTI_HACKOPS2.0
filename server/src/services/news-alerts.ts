@@ -2,6 +2,7 @@ import { env, emailConfigured } from '../config/env.js';
 import { query, one } from '../db/pool.js';
 import { deliverEmail, markNotificationStatus, recordNotificationEvent, renderCriticalNewsEmail } from './email.js';
 import { getEnvironmentalNews, isCriticalNews, type NewsItem } from './news.js';
+import { recordEmail, recordFailure, recordHeartbeat } from './telemetry.js';
 
 const MAX_AGE_MS = 72 * 60 * 60_000;
 
@@ -65,6 +66,7 @@ export async function monitorCriticalNews(): Promise<{ items: number; emails: nu
       if (!emailConfigured) {
         await markNotificationStatus(inserted.id, 'FAILED', { error: 'Email provider NOT_CONFIGURED.' });
         await recordNotificationEvent(inserted.id, 'NEWS_EMAIL_FAILED', { reason: 'NOT_CONFIGURED', newsItemId: item.id });
+        await recordFailure('email:citizen-alerts', 'Email provider NOT_CONFIGURED.');
         failed += 1;
         continue;
       }
@@ -85,6 +87,7 @@ export async function monitorCriticalNews(): Promise<{ items: number; emails: nu
         recipient: delivery.recipient,
         messageId: delivery.messageId,
       });
+      await recordEmail(delivery.status !== 'FAILED', delivery.error);
       if (delivery.status === 'FAILED') {
         await query(
           `UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`,
@@ -107,6 +110,7 @@ async function runNewsMonitor(): Promise<void> {
   newsRunning = true;
   try {
     const result = await monitorCriticalNews();
+    await recordHeartbeat('worker:critical-news', result);
     if (result.items > 0 || result.emails > 0 || result.failed > 0) {
       console.log(`[critical-news] items=${result.items} emails=${result.emails} failed=${result.failed}`);
     }

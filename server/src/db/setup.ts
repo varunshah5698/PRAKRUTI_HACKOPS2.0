@@ -59,7 +59,7 @@ export async function main() {
           ml_predictions, model_registry, ai_assessments, report_evidence, environmental_reports,
           weather_observations, citizen_weather_readings, weather_events, environmental_observations, pollutant_types, station_health,
           monitoring_stations, password_resets, user_preferences, users, wards, localities,
-          data_sources, app_config
+          data_sources, app_config, service_health
         CASCADE;
       `);
     }

@@ -29,6 +29,7 @@ import { liveRouter } from './routes/live.js';
 import { newsRouter } from './routes/news.js';
 import { cityRouter } from './routes/city.js';
 import { citizenRouter } from './routes/citizen.js';
+import { adminRouter } from './routes/admin.js';
 import { getDashboard } from './services/dashboard.js';
 import { syncSourceCatalogue } from './services/sources.js';
 import { ingestOpenMeteoWeather } from './services/ingest.js';
@@ -124,6 +125,7 @@ app.use('/api/v1/live', liveRouter);
 app.use('/api/v1/news', newsRouter);
 app.use('/api/v1/city', cityRouter);
 app.use('/api/v1/citizen', citizenRouter);
+app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/governance', governanceRouter);
 
 app.get('/api/v1/environment/categories', requireAuth, async (_req, res, next) => {

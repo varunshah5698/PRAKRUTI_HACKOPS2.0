@@ -72,7 +72,27 @@ interface DashboardData {
   reports: Array<{ id: string; public_ref: string; category: string; incident_type: string; status: string; verification_state: string; submitted_at: string; locality_name: string | null; is_simulated: boolean }>;
   incidents: Array<{ id: string; public_ref: string; category: string; title: string; status: string; risk_level: string; detected_at: string; locality_name: string | null; is_simulated: boolean }>;
   sources: Array<{ id: string; name: string; status: string; lastSuccessAt?: string; notes?: string; isSimulated?: boolean }>;
-  weather: { observed_at: string; temperature_c: number; relative_humidity: number; wind_speed_kmh: number; wind_direction_deg: number; precipitation_mm: number; is_simulated: boolean; note: string } | null;
+  weather: {
+    observed_at: string;
+    temperature_c: number;
+    relative_humidity: number;
+    wind_speed_kmh: number;
+    wind_direction_deg: number;
+    precipitation_mm: number;
+    is_simulated: boolean;
+    source_id?: string;
+    status: 'LIVE' | 'STALE' | 'UNAVAILABLE' | 'DEMO';
+    provider: string | null;
+    dataSourceType: string | null;
+    fetchedAt: string | null;
+    observationTime: string | null;
+    forecastTime: string | null;
+    isLive: boolean;
+    freshnessStatus: string;
+    validationStatus: string;
+    recommendation: string;
+    note: string;
+  } | null;
   cams: Array<{ localityName: string; pm25: number | null; pm10: number | null; observedAt: string }>;
   latestReadings: Array<{ station_name: string; pollutant_code: string; value: number; unit: string; observed_at: string; is_simulated: boolean; source_id: string }>;
   charts: {
@@ -811,7 +831,9 @@ export function DashboardPage() {
             <Badge tone={data.dataMode.stationObservations === 'SIMULATION' ? 'amber' : data.dataMode.stationObservations === 'MIXED' ? 'teal' : 'green'} dot>
               {data.dataMode.stationObservations === 'SIMULATION' ? 'Simulation data' : data.dataMode.stationObservations === 'MIXED' ? 'Mixed sources' : 'Connected source'}
             </Badge>
-            <Badge tone="neutral">{data.dataMode.weather === 'LIVE_OPEN_METEO' ? 'Weather live' : 'Weather unavailable'}</Badge>
+            <Badge tone={data.weather?.status === 'LIVE' ? 'green' : data.weather?.status === 'STALE' ? 'amber' : 'neutral'}>
+              {data.weather?.status ?? 'UNAVAILABLE'} weather
+            </Badge>
             <Badge tone="amber">{mlActive ? 'ML active' : 'ML baseline'}</Badge>
           </div>
         </div>
@@ -843,14 +865,27 @@ export function DashboardPage() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-[15px] font-semibold tracking-[-0.01em] text-[#142016]">Mumbai now</p>
-                <p className="mt-0.5 text-[10px] text-[#66766b]">{weather ? 'Live weather · Open-Meteo' : 'Weather source · Open-Meteo'}</p>
+                <p className="mt-0.5 text-[10px] text-[#66766b]">
+                  {weather
+                    ? `${weather.provider ?? 'Weather provider'} · ${weather.dataSourceType === 'HOURLY_FORECAST' ? 'hourly forecast' : 'current conditions'}`
+                    : 'No verified weather reading'}
+                </p>
               </div>
               <span
                 className={`flex items-center gap-1 rounded-full border border-white/80 bg-white/65 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.1em] ${
-                  weather ? 'text-[#3f7d2a]' : 'text-[#8a6710]'
+                  weather?.status === 'LIVE'
+                    ? 'text-[#3f7d2a]'
+                    : weather?.status === 'STALE'
+                      ? 'text-[#8a6710]'
+                      : 'text-[#8a2f2a]'
                 }`}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${weather ? 'bg-[#5da341]' : 'bg-[#c49a1c]'}`} /> {weather ? 'Live' : 'No data'}
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    weather?.status === 'LIVE' ? 'bg-[#5da341]' : weather?.status === 'STALE' ? 'bg-[#c49a1c]' : 'bg-[#c94a50]'
+                  }`}
+                />{' '}
+                {weather?.status ?? 'UNAVAILABLE'}
               </span>
             </div>
             <div className="mt-4 flex items-start justify-between gap-3">
@@ -861,8 +896,11 @@ export function DashboardPage() {
                 </p>
                 <p className="mt-1.5 text-[12px] font-medium text-[#3f5045]">{condition.label}</p>
                 <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">
-                  {weather ? `Observed ${formatTime(weather.observed_at)} IST` : 'No current weather observation.'}
+                  {weather
+                    ? `${weather.dataSourceType === 'HOURLY_FORECAST' ? 'Forecast valid' : 'Observed'} ${formatTime(weather.observationTime ?? weather.observed_at)} IST · fetched ${formatTime(weather.fetchedAt ?? weather.observed_at)} IST`
+                    : 'No verified current weather observation.'}
                 </p>
+                {weather ? <p className="mt-1 text-[9px] leading-relaxed text-[#66766b]">{weather.recommendation}</p> : null}
               </div>
               <span
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[0_18px_40px_-26px_rgba(38,70,52,.55)] ${

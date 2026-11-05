@@ -3,6 +3,7 @@ import { query } from '../db/pool.js';
 import { calculateAqi } from './aqi.js';
 import { emitEvent } from '../lib/events.js';
 import { markSourceAttempt, markSourceFailure, markSourceSuccess } from './sources.js';
+import { recordFailure, recordSuccess } from './telemetry.js';
 import { ingestDataGovIn, ingestOpenAq } from './ingest.js';
 
 /**
@@ -149,10 +150,12 @@ export async function pollLiveWeather(): Promise<{ records: number; message?: st
       }
     }
     await markSourceSuccess(sourceId, records);
+    await recordSuccess('provider:open-meteo-weather', { points: stations.length, records });
     return { records };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Live weather poll failed';
     await markSourceFailure(sourceId, message);
+    await recordFailure('provider:open-meteo-weather', message);
     return { records, message };
   }
 }

@@ -1,6 +1,7 @@
 import { env } from '../config/env.js';
 import { badRequest, unavailable } from '../middleware/errors.js';
 import { calculateAqi, aqiCategory } from './aqi.js';
+import { recordFailure, recordSuccess } from './telemetry.js';
 
 /**
  * On-demand open-data services for the Live City workspace. Every provider is
@@ -1192,12 +1193,19 @@ export interface PlanetEvent {
 export async function getPlanetEvents(lat: number, lng: number): Promise<{ events: PlanetEvent[]; earthquakes: PlanetEvent[]; sources: Array<{ label: string; url: string }> }> {
   assertMumbaiPoint(lat, lng);
   return cached(`city:events:${lat.toFixed(3)}:${lng.toFixed(3)}`, 30 * 60_000, async () => {
-    const [eonet, quakes] = await Promise.allSettled([
+    const [eonet, quakes, gdacs] = await Promise.allSettled([
       fetchJson<{ events?: EonetEvent[] }>('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30&bbox=68,6,98,36', {}, 15_000),
       fetchJson<{ features?: UsgsFeature[] }>('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson', {}, 15_000),
+      fetch('https://www.gdacs.org/xml/rss.xml', {
+        headers: { 'user-agent': 'Prakriti/1.0 (GDACS event reader)' },
+        signal: AbortSignal.timeout(15_000),
+      }).then((response) => {
+        if (!response.ok) throw new Error(`GDACS feed returned ${response.status}`);
+        return response.text();
+      }),
     ]);
 
-    const events = eonet.status === 'fulfilled'
+    const eonetEvents = eonet.status === 'fulfilled'
       ? (eonet.value.events ?? [])
           .flatMap((event) => {
             const geometry = event.geometry?.at(-1);
@@ -1218,9 +1226,48 @@ export async function getPlanetEvents(lat: number, lng: number): Promise<{ event
               provider: 'NASA EONET',
             }];
           })
-          .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
-          .slice(0, 8)
       : [];
+
+    const gdacsEvents = gdacs.status === 'fulfilled'
+      ? [...gdacs.value.matchAll(/<item>([\s\S]*?)<\/item>/gi)]
+          .flatMap((match) => {
+            const block = match[1];
+            const xml = (name: string) => {
+              const value = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'i'))?.[1]?.trim();
+              return value ? value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : null;
+            };
+            const isCurrent = xml('gdacs:iscurrent');
+            if (isCurrent === 'false') return [];
+            const eventLat = Number(xml('geo:lat'));
+            const eventLng = Number(xml('geo:long'));
+            if (!Number.isFinite(eventLat) || !Number.isFinite(eventLng) || !isWithinIndiaBbox(eventLat, eventLng)) return [];
+            const title = xml('title');
+            if (!title) return [];
+            const eventType = xml('gdacs:eventtype') ?? 'Event';
+            const alertLevel = xml('gdacs:alertlevel') ?? 'Unknown';
+            const country = xml('gdacs:country');
+            return [{
+              id: xml('guid') ?? `gdacs-${eventLat}-${eventLng}-${title}`,
+              title: country ? `${title} · ${country}` : title,
+              kind: `${eventType} · ${alertLevel} alert`,
+              date: xml('pubDate') ? new Date(xml('pubDate')!).toISOString() : null,
+              lat: eventLat,
+              lng: eventLng,
+              magnitude: null,
+              url: xml('link'),
+              distanceKm: haversineKm({ lat, lng }, { lat: eventLat, lng: eventLng }),
+              provider: 'GDACS',
+            }];
+          })
+      : [];
+
+    const events = [...eonetEvents, ...gdacsEvents]
+      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+      .slice(0, 12);
+    if (eonet.status === 'fulfilled') await recordSuccess('provider:nasa-eonet', { events: eonetEvents.length });
+    else await recordFailure('provider:nasa-eonet', eonet.reason instanceof Error ? eonet.reason.message : 'EONET failed');
+    if (gdacs.status === 'fulfilled') await recordSuccess('provider:gdacs', { events: gdacsEvents.length });
+    else await recordFailure('provider:gdacs', gdacs.reason instanceof Error ? gdacs.reason.message : 'GDACS failed');
 
     const earthquakes = quakes.status === 'fulfilled'
       ? (quakes.value.features ?? [])
@@ -1252,6 +1299,7 @@ export async function getPlanetEvents(lat: number, lng: number): Promise<{ event
       sources: [
         { label: 'NASA EONET', url: 'https://eonet.gsfc.nasa.gov/' },
         { label: 'USGS earthquakes', url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php' },
+        { label: 'GDACS disasters', url: 'https://www.gdacs.org/' },
       ],
     };
   });

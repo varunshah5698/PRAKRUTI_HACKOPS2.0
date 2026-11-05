@@ -13,6 +13,7 @@ const ON_DEMAND_PUBLIC_SOURCES = new Set([
   'osm-overpass',
   'osm-valhalla',
   'nasa-eonet',
+  'gdacs',
   'usgs-earthquakes',
 ]);
 

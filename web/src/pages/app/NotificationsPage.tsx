@@ -20,7 +20,7 @@ interface Locality { id: string; name: string }
 export function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [preferences, setPreferences] = useState<Record<string, unknown> | null>(null);
-  const [provider, setProvider] = useState<{ configured: boolean; mode: string; provider?: string; from?: string; demoMode: boolean; demoRecipientConfigured: boolean; criticalBroadcast?: boolean; note: string } | null>(null);
+  const [provider, setProvider] = useState<{ configured: boolean; mode: string; provider?: string; from?: string; demoMode: boolean; demoRecipientConfigured: boolean; criticalBroadcast?: boolean; note: string } | null | undefined>(null);
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [localities, setLocalities] = useState<Locality[]>([]);
@@ -39,7 +39,7 @@ export function NotificationsPage() {
     setLoading(true);
     Promise.all([
       api.get<{ notifications: NotificationRow[] }>('/notifications?pageSize=50'),
-      api.get<{ preferences: Record<string, unknown> | null; provider: { configured: boolean; mode: string; provider?: string; from?: string; demoMode: boolean; demoRecipientConfigured: boolean; criticalBroadcast?: boolean; note: string } }>('/notifications/preferences'),
+      api.get<{ preferences: Record<string, unknown> | null; provider?: { configured: boolean; mode: string; provider?: string; from?: string; demoMode: boolean; demoRecipientConfigured: boolean; criticalBroadcast?: boolean; note: string } }>('/notifications/preferences'),
       api.get<{ localities: Locality[] }>('/public/localities'),
     ])
       .then(([notificationResult, preferenceResult, localityResult]) => {
@@ -121,10 +121,17 @@ export function NotificationsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2"><Badge tone="amber" dot>Simulation delivery</Badge><Badge tone="neutral">{notifications.length} records</Badge></div>
+          <div className="flex items-center gap-2">
+            <Badge tone={provider?.demoMode ? 'amber' : 'green'} dot>
+              {provider?.demoMode ? 'Demo delivery' : 'Delivery status'}
+            </Badge>
+            <Badge tone="neutral">{notifications.length} records</Badge>
+          </div>
           <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">Environmental notifications</h2>
           <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-[#6f7f74]">
-            Predictive and critical observed-condition alerts have independent trigger pipelines. In demo mode, emails are stored as SIMULATED records and are not sent to real mailing lists.
+            {provider?.demoMode
+              ? 'Demo mode is active: emails are stored as SIMULATED records and are not sent to real mailing lists.'
+              : 'Delivery status is recorded per notification. SENT means the provider accepted the message; DELIVERED requires a provider webhook.'}
           </p>
         </div>
         <Button variant="dark" size="sm" onClick={load}><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
@@ -181,6 +188,7 @@ export function NotificationsPage() {
         </Card>
 
         <div className="space-y-4">
+          {isAuthority() ? (
           <Card>
             <CardHeader><CardTitle>Email provider</CardTitle><Badge tone={provider?.configured ? 'green' : 'amber'}>{provider?.configured ? 'Configured' : 'Not configured'}</Badge></CardHeader>
             <div className="p-4 text-[10px] leading-relaxed text-[#5a6a5f]">
@@ -204,6 +212,7 @@ export function NotificationsPage() {
               </div>
             </div>
           </Card>
+          ) : null}
 
           <Card>
             <CardHeader><CardTitle>Preferences</CardTitle><Save className="h-4 w-4 text-[#3f7d2a]" /></CardHeader>

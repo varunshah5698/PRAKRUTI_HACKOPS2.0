@@ -4,6 +4,7 @@ import { query } from '../db/pool.js';
 import { getSourceStatuses } from '../services/sources.js';
 import { getStationSnapshots } from '../services/station-data.js';
 import { getDashboard } from '../services/dashboard.js';
+import { weatherIntegrity, weatherRecommendation } from '../services/weather-status.js';
 
 export const publicRouter = Router();
 
@@ -21,15 +22,49 @@ publicRouter.get('/overview', async (_req, res, next) => {
          WHERE submitted_at > now() - interval '7 days' GROUP BY category`,
       ),
       query<{ latest: string | null }>('SELECT MAX(observed_at) AS latest FROM environmental_observations'),
-      query<{ observed_at: string; temperature_c: number; relative_humidity: number; wind_speed_kmh: number; wind_direction_deg: number }>(
-        `SELECT observed_at, temperature_c::float8, relative_humidity::float8, wind_speed_kmh::float8, wind_direction_deg::float8
-         FROM weather_observations WHERE kind='OBSERVATION' ORDER BY observed_at DESC LIMIT 1`,
+      query<{
+        observed_at: string;
+        retrieved_at: string;
+        source_id: string;
+        temperature_c: number;
+        relative_humidity: number;
+        wind_speed_kmh: number;
+        wind_direction_deg: number;
+        precipitation_mm: number;
+        is_simulated: boolean;
+        latitude: number;
+        longitude: number;
+      }>(
+        `SELECT observed_at, retrieved_at, source_id, temperature_c::float8, relative_humidity::float8,
+                wind_speed_kmh::float8, wind_direction_deg::float8, precipitation_mm::float8, is_simulated,
+                ST_Y(location::geometry)::float8 AS latitude, ST_X(location::geometry)::float8 AS longitude
+         FROM weather_observations
+         WHERE kind='OBSERVATION' AND (is_simulated=false OR $1)
+         ORDER BY observed_at DESC LIMIT 1`,
+        [env.DEMO_MODE],
       ),
     ]);
     const currentSnapshots = snapshots.filter((station) => !station.isStale);
     const staleStationCount = snapshots.length - currentSnapshots.length;
     const simulatedStationCount = currentSnapshots.filter((station) => station.isSimulated).length;
     const connectedStationCount = currentSnapshots.length - simulatedStationCount;
+    const weatherRow = weather[0] ?? null;
+    const weatherCheck = weatherRow
+      ? weatherIntegrity({
+          observedAt: weatherRow.observed_at,
+          fetchedAt: weatherRow.retrieved_at,
+          sourceId: weatherRow.source_id,
+          isSimulated: weatherRow.is_simulated,
+          demoMode: env.DEMO_MODE,
+          latitude: weatherRow.latitude,
+          longitude: weatherRow.longitude,
+          temperatureC: weatherRow.temperature_c,
+          relativeHumidity: weatherRow.relative_humidity,
+          precipitationMm: weatherRow.precipitation_mm,
+          windSpeedKmh: weatherRow.wind_speed_kmh,
+        })
+      : null;
+    const weatherStatus = weatherCheck?.status ?? 'UNAVAILABLE';
     res.json({
       demoMode: env.DEMO_MODE,
       stationDataMode: connectedStationCount > 0 && simulatedStationCount > 0 ? 'MIXED' : connectedStationCount > 0 ? 'LIVE_SOURCE' : 'SIMULATION',
@@ -50,7 +85,21 @@ publicRouter.get('/overview', async (_req, res, next) => {
       alertCounts,
       reportCounts,
       latestObservationAt: latest[0]?.latest ?? null,
-      weather: weather[0] ?? null,
+      weather: weatherRow
+        ? {
+            ...weatherRow,
+            status: weatherStatus,
+            provider: weatherCheck?.provider ?? null,
+            dataSourceType: weatherCheck?.dataSourceType ?? null,
+            fetchedAt: weatherCheck?.fetchedAt ?? null,
+            observationTime: weatherCheck?.observationTime ?? null,
+            forecastTime: weatherCheck?.forecastTime ?? null,
+            isLive: weatherCheck?.isLive ?? false,
+            freshnessStatus: weatherCheck?.freshnessStatus ?? 'UNAVAILABLE',
+            validationStatus: weatherCheck?.validationStatus ?? 'INVALID',
+            recommendation: weatherRecommendation(weatherRow.precipitation_mm > 0 ? 'Rain' : ''),
+          }
+        : null,
       sources: sources
         .filter((s) => ['open-meteo-weather', 'open-meteo-cams', 'cpcb-caaqms', 'data-gov-in-air', 'openaq', 'river-ai', 'ml-service', 'demo-network'].includes(s.id))
         .map((s) => ({
@@ -70,7 +119,7 @@ publicRouter.get('/overview', async (_req, res, next) => {
       },
       labels: {
         observations: 'SIMULATION DATA — demo stations, not CPCB readings',
-        weather: 'Live Open-Meteo observation',
+        weather: `Weather status: ${weatherStatus}${weatherCheck?.provider ? ` · ${weatherCheck.provider}` : ''}`,
         staleStations: `${staleStationCount} stale station(s) excluded from the current map and counts.`,
       },
     });

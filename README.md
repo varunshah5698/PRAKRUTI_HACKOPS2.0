@@ -339,6 +339,28 @@ news emails on or off from the dashboard; enabling requires explicit consent.
 News alerts are labelled as news, never as official measurements or regulatory
 determinations.
 
+### Data integrity and observability
+
+Every weather card is fail-closed. A reading is `LIVE` only when the provider
+identity is known, the values pass range validation, and the observation is
+inside the provider freshness window (90 minutes for Open-Meteo current
+conditions, 3 hours for the MET Norway hourly forecast). Otherwise it is
+`STALE` (last real reading retained with its original timestamp) or
+`UNAVAILABLE`. Simulated values are `DEMO` only when `DEMO_MODE=true`; they are
+never labelled live in production.
+
+The public overview and the authority dashboard use the same rules. Open-Meteo
+current conditions and MET Norway hourly forecasts are labelled separately.
+
+`GET /api/v1/admin/health` is restricted to `SYSTEM_ADMIN`. It reports the last
+success/failure, error and heartbeat for Open-Meteo, MET Norway, news, EONET,
+GDACS and the background workers, plus monitored citizen count, pending retries
+and the last citizen weather observation. It never returns citizen emails,
+names or coordinates; provider detail is sanitised.
+
+The Live City map combines NASA EONET, GDACS and USGS events. GDACS alert levels
+are not local official warnings; each row links to the original report.
+
 **Deployment note:** on Render's free plan an idle web service is suspended, and
 the in-process worker stops with it. Use an always-on instance (or a separate
 scheduler) if alerts must run continuously.

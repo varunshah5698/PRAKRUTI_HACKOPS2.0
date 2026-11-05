@@ -512,6 +512,18 @@ CREATE TABLE IF NOT EXISTS app_config (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS service_health (
+  key text PRIMARY KEY,
+  last_success_at timestamptz,
+  last_failure_at timestamptz,
+  last_heartbeat_at timestamptz,
+  last_error text,
+  success_count bigint NOT NULL DEFAULT 0,
+  failure_count bigint NOT NULL DEFAULT 0,
+  detail jsonb,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Citizen report responses. Added after the fact, so it must be idempotent for
 -- databases that already ran the original schema.
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS report_id uuid REFERENCES environmental_reports(id) ON DELETE SET NULL;
@@ -545,6 +557,7 @@ CREATE TABLE IF NOT EXISTS citizen_weather_readings (
   observed_at timestamptz NOT NULL,
   retrieved_at timestamptz NOT NULL DEFAULT now(),
   temperature_c numeric,
+  relative_humidity numeric,
   precipitation_mm numeric,
   wind_speed_kmh numeric,
   wind_gust_kmh numeric,
@@ -556,6 +569,7 @@ CREATE TABLE IF NOT EXISTS citizen_weather_readings (
 );
 CREATE INDEX IF NOT EXISTS citizen_weather_readings_location_idx
   ON citizen_weather_readings (location_key, observed_at DESC);
+ALTER TABLE citizen_weather_readings ADD COLUMN IF NOT EXISTS relative_humidity numeric;
 
 -- One row per location + condition + severity + day. The unique key is the
 -- duplicate guard: the same ongoing event cannot generate a second email.

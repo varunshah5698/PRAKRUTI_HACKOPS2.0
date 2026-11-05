@@ -4,8 +4,9 @@ import rateLimit from 'express-rate-limit';
 import { query, one } from '../db/pool.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { badRequest, notFound } from '../middleware/errors.js';
-import { emailConfigured, emailProviderLabel, env, googleConfigured } from '../config/env.js';
+import { env } from '../config/env.js';
 import { classifyWeather, locationKey, refreshCitizenLocation, type WeatherSeverity } from '../services/citizen-weather.js';
+import { weatherIntegrity, weatherRecommendation } from '../services/weather-status.js';
 
 export const citizenRouter = Router();
 
@@ -107,16 +108,23 @@ citizenRouter.get('/dashboard', async (req, res, next) => {
     const reading = key
       ? await one<{
           observed_at: string;
+          retrieved_at: string;
+          latitude: number;
+          longitude: number;
           temperature_c: number | null;
+          relative_humidity: number | null;
           precipitation_mm: number | null;
           wind_speed_kmh: number | null;
           wind_gust_kmh: number | null;
           weather_code: number | null;
           source_id: string;
+          is_simulated: boolean;
         }>(
-          `SELECT observed_at, temperature_c::float8 AS temperature_c, precipitation_mm::float8 AS precipitation_mm,
+          `SELECT observed_at, retrieved_at, latitude::float8 AS latitude, longitude::float8 AS longitude,
+                  temperature_c::float8 AS temperature_c, relative_humidity::float8 AS relative_humidity,
+                  precipitation_mm::float8 AS precipitation_mm,
                   wind_speed_kmh::float8 AS wind_speed_kmh, wind_gust_kmh::float8 AS wind_gust_kmh,
-                  weather_code, source_id
+                  weather_code, source_id, is_simulated
            FROM citizen_weather_readings WHERE location_key=$1 ORDER BY observed_at DESC LIMIT 1`,
           [key],
         )
@@ -152,6 +160,32 @@ citizenRouter.get('/dashboard', async (req, res, next) => {
       [req.user!.id],
     );
 
+    const classification = reading
+      ? classifyWeather({
+          temperatureC: reading.temperature_c,
+          precipitationMm: reading.precipitation_mm,
+          windSpeedKmh: reading.wind_speed_kmh,
+          windGustKmh: reading.wind_gust_kmh,
+          weatherCode: reading.weather_code,
+        })
+      : null;
+    const integrity = reading
+      ? weatherIntegrity({
+          observedAt: reading.observed_at,
+          fetchedAt: reading.retrieved_at,
+          sourceId: reading.source_id,
+          isSimulated: reading.is_simulated,
+          demoMode: env.DEMO_MODE,
+          latitude: reading.latitude,
+          longitude: reading.longitude,
+          temperatureC: reading.temperature_c,
+          relativeHumidity: reading.relative_humidity,
+          precipitationMm: reading.precipitation_mm,
+          windSpeedKmh: reading.wind_speed_kmh,
+          windGustKmh: reading.wind_gust_kmh,
+        })
+      : null;
+
     res.json({
       profile: {
         id: profile.id,
@@ -170,26 +204,48 @@ citizenRouter.get('/dashboard', async (req, res, next) => {
         weatherConsentAt: profile.weather_consent_at,
         newsConsentAt: profile.news_consent_at,
       },
-      weather: reading
+      weather: reading && integrity
         ? {
             ...reading,
-            classification: classifyWeather({
-              temperatureC: reading.temperature_c,
-              precipitationMm: reading.precipitation_mm,
-              windSpeedKmh: reading.wind_speed_kmh,
-              windGustKmh: reading.wind_gust_kmh,
-              weatherCode: reading.weather_code,
-            }),
+            status: integrity.status,
+            provider: integrity.provider,
+            data_source_type: integrity.dataSourceType,
+            fetched_at: integrity.fetchedAt,
+            observation_time: integrity.observationTime,
+            forecast_time: integrity.forecastTime,
+            is_live: integrity.isLive,
+            freshness_status: integrity.freshnessStatus,
+            validation_status: integrity.validationStatus,
+            latitude: integrity.latitude,
+            longitude: integrity.longitude,
+            recommendation: weatherRecommendation(classification?.condition ?? ''),
+            classification,
           }
-        : null,
+        : {
+            status: 'UNAVAILABLE' as const,
+            provider: null,
+            data_source_type: null,
+            fetched_at: null,
+            observation_time: null,
+            forecast_time: null,
+            is_live: false,
+            freshness_status: 'UNAVAILABLE' as const,
+            validation_status: 'INVALID' as const,
+            latitude: profile.latitude,
+            longitude: profile.longitude,
+            recommendation: 'No verified live weather is available for your location. Follow local authority guidance.',
+            classification: null,
+            observed_at: null,
+            temperature_c: null,
+            relative_humidity: null,
+            precipitation_mm: null,
+            wind_speed_kmh: null,
+            wind_gust_kmh: null,
+            weather_code: null,
+            source_id: null,
+          },
       events,
       notifications,
-      provider: {
-        emailConfigured,
-        emailProvider: emailProviderLabel,
-        demoMode: env.DEMO_MODE,
-        googleConfigured,
-      },
     });
   } catch (error) {
     next(error);

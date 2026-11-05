@@ -1379,7 +1379,7 @@ export function CityPulsePage() {
               </div>
             )}
             <p className="mt-2 border-t border-dashed border-[#dbe5d6] pt-2 text-[8px] leading-relaxed text-[#7a8b7e]">
-              NASA EONET · USGS. Events are not local hazard warnings. Distances are straight-line from the selected point.
+              NASA EONET · GDACS · USGS. Events are not local hazard warnings. Distances are straight-line from the selected point.
             </p>
           </div>
         </Card>
@@ -1452,7 +1452,7 @@ export function CityPulsePage() {
               ['River', '/city/flood', 'Open-Meteo Flood API', 'https://open-meteo.com/en/docs/flood-api'],
               ['Nature', '/city/nearby', 'OpenStreetMap Overpass API', 'https://wiki.openstreetmap.org/wiki/Overpass_API'],
               ['Walking route', '/city/route', 'Valhalla pedestrian router', 'https://valhalla.github.io/valhalla/'],
-              ['Planet watch', '/city/events', 'NASA EONET + USGS earthquakes', 'https://eonet.gsfc.nasa.gov/'],
+              ['Planet watch', '/city/events', 'NASA EONET + GDACS + USGS earthquakes', 'https://eonet.gsfc.nasa.gov/'],
               ['This day last year', '/city/archive', 'Open-Meteo Historical Weather API', 'https://open-meteo.com/en/docs/historical-weather-api'],
             ].map(([label, endpoint, provider, docs]) => (
               <div key={endpoint} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">

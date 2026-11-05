@@ -1,4 +1,5 @@
 import { unavailable } from '../middleware/errors.js';
+import { recordFailure, recordSuccess } from './telemetry.js';
 
 export interface NewsItem {
   id: string;
@@ -189,11 +190,13 @@ export async function getEnvironmentalNews(): Promise<NewsFeed> {
 
   if (items.length === 0) {
     retryAt = Date.now() + RETRY_AFTER_FAILURE_MS;
+    await recordFailure('provider:news', 'All configured news feeds failed.');
     if (cache) return { fetchedAt: new Date(cache.at).toISOString(), stale: true, sources, items: cache.items };
     throw unavailable('The news feeds are temporarily unavailable. Please try again shortly.');
   }
 
   cache = { at: Date.now(), items };
   retryAt = 0;
+  await recordSuccess('provider:news', { items: items.length, sources: sources.length });
   return { fetchedAt: new Date(cache.at).toISOString(), stale: false, sources, items };
 }

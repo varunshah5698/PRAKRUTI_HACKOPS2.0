@@ -177,6 +177,16 @@ export const DATA_SOURCE_CATALOGUE = [
     notes: 'Open natural events inside the India bounding box for the last 30 days. Event positions are not Mumbai-specific hazards.',
   },
   {
+    id: 'gdacs',
+    name: 'GDACS disaster alerts',
+    category: 'hazards',
+    provider: 'European Commission JRC / GDACS',
+    documentationUrl: 'https://www.gdacs.org/',
+    attribution: 'GDACS (EC-JRC)',
+    configured: true,
+    notes: 'Current disaster notifications inside the India bounding box. GDACS alert levels are not local official warnings; always open the source report.',
+  },
+  {
     id: 'usgs-earthquakes',
     name: 'USGS earthquake feed',
     category: 'hazards',

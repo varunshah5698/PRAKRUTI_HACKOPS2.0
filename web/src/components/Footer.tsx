@@ -12,7 +12,7 @@ export function Footer() {
             facts, forecasts, reports and official determinations.
           </p>
           <div className="mt-6 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.1em] text-ink/45">
-            <span className="rounded-full border border-ink/12 bg-white/45 px-2.5 py-1">Demo data labelled</span>
+            <span className="rounded-full border border-ink/12 bg-white/45 px-2.5 py-1">Source-labelled data</span>
             <span className="rounded-full border border-ink/12 bg-white/45 px-2.5 py-1">No paywall</span>
           </div>
         </div>
@@ -49,7 +49,7 @@ export function Footer() {
       </div>
       <div className="border-t border-ink/10">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-5 text-[11px] text-ink/35 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-          <p>© {new Date().getFullYear()} प्रकृति. Demonstration deployment.</p>
+          <p>© {new Date().getFullYear()} प्रकृति. Environmental intelligence platform.</p>
           <p>Automated assessments assist human decisions. They are not official regulatory determinations.</p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { env, emailConfigured } from '../config/env.js';
 import { one, query } from '../db/pool.js';
+import { weatherRecommendation } from './weather-status.js';
 
 export interface AlertForEmail {
   id: string;
@@ -255,23 +256,7 @@ export interface WeatherAlertEmailInput {
 }
 
 function weatherAction(condition: string): string {
-  const text = condition.toLowerCase();
-  if (text.includes('rain') || text.includes('flood')) {
-    return 'Avoid low-lying roads and underpasses. Do not walk or drive through standing water. Move valuables above expected water level and follow local authority instructions.';
-  }
-  if (text.includes('thunder')) {
-    return 'Stay indoors, away from windows and open ground. Unplug sensitive electronics. Avoid sheltering under isolated trees.';
-  }
-  if (text.includes('wind')) {
-    return 'Secure loose outdoor objects. Stay away from trees, scaffolding and hoardings. Avoid two-wheeler travel in exposed areas.';
-  }
-  if (text.includes('heat')) {
-    return 'Drink water frequently, avoid outdoor exertion between 12:00 and 16:00, and check on elderly neighbours. Never leave children or pets in a parked vehicle.';
-  }
-  if (text.includes('cold')) {
-    return 'Wear warm layers, limit exposure outdoors and check on elderly or homeless neighbours.';
-  }
-  return 'Follow local authority guidance and avoid unnecessary exposure outdoors.';
+  return weatherRecommendation(condition);
 }
 
 export function renderWeatherAlertEmail(input: WeatherAlertEmailInput): { subject: string; html: string } {

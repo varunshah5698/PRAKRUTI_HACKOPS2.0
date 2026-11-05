@@ -3,6 +3,7 @@ import { one, query } from '../db/pool.js';
 import { getSourceStatuses } from './sources.js';
 import { getStationSnapshots } from './station-data.js';
 import { mlHealth } from './ml.js';
+import { weatherIntegrity, weatherRecommendation } from './weather-status.js';
 import { CATEGORY_LABELS, type Category } from '../types.js';
 
 interface AlertRow {
@@ -135,17 +136,24 @@ export async function getDashboard() {
     one<{ latest: string | null }>('SELECT MAX(observed_at) AS latest FROM environmental_observations'),
     one<{
       observed_at: string;
+      retrieved_at: string;
+      source_id: string;
       temperature_c: number;
       relative_humidity: number;
       wind_speed_kmh: number;
       wind_direction_deg: number;
       precipitation_mm: number;
       is_simulated: boolean;
+      latitude: number;
+      longitude: number;
     }>(
-      `SELECT observed_at, temperature_c::float8, relative_humidity::float8, wind_speed_kmh::float8,
-              wind_direction_deg::float8, precipitation_mm::float8, is_simulated
-       FROM weather_observations WHERE kind='OBSERVATION'
+      `SELECT observed_at, retrieved_at, source_id, temperature_c::float8, relative_humidity::float8,
+              wind_speed_kmh::float8, wind_direction_deg::float8, precipitation_mm::float8, is_simulated,
+              ST_Y(location::geometry)::float8 AS latitude, ST_X(location::geometry)::float8 AS longitude
+       FROM weather_observations
+       WHERE kind='OBSERVATION' AND (is_simulated=false OR $1)
        ORDER BY observed_at DESC LIMIT 1`,
+      [env.DEMO_MODE],
     ),
     query<{ locality_id: string; locality_name: string; pollutant_code: string; value: number; unit: string; observed_at: string }>(
       `SELECT DISTINCT ON (o.locality_id, o.pollutant_code) o.locality_id, l.name AS locality_name,
@@ -337,6 +345,30 @@ export async function getDashboard() {
 
   const simulatedStationCount = currentSnapshots.filter((station) => station.isSimulated).length;
   const connectedStationCount = currentSnapshots.length - simulatedStationCount;
+  const weatherCheck = weatherRow
+    ? weatherIntegrity({
+        observedAt: weatherRow.observed_at,
+        fetchedAt: weatherRow.retrieved_at,
+        sourceId: weatherRow.source_id,
+        isSimulated: weatherRow.is_simulated,
+        demoMode: env.DEMO_MODE,
+        latitude: weatherRow.latitude,
+        longitude: weatherRow.longitude,
+        temperatureC: weatherRow.temperature_c,
+        relativeHumidity: weatherRow.relative_humidity,
+        precipitationMm: weatherRow.precipitation_mm,
+        windSpeedKmh: weatherRow.wind_speed_kmh,
+      })
+    : null;
+  const weatherStatus = weatherCheck?.status ?? 'UNAVAILABLE';
+  const weatherCondition =
+    weatherRow && weatherRow.precipitation_mm > 0
+      ? 'Rain'
+      : weatherRow && weatherRow.temperature_c >= 40
+        ? 'Heat'
+        : weatherRow && weatherRow.wind_speed_kmh >= 60
+          ? 'Wind'
+          : '';
   const stationDataMode = connectedStationCount > 0 && simulatedStationCount > 0 ? 'MIXED' : connectedStationCount > 0 ? 'LIVE_SOURCE' : 'SIMULATION';
   const activeStations = Number(activeStationRow?.count ?? 0);
   const previousActive = Number(previousActiveRow?.count ?? 0);
@@ -353,7 +385,7 @@ export async function getDashboard() {
       simulatedStations: simulatedStationCount,
       connectedSourceStations: connectedStationCount,
       staleStationsExcluded: staleStationCount,
-      weather: 'LIVE_OPEN_METEO',
+      weather: weatherStatus,
       cams: 'MODELLED_CAMS',
       cpcb: env.DATA_GOV_IN_API_KEY ? 'CONFIGURED' : 'NOT_CONFIGURED',
       forecasts: mlStatus.status === 'TRAINED' ? 'LIGHTGBM_TRAINED_AVAILABLE' : 'PERSISTENCE_BASELINE',
@@ -428,7 +460,22 @@ export async function getDashboard() {
     weather: weatherRow
       ? {
           ...weatherRow,
-          note: 'Live Open-Meteo observation. Weather is context, not evidence of causation.',
+          status: weatherStatus,
+          provider: weatherCheck?.provider ?? null,
+          dataSourceType: weatherCheck?.dataSourceType ?? null,
+          fetchedAt: weatherCheck?.fetchedAt ?? null,
+          observationTime: weatherCheck?.observationTime ?? null,
+          forecastTime: weatherCheck?.forecastTime ?? null,
+          isLive: weatherCheck?.isLive ?? false,
+          freshnessStatus: weatherCheck?.freshnessStatus ?? 'UNAVAILABLE',
+          validationStatus: weatherCheck?.validationStatus ?? 'INVALID',
+          recommendation: weatherRecommendation(weatherCondition),
+          note:
+            weatherStatus === 'LIVE'
+              ? `Verified ${weatherCheck?.dataSourceType === 'HOURLY_FORECAST' ? 'hourly forecast' : 'current conditions'} from ${weatherCheck?.provider}. Weather is context, not evidence of causation.`
+              : weatherStatus === 'STALE'
+                ? `Last verified reading from ${weatherCheck?.provider} is stale. It is retained with its original timestamp.`
+                : `No verified live weather reading is available from the configured providers.`,
         }
       : null,
     cams: [...camsMap.values()],

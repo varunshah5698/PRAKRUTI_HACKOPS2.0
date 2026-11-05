@@ -49,7 +49,18 @@ interface Overview {
   alertCounts: Array<{ category: string; count: number }>;
   reportCounts: Array<{ category: string; count: number }>;
   latestObservationAt: string | null;
-  weather: { temperature_c: number; wind_speed_kmh: number; relative_humidity: number; observed_at: string } | null;
+  weather: {
+    temperature_c: number;
+    wind_speed_kmh: number;
+    relative_humidity: number;
+    observed_at: string;
+    status: 'LIVE' | 'STALE' | 'UNAVAILABLE' | 'DEMO';
+    provider: string | null;
+    dataSourceType: string | null;
+    fetchedAt: string | null;
+    observationTime: string | null;
+    isLive: boolean;
+  } | null;
   sources: Array<{ id: string; name: string; status: string; notes?: string }>;
   labels: Record<string, string>;
 }
@@ -230,7 +241,8 @@ export function LandingPage() {
             {overview?.weather ? (
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white/70 px-3 py-1.5 text-[10px] font-semibold text-ink/65">
-                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-[#32a879]" /> Live now
+                  <span className={`h-1.5 w-1.5 rounded-full ${overview.weather.status === 'LIVE' ? 'bg-[#32a879]' : overview.weather.status === 'STALE' ? 'bg-[#c69218]' : 'bg-[#c94a50]'}`} />
+                  {overview.weather.status === 'LIVE' ? 'Live weather' : overview.weather.status === 'STALE' ? 'Stale weather' : 'Weather unavailable'}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[10px] text-ink/60">
                   <Gauge className="h-3 w-3 text-ink/45" /> {number(overview.weather.temperature_c, 0)}°C
@@ -241,7 +253,10 @@ export function LandingPage() {
                 <span className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[10px] text-ink/60">
                   <Wind className="h-3 w-3 text-ink/45" /> {number(overview.weather.wind_speed_kmh)} km/h
                 </span>
-                <span className="text-[9px] text-ink/35">Weather updated {timeAgo(overview.weather.observed_at)} · Open-Meteo</span>
+                <span className="text-[9px] text-ink/35">
+                  {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'Forecast valid' : 'Observed'}{' '}
+                  {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at)} · {overview.weather.provider ?? 'provider'}
+                </span>
               </div>
             ) : null}
             <div className="mt-8 grid max-w-[540px] grid-cols-3 gap-4 border-t border-ink/15 pt-5">

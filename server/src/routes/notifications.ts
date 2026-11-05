@@ -97,19 +97,24 @@ notificationsRouter.get('/', async (req, res, next) => {
 notificationsRouter.get('/preferences', async (req, res, next) => {
   try {
     const prefs = await one<Record<string, unknown>>('SELECT * FROM user_preferences WHERE user_id=$1', [req.user!.id]);
+    const isAuthority = ['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN', 'SYSTEM_ADMIN'].includes(req.user!.role);
     res.json({
       preferences: prefs,
-      provider: {
-        configured: emailConfigured,
-        mode: env.EMAIL_PROVIDER,
-        provider: emailProviderLabel,
-        from: resolvedFromAddress(),
-        demoMode: env.DEMO_MODE,
-        demoRecipientConfigured: Boolean(env.DEMO_EMAIL_RECIPIENT),
-        criticalBroadcast: true,
-        note:
-          'Critical alerts are emailed to every active account. Set EMAIL_PROVIDER=gmail with a Gmail app password to deliver through Gmail. In DEMO_MODE, mail is redirected to the demonstration recipient; DELIVERED is only set by a provider webhook.',
-      },
+      ...(isAuthority
+        ? {
+            provider: {
+              configured: emailConfigured,
+              mode: env.EMAIL_PROVIDER,
+              provider: emailProviderLabel,
+              from: resolvedFromAddress(),
+              demoMode: env.DEMO_MODE,
+              demoRecipientConfigured: Boolean(env.DEMO_EMAIL_RECIPIENT),
+              criticalBroadcast: true,
+              note:
+                'Critical alerts are emailed to every active account. Set EMAIL_PROVIDER=gmail with a Gmail app password to deliver through Gmail. In DEMO_MODE, mail is redirected to the demonstration recipient; DELIVERED is only set by a provider webhook.',
+            },
+          }
+        : {}),
     });
   } catch (error) {
     next(error);

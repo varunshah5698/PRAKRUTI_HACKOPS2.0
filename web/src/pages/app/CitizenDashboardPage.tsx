@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle,
   CheckCircle2,
   CloudRain,
   Droplets,
   Mail,
   MapPin,
   RefreshCw,
-  Send,
   Thermometer,
   Wind,
   ExternalLink,
@@ -49,15 +47,26 @@ interface DashboardPayload {
     newsConsentAt: string | null;
   };
   weather: {
-    observed_at: string;
+    observed_at: string | null;
     temperature_c: number | null;
+    relative_humidity: number | null;
     precipitation_mm: number | null;
     wind_speed_kmh: number | null;
     wind_gust_kmh: number | null;
     weather_code: number | null;
-    source_id: string;
-    classification: WeatherClassification;
-  } | null;
+    source_id: string | null;
+    status: 'LIVE' | 'STALE' | 'UNAVAILABLE' | 'DEMO';
+    provider: string | null;
+    data_source_type: string | null;
+    fetched_at: string | null;
+    observation_time: string | null;
+    forecast_time: string | null;
+    is_live: boolean;
+    freshness_status: string;
+    validation_status: string;
+    recommendation: string;
+    classification: WeatherClassification | null;
+  };
   events: Array<{
     id: string;
     condition: string;
@@ -76,12 +85,6 @@ interface DashboardPayload {
     error: string | null;
     created_at: string;
   }>;
-  provider: {
-    emailConfigured: boolean;
-    emailProvider: string;
-    demoMode: boolean;
-    googleConfigured: boolean;
-  };
 }
 
 const SEVERITY_STYLE: Record<string, string> = {
@@ -111,19 +114,13 @@ export function CitizenDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [enabled, setEnabled] = useState(false);
-  const [newsEnabled, setNewsEnabled] = useState(true);
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [consent, setConsent] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
 
   const load = async () => {
     try {
       const payload = await api.get<DashboardPayload>('/citizen/dashboard');
       setData(payload);
-      setEnabled(payload.profile.weatherNotifications);
-      setNewsEnabled(payload.profile.newsNotifications);
       if (!payload.profile.onboardingCompleted || payload.profile.latitude === null || payload.profile.longitude === null) {
         navigate('/citizen/onboarding', { replace: true });
       }
@@ -143,43 +140,6 @@ export function CitizenDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const savePreferences = async () => {
-    if (!data?.profile.locationLabel || data.profile.latitude === null || data.profile.longitude === null) {
-      navigate('/citizen/onboarding');
-      return;
-    }
-    const consentNeeded =
-      (enabled && !data.profile.weatherConsentAt) || (newsEnabled && !data.profile.newsConsentAt);
-    if (consentNeeded && !consent) {
-      setError('Tick the consent box before enabling weather or critical-news emails.');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    setNotice(null);
-    try {
-      await api.put('/citizen/profile', {
-        locationLabel: data.profile.locationLabel,
-        latitude: data.profile.latitude,
-        longitude: data.profile.longitude,
-        weatherNotifications: enabled,
-        newsNotifications: newsEnabled,
-        consent,
-      });
-      setNotice(
-        [
-          enabled ? 'Weather email alerts are enabled.' : 'Weather email alerts are disabled.',
-          newsEnabled ? 'Critical news alerts are enabled.' : 'Critical news alerts are disabled.',
-        ].join(' '),
-      );
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save notification preferences.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const refreshWeather = async () => {
     setTesting(true);
     setError(null);
@@ -187,33 +147,9 @@ export function CitizenDashboardPage() {
     try {
       await api.post('/citizen/refresh');
       await load();
-      setNotice('Live weather refreshed from the weather provider.');
+      setNotice('Weather refresh requested. The status below reflects the provider response.');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not refresh weather.');
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const sendTestEmail = async () => {
-    setTesting(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const result = await api.post<{ status: string; recipient?: string; error?: string; demoMode?: boolean }>(
-        '/notifications/test-email',
-      );
-      if (result.status === 'FAILED') {
-        setError(result.error ?? 'Gmail rejected the test message.');
-      } else {
-        setNotice(
-          result.demoMode
-            ? `DEMO_MODE redirected the test email to ${result.recipient ?? 'the demo recipient'}. Set DEMO_MODE=false for the citizen's verified address.`
-            : `Test email accepted by the provider for ${result.recipient ?? data?.profile.email}.`,
-        );
-      }
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not send the test email.');
     } finally {
       setTesting(false);
     }
@@ -227,7 +163,8 @@ export function CitizenDashboardPage() {
   }
 
   const weather = data.weather;
-  const severity = weather?.classification.severity ?? 'NORMAL';
+  const severity = weather?.classification?.severity ?? 'NORMAL';
+  const hasReading = Boolean(weather?.classification);
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6">
@@ -258,7 +195,7 @@ export function CitizenDashboardPage() {
           </Button>
           <Link to="/citizen/onboarding">
             <Button variant="subtle" size="sm">
-              <MapPin className="h-4 w-4" /> Edit location
+              <MapPin className="h-4 w-4" /> Edit location & alerts
             </Button>
           </Link>
         </div>
@@ -271,26 +208,47 @@ export function CitizenDashboardPage() {
         <p className="rounded-xl border border-[#bfe0ae] bg-[#f2faec] px-3.5 py-2.5 text-[12px] text-[#356b2a]">{notice}</p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         <Card>
           <CardHeader>
-            <CardTitle>Live weather at your location</CardTitle>
-            <Badge className={SEVERITY_STYLE[severity]}>{severity}</Badge>
+            <CardTitle>Weather at your location</CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge className={SEVERITY_STYLE[severity]}>{severity}</Badge>
+              <Badge
+                className={
+                  weather?.status === 'LIVE'
+                    ? 'bg-[#edf5e7] text-[#356b2a] border-[#bfe0ae]'
+                    : weather?.status === 'STALE'
+                      ? 'bg-[#fff7df] text-[#8a5a08] border-[#ecd79a]'
+                      : 'bg-[#fff0ee] text-[#8a2f2a] border-[#e8b7b1]'
+                }
+              >
+                {weather?.status ?? 'UNAVAILABLE'}
+              </Badge>
+            </div>
           </CardHeader>
           <div className="px-5 py-5">
-            {weather ? (
+            {weather && hasReading ? (
               <>
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="display text-5xl font-bold leading-none text-ink">
                       {weather.temperature_c === null ? '—' : `${Math.round(weather.temperature_c)}°`}
                     </p>
-                    <p className="mt-2 text-sm font-semibold text-ink/60">{weather.classification.condition}</p>
-                    <p className="mt-1 text-[11px] text-ink/35">Observed {fmt(weather.observed_at)} · Open-Meteo</p>
+                    <p className="mt-2 text-sm font-semibold text-ink/60">{weather.classification?.condition}</p>
+                    <p className="mt-1 text-[11px] text-ink/35">
+                      {weather.provider ?? 'Unknown provider'} ·{' '}
+                      {weather.data_source_type === 'HOURLY_FORECAST' ? 'hourly forecast' : 'current conditions'} ·{' '}
+                      {weather.data_source_type === 'HOURLY_FORECAST' ? 'valid' : 'observed'}{' '}
+                      {fmt(weather.observation_time ?? weather.observed_at)} · fetched {fmt(weather.fetched_at)}
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-ink/55">
                     <span className="inline-flex items-center gap-1.5">
-                      <Droplets className="h-3.5 w-3.5" /> {weather.precipitation_mm ?? '—'} mm
+                      <Droplets className="h-3.5 w-3.5" /> {weather.relative_humidity ?? '—'}% RH
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <CloudRain className="h-3.5 w-3.5" /> {weather.precipitation_mm ?? '—'} mm
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <Wind className="h-3.5 w-3.5" /> {weather.wind_speed_kmh ?? '—'} km/h
@@ -298,11 +256,18 @@ export function CitizenDashboardPage() {
                     <span className="inline-flex items-center gap-1.5">
                       <Thermometer className="h-3.5 w-3.5" /> gust {weather.wind_gust_kmh ?? '—'}
                     </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <CloudRain className="h-3.5 w-3.5" /> code {weather.weather_code ?? '—'}
-                    </span>
                   </div>
                 </div>
+                <p className="mt-4 rounded-xl border border-[#dbe5d6] bg-[#f7faf3] px-3.5 py-2.5 text-[11px] leading-relaxed text-ink/60">
+                  <span className="font-semibold text-ink/75">Safety recommendation · </span>
+                  {weather.recommendation}
+                </p>
+                {weather.status !== 'LIVE' ? (
+                  <p className="mt-3 text-[11px] leading-relaxed text-[#8a5a08]">
+                    This reading is {weather.status.toLowerCase()}. Its original timestamp is shown above; no newer
+                    verified provider response was available.
+                  </p>
+                ) : null}
                 {data.events.length > 0 ? (
                   <div className="mt-4 space-y-1.5 border-t border-dashed border-[#dbe5d6] pt-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/35">Recent events</p>
@@ -318,86 +283,17 @@ export function CitizenDashboardPage() {
                 ) : null}
               </>
             ) : (
-              <p className="text-sm text-ink/45">
-                No reading yet. The worker fetches your location within a few minutes, or press “Refresh weather”.
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-[#8a2f2a]">No verified live weather is available for this location.</p>
+                <p className="text-[11px] leading-relaxed text-ink/45">
+                  The worker will retry the configured providers on its next cycle. No value is substituted when the
+                  provider cannot be validated.
+                </p>
+                <Button size="sm" variant="outline" onClick={refreshWeather} disabled={testing}>
+                  <RefreshCw className={`h-4 w-4 ${testing ? 'animate-spin' : ''}`} /> Retry now
+                </Button>
+              </div>
             )}
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Email alerts</CardTitle>
-            <Badge className={data.provider.emailConfigured ? 'bg-[#edf5e7] text-[#356b2a]' : 'bg-[#fff0ee] text-[#8a2f2a]'}>
-              {data.provider.emailConfigured ? data.provider.emailProvider : 'NOT_CONFIGURED'}
-            </Badge>
-          </CardHeader>
-          <div className="space-y-4 px-5 py-5">
-            <label className="flex items-start gap-3 text-sm text-ink/70">
-              <input
-                type="checkbox"
-                checked={enabled}
-                onChange={(event) => setEnabled(event.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
-              />
-              <span>
-                <span className="font-semibold text-ink">Weather alerts for {data.profile.locationLabel ?? 'my location'}</span>
-                <span className="mt-0.5 block text-[11px] leading-relaxed text-ink/40">
-                  Recipient: {data.profile.email}. The server monitors even after you close the browser.
-                </span>
-              </span>
-            </label>
-
-            <label className="flex items-start gap-3 text-sm text-ink/70">
-              <input
-                type="checkbox"
-                checked={newsEnabled}
-                onChange={(event) => setNewsEnabled(event.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
-              />
-              <span>
-                <span className="font-semibold text-ink">Critical environmental news</span>
-                <span className="mt-0.5 block text-[11px] leading-relaxed text-ink/40">
-                  Emails when a live news story matches a safety keyword (flood, cyclone, severe pollution, gas leak,
-                  heatwave, major fire). Deduplicated and rate-limited.
-                </span>
-              </span>
-            </label>
-
-            {(enabled && !data.profile.weatherConsentAt) || (newsEnabled && !data.profile.newsConsentAt) ? (
-              <label className="flex items-start gap-3 rounded-xl border border-[#ecd79a] bg-[#fff9e8] px-3 py-2.5 text-[11px] leading-relaxed text-[#7a5a16]">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(event) => setConsent(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#4e9b3f]"
-                />
-                I consent to automated weather and critical environmental news emails at my verified address.
-              </label>
-            ) : null}
-
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={savePreferences} disabled={saving}>
-                {saving ? 'Saving…' : 'Save preference'}
-              </Button>
-              <Button size="sm" variant="outline" onClick={sendTestEmail} disabled={testing || !data.provider.emailConfigured}>
-                <Send className="h-4 w-4" /> Send test email
-              </Button>
-            </div>
-
-            {data.provider.demoMode ? (
-              <p className="flex items-start gap-2 rounded-xl border border-[#ecd79a] bg-[#fff9e8] px-3 py-2.5 text-[11px] leading-relaxed text-[#7a5a16]">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                DEMO_MODE is on. Emails are redirected to the configured demo recipient, not the citizen's inbox. Set
-                DEMO_MODE=false and real Gmail credentials for production.
-              </p>
-            ) : null}
-            {!data.provider.emailConfigured ? (
-              <p className="text-[11px] leading-relaxed text-[#8a2f2a]">
-                Gmail SMTP is not configured. Alerts will be recorded as FAILED, never as delivered. Set SMTP_USER and
-                SMTP_PASSWORD (Google App Password) and EMAIL_PROVIDER=gmail.
-              </p>
-            ) : null}
           </div>
         </Card>
       </div>

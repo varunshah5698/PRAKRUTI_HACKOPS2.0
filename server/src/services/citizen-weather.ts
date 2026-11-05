@@ -1,6 +1,8 @@
 import { env, emailConfigured } from '../config/env.js';
 import { query, one } from '../db/pool.js';
 import { deliverEmail, markNotificationStatus, recordNotificationEvent, renderWeatherAlertEmail } from './email.js';
+import { validateWeatherReading } from './weather-status.js';
+import { recordEmail, recordFailure, recordHeartbeat, recordSuccess } from './telemetry.js';
 
 export type WeatherSeverity = 'NORMAL' | 'MODERATE' | 'HIGH' | 'CRITICAL';
 
@@ -115,6 +117,7 @@ interface WeatherGroup {
 interface CurrentWeather {
   observedAt: string;
   temperatureC: number | null;
+  relativeHumidity: number | null;
   precipitationMm: number | null;
   windSpeedKmh: number | null;
   windGustKmh: number | null;
@@ -173,6 +176,7 @@ async function fetchMetNo(point: { latitude: number; longitude: number }): Promi
   return {
     observedAt: isoUtc(entry.time),
     temperatureC: Number.isFinite(details.air_temperature) ? details.air_temperature : null,
+    relativeHumidity: Number.isFinite(details.relative_humidity) ? details.relative_humidity : null,
     precipitationMm: Number.isFinite(next?.details?.precipitation_amount) ? next!.details!.precipitation_amount! : null,
     windSpeedKmh: Number.isFinite(windMs) ? windMs * 3.6 : null,
     windGustKmh: Number.isFinite(gustMs) ? gustMs * 3.6 : null,
@@ -204,6 +208,7 @@ async function fetchWeather(points: Array<{ latitude: number; longitude: number 
       return {
         observedAt: isoUtc(current.time),
         temperatureC: typeof current.temperature_2m === 'number' ? current.temperature_2m : null,
+        relativeHumidity: typeof current.relative_humidity_2m === 'number' ? current.relative_humidity_2m : null,
         precipitationMm: typeof current.precipitation === 'number' ? current.precipitation : null,
         windSpeedKmh: typeof current.wind_speed_10m === 'number' ? current.wind_speed_10m : null,
         windGustKmh: typeof current.wind_gusts_10m === 'number' ? current.wind_gusts_10m : null,
@@ -212,16 +217,26 @@ async function fetchWeather(points: Array<{ latitude: number; longitude: number 
         raw: current,
       };
     });
+    await recordSuccess('provider:open-meteo-weather', { points: points.length });
   } catch (error) {
-    console.warn('[citizen-weather] Open-Meteo unavailable; using MET Norway fallback.', error instanceof Error ? error.message : error);
+    const message = error instanceof Error ? error.message : 'Open-Meteo weather failed';
+    console.warn('[citizen-weather] Open-Meteo unavailable; using MET Norway fallback.', message);
+    await recordFailure('provider:open-meteo-weather', message);
     results = points.map(() => null);
   }
   return Promise.all(
     results.map(async (reading, index) =>
-      reading ?? fetchMetNo(points[index]).catch((error) => {
-        console.warn('[citizen-weather] MET Norway fallback failed.', error instanceof Error ? error.message : error);
-        return null;
-      }),
+      reading ?? fetchMetNo(points[index]).then(
+        (value) => {
+          if (value) void recordSuccess('provider:met-no-weather', { latitude: points[index].latitude, longitude: points[index].longitude });
+          return value;
+        },
+        (error) => {
+          void recordFailure('provider:met-no-weather', error instanceof Error ? error.message : 'MET Norway failed');
+          console.warn('[citizen-weather] MET Norway fallback failed.', error instanceof Error ? error.message : error);
+          return null;
+        },
+      ),
     ),
   );
 }
@@ -234,11 +249,12 @@ function isFresh(observedAt: string): boolean {
 async function storeReading(key: string, latitude: number, longitude: number, reading: CurrentWeather): Promise<void> {
   await query(
     `INSERT INTO citizen_weather_readings
-       (location_key, latitude, longitude, observed_at, temperature_c, precipitation_mm, wind_speed_kmh,
+       (location_key, latitude, longitude, observed_at, temperature_c, relative_humidity, precipitation_mm, wind_speed_kmh,
         wind_gust_kmh, weather_code, source_id, raw)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)
      ON CONFLICT (location_key, observed_at, source_id) DO UPDATE SET
        retrieved_at=now(), temperature_c=EXCLUDED.temperature_c,
+       relative_humidity=EXCLUDED.relative_humidity,
        precipitation_mm=EXCLUDED.precipitation_mm, wind_speed_kmh=EXCLUDED.wind_speed_kmh,
        wind_gust_kmh=EXCLUDED.wind_gust_kmh, weather_code=EXCLUDED.weather_code, raw=EXCLUDED.raw`,
     [
@@ -247,6 +263,7 @@ async function storeReading(key: string, latitude: number, longitude: number, re
       longitude,
       reading.observedAt,
       reading.temperatureC,
+      reading.relativeHumidity,
       reading.precipitationMm,
       reading.windSpeedKmh,
       reading.windGustKmh,
@@ -329,6 +346,7 @@ async function sendWeatherAlert(
   if (!emailConfigured) {
     await markNotificationStatus(inserted.id, 'FAILED', { error: 'Email provider NOT_CONFIGURED.' });
     await recordNotificationEvent(inserted.id, 'WEATHER_EMAIL_FAILED', { reason: 'NOT_CONFIGURED' });
+    await recordFailure('email:citizen-alerts', 'Email provider NOT_CONFIGURED.');
     console.error(`[citizen-weather] Email NOT_CONFIGURED; alert ${inserted.id} for ${citizen.email} not sent.`);
     return;
   }
@@ -349,6 +367,7 @@ async function sendWeatherAlert(
     recipient: delivery.recipient,
     messageId: delivery.messageId,
   });
+  await recordEmail(delivery.status !== 'FAILED', delivery.error);
   if (delivery.status === 'FAILED') {
     await query(
       `UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`,
@@ -377,6 +396,24 @@ async function processGroups(groups: WeatherGroup[], sendEmails: boolean): Promi
       if (!reading) continue;
       if (!isFresh(reading.observedAt)) {
         console.warn(`[citizen-weather] stale reading for ${group.key} at ${reading.observedAt}; skipped.`);
+        continue;
+      }
+      const validation = validateWeatherReading({
+        observedAt: reading.observedAt,
+        fetchedAt: new Date().toISOString(),
+        sourceId: reading.sourceId,
+        isSimulated: false,
+        demoMode: env.DEMO_MODE,
+        latitude: group.latitude,
+        longitude: group.longitude,
+        temperatureC: reading.temperatureC,
+        relativeHumidity: reading.relativeHumidity,
+        precipitationMm: reading.precipitationMm,
+        windSpeedKmh: reading.windSpeedKmh,
+        windGustKmh: reading.windGustKmh,
+      });
+      if (!validation.valid) {
+        console.warn(`[citizen-weather] invalid reading for ${group.key}: ${validation.errors.join(' ')}`);
         continue;
       }
       await storeReading(group.key, group.latitude, group.longitude, reading);
@@ -461,6 +498,24 @@ export async function refreshCitizenLocation(userId: string): Promise<{ updated:
   const key = locationKey(row.latitude, row.longitude);
   const [reading] = await fetchWeather([{ latitude: row.latitude, longitude: row.longitude }]);
   if (!reading || !isFresh(reading.observedAt)) return { updated: false, severity: null };
+  const validation = validateWeatherReading({
+    observedAt: reading.observedAt,
+    fetchedAt: new Date().toISOString(),
+    sourceId: reading.sourceId,
+    isSimulated: false,
+    demoMode: env.DEMO_MODE,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    temperatureC: reading.temperatureC,
+    relativeHumidity: reading.relativeHumidity,
+    precipitationMm: reading.precipitationMm,
+    windSpeedKmh: reading.windSpeedKmh,
+    windGustKmh: reading.windGustKmh,
+  });
+  if (!validation.valid) {
+    console.warn(`[citizen-weather] invalid refresh for ${key}: ${validation.errors.join(' ')}`);
+    return { updated: false, severity: null };
+  }
   await storeReading(key, row.latitude, row.longitude, reading);
   const classification = classifyWeather(reading);
   if (classification.severity !== 'NORMAL') {
@@ -509,6 +564,7 @@ export async function retryFailedCitizenEmails(): Promise<{ retried: number; sen
       error: delivery.error,
     });
     await recordNotificationEvent(row.id, `RETRY_${delivery.event}`, { attempt: attempts, recipient: delivery.recipient });
+    await recordEmail(delivery.status !== 'FAILED', delivery.error);
     if (delivery.status === 'FAILED') {
       const delay = Math.min(60, 2 ** Math.min(attempts, 6));
       await query(`UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`, [
@@ -532,6 +588,7 @@ async function runMonitor(): Promise<void> {
   try {
     const result = await monitorCitizenWeather();
     const retries = await retryFailedCitizenEmails();
+    await recordHeartbeat('worker:citizen-weather', { ...result, retries });
     if (result.citizens > 0 || retries.retried > 0) {
       console.log(
         `[citizen-weather] locations=${result.locations} citizens=${result.citizens} readings=${result.readings} events=${result.events} emails=${result.emails} retries=${retries.retried}/${retries.sent}`,

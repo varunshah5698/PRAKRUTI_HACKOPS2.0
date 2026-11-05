@@ -95,6 +95,7 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [demoMode, setDemoMode] = useState<boolean | null>(null);
   const [now, setNow] = useState(new Date());
   const mainRef = useRef<HTMLElement | null>(null);
   const location = useLocation();
@@ -111,6 +112,19 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/health')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { demoMode?: boolean } | null) => {
+        if (active && typeof payload?.demoMode === 'boolean') setDemoMode(payload.demoMode);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -331,8 +345,8 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
                     {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                   </span>
                 </div>
-                <Badge tone={location.pathname.startsWith('/map') ? 'teal' : 'lime'} dot className="hidden xl:inline-flex">
-                  {location.pathname.startsWith('/map') ? 'Live sources' : 'Demo data'}
+                <Badge tone={demoMode ? 'amber' : 'teal'} dot className="hidden xl:inline-flex">
+                  {demoMode === null ? 'Checking data mode' : demoMode ? 'Demo mode' : 'Source-labelled'}
                 </Badge>
                 <Link
                   to="/notifications"
