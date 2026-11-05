@@ -317,6 +317,9 @@ GET /api/v1/admin/email/status     # SYSTEM_ADMIN only
 
 The response reports the configured sender, whether Brevo lists it as an active
 verified sender, and the sender API HTTP status. It never returns the API key.
+Brevo may rewrite the envelope From to its relay domain for Gmail senders; the
+display name is preserved. Authenticate a domain in Brevo if the From address
+must show that domain exactly.
 Send one diagnostic email with:
 
 ```bash
