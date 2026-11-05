@@ -478,6 +478,61 @@ export async function monitorCitizenWeather(options: { sendEmails?: boolean } = 
   return { locations: groups.size, citizens: rows.length, ...result };
 }
 
+export async function probeWeather(latitude: number, longitude: number): Promise<{
+  provider: string | null;
+  sourceId: string | null;
+  status: string;
+  observedAt: string | null;
+  temperatureC: number | null;
+  relativeHumidity: number | null;
+  precipitationMm: number | null;
+  windSpeedKmh: number | null;
+  windGustKmh: number | null;
+  validation: { valid: boolean; errors: string[] };
+}> {
+  const [reading] = await fetchWeather([{ latitude, longitude }]);
+  if (!reading) {
+    return {
+      provider: null,
+      sourceId: null,
+      status: 'UNAVAILABLE',
+      observedAt: null,
+      temperatureC: null,
+      relativeHumidity: null,
+      precipitationMm: null,
+      windSpeedKmh: null,
+      windGustKmh: null,
+      validation: { valid: false, errors: ['No provider returned a reading.'] },
+    };
+  }
+  const validation = validateWeatherReading({
+    observedAt: reading.observedAt,
+    fetchedAt: new Date().toISOString(),
+    sourceId: reading.sourceId,
+    isSimulated: false,
+    demoMode: false,
+    latitude,
+    longitude,
+    temperatureC: reading.temperatureC,
+    relativeHumidity: reading.relativeHumidity,
+    precipitationMm: reading.precipitationMm,
+    windSpeedKmh: reading.windSpeedKmh,
+    windGustKmh: reading.windGustKmh,
+  });
+  return {
+    provider: reading.sourceId === 'met-no-weather' ? 'MET Norway' : reading.sourceId === 'open-meteo-weather' ? 'Open-Meteo' : reading.sourceId,
+    sourceId: reading.sourceId,
+    status: validation.valid ? 'VALID' : 'INVALID',
+    observedAt: reading.observedAt,
+    temperatureC: reading.temperatureC,
+    relativeHumidity: reading.relativeHumidity,
+    precipitationMm: reading.precipitationMm,
+    windSpeedKmh: reading.windSpeedKmh,
+    windGustKmh: reading.windGustKmh,
+    validation,
+  };
+}
+
 export async function refreshCitizenLocation(userId: string): Promise<{ updated: boolean; severity: WeatherSeverity | null }> {
   const row = await one<{
     id: string;
