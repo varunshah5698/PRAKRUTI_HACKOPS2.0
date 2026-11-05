@@ -459,12 +459,12 @@ authRouter.post('/forgot-password', authLimiter, async (req, res, next) => {
         `INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES ($1,$2,now() + interval '30 minutes')`,
         [user.id, hash],
       );
-      // No transactional email provider is required for local development.
-      // The reset token is printed server-side and never returned in the API response.
-      console.log(`[password-reset] ${body.email} → ${env.FRONTEND_URL}/reset-password?token=${token}`);
+      // Never log the reset token or the account email. The token is returned
+      // to the user only through the configured delivery channel.
+      console.log('[password-reset] reset token generated; value not logged.');
     }
     res.json({
-      message: 'If the account exists, a reset instruction has been generated. Check the server log in local development.',
+      message: 'If the account exists, a reset instruction has been generated.',
     });
   } catch (error) {
     next(error);

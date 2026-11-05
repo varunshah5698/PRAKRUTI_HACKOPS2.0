@@ -86,6 +86,11 @@ async function checkVision() {
 async function checkEmail() {
   if (!emailConfigured) return 'NOT_CONFIGURED (SMTP_USER / SMTP_PASSWORD; SMTP_HOST for non-Gmail)';
   try {
+    if (env.EMAIL_PROVIDER.toLowerCase() === 'brevo') {
+      const { verifyBrevoSender } = await import('../services/brevo.js');
+      const result = await verifyBrevoSender();
+      return `BREVO HTTPS ${result.verified ? 'SENDER VERIFIED' : 'SENDER NOT VERIFIED'} (HTTP ${result.httpStatus ?? 'n/a'})${result.error ? ` — ${result.error}` : ''}`;
+    }
     const gmail = env.EMAIL_PROVIDER === 'gmail' || env.SMTP_HOST.toLowerCase().endsWith('gmail.com');
     const transporter = nodemailer.createTransport(
       gmail

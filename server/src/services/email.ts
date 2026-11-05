@@ -218,6 +218,7 @@ export function renderReportStatusEmail(
 }
 
 function isGmailTransport(): boolean {
+  if (env.EMAIL_PROVIDER.toLowerCase() === 'brevo') return false;
   return env.EMAIL_PROVIDER === 'gmail' || env.SMTP_HOST.toLowerCase().endsWith('gmail.com');
 }
 
@@ -334,7 +335,7 @@ export function renderCriticalNewsEmail(input: CriticalNewsEmailInput): { subjec
 }
 
 export function renderTestEmail(name: string): { subject: string; html: string } {
-  const provider = isGmailTransport() ? 'Gmail' : 'SMTP';
+  const provider = env.EMAIL_PROVIDER.toLowerCase() === 'brevo' ? 'Brevo HTTPS' : isGmailTransport() ? 'Gmail' : 'SMTP';
   return {
     subject: 'प्रकृति email delivery test',
     html: shell(

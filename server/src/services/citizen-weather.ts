@@ -348,7 +348,7 @@ async function sendWeatherAlert(
     await markNotificationStatus(inserted.id, 'FAILED', { error: 'Email provider NOT_CONFIGURED.' });
     await recordNotificationEvent(inserted.id, 'WEATHER_EMAIL_FAILED', { reason: 'NOT_CONFIGURED' });
     await recordFailure('email:citizen-alerts', 'Email provider NOT_CONFIGURED.');
-    console.error(`[citizen-weather] Email NOT_CONFIGURED; alert ${inserted.id} for ${citizen.email} not sent.`);
+    console.error(`[citizen-weather] Email NOT_CONFIGURED; alert ${inserted.id} for ${citizen.email.replace(/(^.).*(@.*$)/, '$1***$2')} not sent.`);
     return;
   }
 
