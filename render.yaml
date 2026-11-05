@@ -78,7 +78,11 @@ services:
       - key: GOOGLE_REDIRECT_URI
         sync: false
       - key: EMAIL_PROVIDER
-        value: gmail
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_API_BASE_URL
+        value: https://api.brevo.com/v3
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
@@ -90,6 +94,8 @@ services:
       - key: SMTP_PASSWORD
         sync: false
       - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
         sync: false
       - key: DEMO_EMAIL_RECIPIENT
         sync: false

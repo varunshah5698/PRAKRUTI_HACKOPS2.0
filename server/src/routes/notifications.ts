@@ -203,13 +203,20 @@ notificationsRouter.post('/test-email', rateLimit({ windowMs: 15 * 60_000, limit
       providerMessageId: delivery.messageId,
       error: delivery.error,
     });
-    await recordNotificationEvent(inserted.id, delivery.event);
+    await recordNotificationEvent(inserted.id, delivery.event, {
+      messageId: delivery.messageId,
+      httpStatus: delivery.httpStatus ?? null,
+      provider: emailProviderLabel,
+    });
     await recordEmail(delivery.status !== 'FAILED', delivery.error);
 
     res.status(delivery.status === 'FAILED' ? 502 : 200).json({
       status: delivery.status,
+      provider: emailProviderLabel,
       recipient: delivery.recipient ?? body.to ?? req.user!.email,
       messageId: delivery.messageId,
+      httpStatus: delivery.httpStatus ?? null,
+      retryable: delivery.retryable ?? null,
       error: delivery.error,
       demoMode: env.DEMO_MODE,
       event: delivery.event,

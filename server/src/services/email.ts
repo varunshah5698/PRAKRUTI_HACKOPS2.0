@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { env, emailConfigured } from '../config/env.js';
 import { one, query } from '../db/pool.js';
 import { weatherRecommendation } from './weather-status.js';
+import { resolvedSender, sendBrevoEmail } from './brevo.js';
 
 export interface AlertForEmail {
   id: string;
@@ -221,6 +222,7 @@ function isGmailTransport(): boolean {
 }
 
 export function resolvedFromAddress(): string {
+  if (env.EMAIL_PROVIDER.toLowerCase() === 'brevo') return resolvedSender().formatted;
   const configured = env.EMAIL_FROM.trim();
   if (env.SMTP_USER && (!configured || configured.includes('enviropulse.local'))) {
     return `प्रकृति Alerts <${env.SMTP_USER}>`;
@@ -355,7 +357,16 @@ export async function deliverEmail(params: {
   subject: string;
   html: string;
   isSimulated: boolean;
-}): Promise<{ status: 'SIMULATED' | 'SENT' | 'FAILED'; recipient?: string; messageId?: string; error?: string; event: string }> {
+}): Promise<{
+  status: 'SIMULATED' | 'SENT' | 'FAILED';
+  recipient?: string;
+  messageId?: string;
+  httpStatus?: number | null;
+  retryable?: boolean;
+  ambiguous?: boolean;
+  error?: string;
+  event: string;
+}> {
   if (params.isSimulated) {
     return { status: 'SIMULATED', event: 'Simulation record: no email was sent.' };
   }
@@ -380,6 +391,27 @@ export async function deliverEmail(params: {
   } else if (/(\.local|@example\.(com|org))$/i.test(recipient)) {
     return { status: 'SIMULATED', recipient, event: 'Placeholder address; notification stored, no email sent.' };
   }
+
+  // Brevo uses its HTTPS transactional API exclusively; no SMTP transport is
+  // constructed on this path.
+  if (env.EMAIL_PROVIDER.toLowerCase() === 'brevo') {
+    const result = await sendBrevoEmail({
+      to: recipient,
+      subject: env.DEMO_MODE ? `[DEMO] ${params.subject}` : params.subject,
+      html: params.html,
+    });
+    return {
+      status: result.ok ? 'SENT' : 'FAILED',
+      recipient,
+      messageId: result.messageId ?? undefined,
+      httpStatus: result.httpStatus,
+      retryable: result.retryable,
+      ambiguous: result.ambiguous,
+      error: result.error,
+      event: result.event,
+    };
+  }
+
   try {
     const transporter = createTransport();
     const info = await Promise.race([

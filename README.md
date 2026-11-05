@@ -297,6 +297,39 @@ PostgreSQL. No endpoint accepts a recipient from the browser. Without SMTP
 credentials, weather alerts are recorded as `FAILED` with
 `Email provider NOT_CONFIGURED`; they are never marked `SENT` or `DELIVERED`.
 
+### Brevo HTTPS delivery
+
+Render's free web services block outbound SMTP ports. Brevo uses the HTTPS
+transactional API instead, with no SMTP transport:
+
+```env
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=your-brevo-api-key
+EMAIL_FROM=alerts@your-verified-domain.example
+EMAIL_FROM_NAME=प्रकृति
+```
+
+`EMAIL_FROM` must be a sender verified in Brevo. Check it with:
+
+```bash
+GET /api/v1/admin/email/status     # SYSTEM_ADMIN only
+```
+
+The response reports the configured sender, whether Brevo lists it as an active
+verified sender, and the sender API HTTP status. It never returns the API key.
+Send one diagnostic email with:
+
+```bash
+POST /api/v1/admin/email/test
+{"to":"authorized-test-recipient@example.com"}
+```
+
+The response reports `accepted` (Brevo returned 2xx), `httpStatus`, `messageId`
+and `delivered:false`. A 2xx response is API acceptance, not inbox delivery.
+Brevo 429 responses are safe to retry; 4xx failures are not retried; 5xx and
+network timeouts are marked ambiguous and are not automatically retried, to
+avoid duplicate emails.
+
 ### Background monitor
 
 `CITIZEN_MONITOR_ENABLED=true` starts a server-side worker in the API process.
@@ -364,9 +397,9 @@ are not local official warnings; each row links to the original report.
 **Deployment note:** Render's free web services suspend when idle and block
 outbound SMTP ports 25/465/587. The in-process worker therefore stops while the
 service sleeps, and Gmail SMTP sends from a free instance time out. Use an
-always-on paid instance for continuous monitoring and SMTP, or send through an
-HTTPS email API. The admin health endpoint records the SMTP failure; the app does
-not report the message as delivered.
+always-on paid instance for continuous monitoring and SMTP, or switch
+`EMAIL_PROVIDER=brevo` to use the HTTPS API. The admin health endpoint records
+the SMTP/Brevo failure; the app does not report the message as delivered.
 
 ## Demo accounts
 

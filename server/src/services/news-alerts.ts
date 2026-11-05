@@ -87,13 +87,16 @@ export async function monitorCriticalNews(): Promise<{ items: number; emails: nu
         newsItemId: item.id,
         recipient: delivery.recipient,
         messageId: delivery.messageId,
+        httpStatus: delivery.httpStatus ?? null,
       });
       await recordEmail(delivery.status !== 'FAILED', delivery.error);
       if (delivery.status === 'FAILED') {
-        await query(
-          `UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`,
-          [inserted.id, 2],
-        );
+        if (delivery.retryable !== false) {
+          await query(
+            `UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`,
+            [inserted.id, 2],
+          );
+        }
         failed += 1;
       } else {
         emails += 1;

@@ -53,12 +53,15 @@ services:
       OPEN_METEO_AIR_QUALITY_BASE_URL: ${OPEN_METEO_AIR_QUALITY_BASE_URL:-https://air-quality-api.open-meteo.com}
       MAP_STYLE_URL: ${MAP_STYLE_URL:-https://tiles.openfreemap.org/styles/liberty}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-gmail}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_API_BASE_URL: ${BREVO_API_BASE_URL:-https://api.brevo.com/v3}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_SECURE: ${SMTP_SECURE:-true}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_FROM: "${EMAIL_FROM:-Mumbai EnviroPulse <alerts@enviropulse.local>}"
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-प्रकृति}
       DEMO_EMAIL_RECIPIENT: ${DEMO_EMAIL_RECIPIENT:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}

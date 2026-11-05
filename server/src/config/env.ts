@@ -46,12 +46,15 @@ const EnvSchema = z.object({
   MAP_TILE_PROVIDER: z.string().default('OpenFreeMap'),
   EMAIL_PROVIDER: z.string().default('console'),
   EMAIL_API_KEY: z.string().default(''),
+  BREVO_API_KEY: z.string().default(''),
+  BREVO_API_BASE_URL: z.string().default('https://api.brevo.com/v3'),
   SMTP_HOST: z.string().default(''),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z.string().default('').transform((v) => v.toLowerCase() === 'true'),
   SMTP_USER: z.string().default(''),
   SMTP_PASSWORD: z.string().default(''),
   EMAIL_FROM: z.string().default('प्रकृति <alerts@enviropulse.local>'),
+  EMAIL_FROM_NAME: z.string().default(''),
   EMAIL_WEBHOOK_SECRET: z.string().default(''),
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
@@ -124,12 +127,19 @@ export const visionConfig = {
 // pretends an email was sent.
 const gmailTransport =
   env.EMAIL_PROVIDER === 'gmail' || env.SMTP_HOST.toLowerCase().endsWith('gmail.com');
+const brevoTransport = env.EMAIL_PROVIDER.toLowerCase() === 'brevo';
 
-export const emailConfigured = Boolean(
-  env.SMTP_USER && env.SMTP_PASSWORD && (env.SMTP_HOST || gmailTransport),
-);
+export const emailConfigured = brevoTransport
+  ? Boolean(env.BREVO_API_KEY && env.EMAIL_FROM.trim())
+  : Boolean(env.SMTP_USER && env.SMTP_PASSWORD && (env.SMTP_HOST || gmailTransport));
 
-export const emailProviderLabel = !emailConfigured ? 'NOT_CONFIGURED' : gmailTransport ? 'GMAIL' : 'SMTP';
+export const emailProviderLabel = !emailConfigured
+  ? 'NOT_CONFIGURED'
+  : brevoTransport
+    ? 'BREVO'
+    : gmailTransport
+      ? 'GMAIL'
+      : 'SMTP';
 
 export const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 export const googleRedirectUri =

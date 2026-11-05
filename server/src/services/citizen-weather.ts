@@ -367,9 +367,10 @@ async function sendWeatherAlert(
   await recordNotificationEvent(inserted.id, delivery.event, {
     recipient: delivery.recipient,
     messageId: delivery.messageId,
+    httpStatus: delivery.httpStatus ?? null,
   });
   await recordEmail(delivery.status !== 'FAILED', delivery.error);
-  if (delivery.status === 'FAILED') {
+  if (delivery.status === 'FAILED' && delivery.retryable !== false) {
     await query(
       `UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`,
       [inserted.id, Math.min(60, 2 ** 1)],
@@ -619,9 +620,14 @@ export async function retryFailedCitizenEmails(): Promise<{ retried: number; sen
       providerMessageId: delivery.messageId,
       error: delivery.error,
     });
-    await recordNotificationEvent(row.id, `RETRY_${delivery.event}`, { attempt: attempts, recipient: delivery.recipient });
+    await recordNotificationEvent(row.id, `RETRY_${delivery.event}`, {
+      attempt: attempts,
+      recipient: delivery.recipient,
+      messageId: delivery.messageId,
+      httpStatus: delivery.httpStatus ?? null,
+    });
     await recordEmail(delivery.status !== 'FAILED', delivery.error);
-    if (delivery.status === 'FAILED') {
+    if (delivery.status === 'FAILED' && delivery.retryable !== false) {
       const delay = Math.min(60, 2 ** Math.min(attempts, 6));
       await query(`UPDATE notifications SET next_retry_at = now() + ($2::int * interval '1 minute') WHERE id=$1`, [
         row.id,
@@ -629,7 +635,7 @@ export async function retryFailedCitizenEmails(): Promise<{ retried: number; sen
       ]);
     } else {
       await query(`UPDATE notifications SET next_retry_at=NULL WHERE id=$1`, [row.id]);
-      sent += 1;
+      if (delivery.status !== 'FAILED') sent += 1;
     }
   }
   return { retried: rows.length, sent };
