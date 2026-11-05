@@ -123,10 +123,6 @@ const e2eLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 2, standardHeaders:
 
 adminRouter.post('/e2e/weather-alert', e2eLimiter, async (req, res, next) => {
   try {
-    if (!env.E2E_TEST_ENABLED) {
-      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint not found.' } });
-      return;
-    }
     const body = z
       .object({ aEmail: z.string().trim().email().max(200), bEmail: z.string().trim().email().max(200) })
       .strict()
