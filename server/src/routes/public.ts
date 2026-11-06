@@ -5,6 +5,7 @@ import { getSourceStatuses } from '../services/sources.js';
 import { getStationSnapshots } from '../services/station-data.js';
 import { getDashboard } from '../services/dashboard.js';
 import { weatherIntegrity, weatherRecommendation } from '../services/weather-status.js';
+import { liveStatus } from '../services/live.js';
 
 export const publicRouter = Router();
 
@@ -122,6 +123,125 @@ publicRouter.get('/overview', async (_req, res, next) => {
         weather: `Weather status: ${weatherStatus}${weatherCheck?.provider ? ` · ${weatherCheck.provider}` : ''}`,
         staleStations: `${staleStationCount} stale station(s) excluded from the current map and counts.`,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+publicRouter.get('/status', async (_req, res, next) => {
+  try {
+    const [sources, weatherRows, airRows] = await Promise.all([
+      getSourceStatuses(),
+      query<{
+        observed_at: string;
+        retrieved_at: string;
+        source_id: string;
+        temperature_c: number | null;
+        relative_humidity: number | null;
+        wind_speed_kmh: number | null;
+        precipitation_mm: number | null;
+        is_simulated: boolean;
+        latitude: number;
+        longitude: number;
+      }>(
+        `SELECT observed_at, retrieved_at, source_id, temperature_c::float8, relative_humidity::float8,
+                wind_speed_kmh::float8, precipitation_mm::float8, is_simulated,
+                ST_Y(location::geometry)::float8 AS latitude, ST_X(location::geometry)::float8 AS longitude
+         FROM weather_observations
+         WHERE kind='OBSERVATION' AND (is_simulated=false OR $1)
+         ORDER BY observed_at DESC LIMIT 1`,
+        [env.DEMO_MODE],
+      ),
+      query<{ observed_at: string; source_id: string }>(
+        `SELECT observed_at, source_id FROM environmental_observations
+         WHERE quality_state <> 'INVALID' AND (is_simulated=false OR $1)
+         ORDER BY observed_at DESC LIMIT 1`,
+        [env.DEMO_MODE],
+      ),
+    ]);
+
+    const weatherRow = weatherRows[0] ?? null;
+    const weatherCheck = weatherRow
+      ? weatherIntegrity({
+          observedAt: weatherRow.observed_at,
+          fetchedAt: weatherRow.retrieved_at,
+          sourceId: weatherRow.source_id,
+          isSimulated: weatherRow.is_simulated,
+          demoMode: env.DEMO_MODE,
+          latitude: weatherRow.latitude,
+          longitude: weatherRow.longitude,
+          temperatureC: weatherRow.temperature_c,
+          relativeHumidity: weatherRow.relative_humidity,
+          precipitationMm: weatherRow.precipitation_mm,
+          windSpeedKmh: weatherRow.wind_speed_kmh,
+        })
+      : null;
+    const airRow = airRows[0] ?? null;
+    const airAgeSeconds = airRow ? Math.max(0, Math.round((Date.now() - Date.parse(airRow.observed_at)) / 1000)) : null;
+    const airStatus = airAgeSeconds === null ? 'UNAVAILABLE' : airAgeSeconds <= 3 * 3600 ? 'LIVE' : airAgeSeconds <= 24 * 3600 ? 'STALE' : 'UNAVAILABLE';
+
+    const feedIds = new Set([
+      'open-meteo-weather',
+      'met-no-weather',
+      'open-meteo-cams',
+      'openaq',
+      'data-gov-in-air',
+      'cpcb-caaqms',
+      'rainviewer-radar',
+    ]);
+    const feeds = sources
+      .filter((source) => feedIds.has(source.id))
+      .map((source) => ({
+        id: source.id,
+        name: source.name,
+        provider: source.provider,
+        status: source.status,
+        lastAttemptAt: source.lastAttemptAt ?? null,
+        lastSuccessAt: source.lastSuccessAt ?? null,
+        errorMessage: source.errorMessage ?? null,
+        attribution: source.attribution ?? null,
+        notes: source.notes ?? null,
+      }));
+    const criticalFeedFailed = feeds.some(
+      (feed) => ['open-meteo-weather', 'met-no-weather', 'open-meteo-cams', 'openaq'].includes(feed.id) && feed.status === 'FAILED',
+    );
+    const overall =
+      weatherCheck?.status === 'UNAVAILABLE' || airStatus === 'UNAVAILABLE'
+        ? 'OUTAGE'
+        : weatherCheck?.status !== 'LIVE' || airStatus !== 'LIVE' || criticalFeedFailed
+          ? 'DEGRADED'
+          : 'OK';
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      demoMode: env.DEMO_MODE,
+      overall,
+      weather: weatherRow
+        ? {
+            status: weatherCheck?.status ?? 'UNAVAILABLE',
+            provider: weatherCheck?.provider ?? null,
+            dataSourceType: weatherCheck?.dataSourceType ?? null,
+            sourceId: weatherRow.source_id,
+            observedAt: weatherCheck?.observationTime ?? weatherRow.observed_at,
+            fetchedAt: weatherCheck?.fetchedAt ?? null,
+            ageSeconds: weatherCheck?.observationTime
+              ? Math.max(0, Math.round((Date.now() - Date.parse(weatherCheck.observationTime)) / 1000))
+              : null,
+            temperatureC: weatherRow.temperature_c,
+            isLive: weatherCheck?.isLive ?? false,
+          }
+        : null,
+      air: airRow
+        ? {
+            status: airStatus,
+            sourceId: airRow.source_id,
+            observedAt: airRow.observed_at,
+            ageSeconds: airAgeSeconds,
+          }
+        : { status: 'UNAVAILABLE', sourceId: null, observedAt: null, ageSeconds: null },
+      feeds,
+      live: liveStatus(),
     });
   } catch (error) {
     next(error);

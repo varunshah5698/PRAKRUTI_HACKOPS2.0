@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell';
 import { LandingPage } from './pages/public/LandingPage';
 import { AboutPage } from './pages/public/AboutPage';
 import { DataSourcesPage as PublicDataSourcesPage } from './pages/public/DataSourcesPage';
+import { StatusPage } from './pages/public/StatusPage';
 import { PrivacyPage, TermsPage } from './pages/public/PrivacyTerms';
 import { PublicReportPage } from './pages/public/PublicReportPage';
 import { LoginPage } from './pages/public/LoginPage';
@@ -161,6 +162,7 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/data-sources" element={<DataSourcesRoute />} />
+      <Route path="/status" element={<StatusPage />} />
 
       <Route path="/dashboard" element={<Protected><AppShell /></Protected>}>
         <Route index element={<DashboardPage />} />

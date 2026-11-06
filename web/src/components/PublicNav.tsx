@@ -7,6 +7,7 @@ import { useAuth } from '../store/auth';
 
 const links = [
   { to: '/about', label: 'About' },
+  { to: '/status', label: 'Status' },
   { to: '/data-sources', label: 'Data sources' },
   { to: '/#how-it-works', label: 'How it works' },
   { to: '/#compliance', label: 'Compliance' },
