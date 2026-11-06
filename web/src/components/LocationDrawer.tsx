@@ -102,7 +102,7 @@ interface LocationAlert {
   is_simulated: boolean;
 }
 
-interface LocationAnalysis {
+export interface LocationAnalysis {
   generatedAt: string;
   category: string;
   withinMumbai: boolean;

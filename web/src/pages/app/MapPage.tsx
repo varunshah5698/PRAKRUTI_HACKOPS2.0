@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Chart';
 import { LocationDrawer } from '../../components/LocationDrawer';
+import { PlaceInsight } from '../../components/PlaceInsight';
 import { MumbaiMap, type MapIncident, type MapReport, type MapSourceLink, type MapStation } from '../../components/MumbaiMap';
 import {
   impactTone,
@@ -835,6 +836,7 @@ export function MapPage() {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(params.get('station'));
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
   const [analysisPoint, setAnalysisPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [fullAnalysisPoint, setFullAnalysisPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [showSources, setShowSources] = useState(true);
   const [showPlumes, setShowPlumes] = useState(true);
   const [showImpactLinks, setShowImpactLinks] = useState(true);
@@ -1034,6 +1036,7 @@ export function MapPage() {
     setPlaying(false);
     setSelectedSourceId(null);
     setAnalysisPoint(null);
+    setFullAnalysisPoint(null);
     setShowSources(true);
     setShowPlumes(true);
     setShowImpactLinks(true);
@@ -1169,9 +1172,9 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
               selectedStationId={selectedStationId}
               selectedSourceId={selectedSourceId}
               focusPoint={analysisPoint}
-              onStationSelect={(id) => { setSelectedStationId(id); setSelectedSourceId(null); setAnalysisPoint(null); }}
-              onSourceSelect={(id) => { setSelectedStationId(null); setSelectedSourceId(id); setAnalysisPoint(null); }}
-              onMapClick={(point) => { setSelectedStationId(null); setSelectedSourceId(null); setAnalysisPoint(point); }}
+              onStationSelect={(id) => { setSelectedStationId(id); setSelectedSourceId(null); setAnalysisPoint(null); setFullAnalysisPoint(null); }}
+              onSourceSelect={(id) => { setSelectedStationId(null); setSelectedSourceId(id); setAnalysisPoint(null); setFullAnalysisPoint(null); }}
+              onMapClick={(point) => { setSelectedStationId(null); setSelectedSourceId(null); setAnalysisPoint(point); setFullAnalysisPoint(null); }}
               onReportSelect={isAuthority() ? (id) => navigate(`/reports/${id}`) : undefined}
               onIncidentSelect={isAuthority() ? (id) => navigate(`/incidents/${id}`) : undefined}
               modelled={modelled}
@@ -1213,56 +1216,66 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
                 </p>
               </div>
             </details>
-            <div className="absolute inset-x-3 bottom-3 z-20">
-              <div className="mx-auto w-full max-w-[720px] rounded-[20px] border border-white/90 bg-white/90 p-3 shadow-[0_24px_60px_-32px_rgba(20,32,22,.5)] backdrop-blur-xl">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex items-center gap-0.5">
-                    <button type="button" onClick={() => setTimelineIndex((value) => Math.max(0, value - 1))} aria-label="Previous timeline step" className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f7065] transition hover:bg-[#eef2ea] hover:text-[#142016]">
-                      <ArrowLeft className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" onClick={() => setPlaying((value) => !value)} aria-label={playing ? 'Pause timeline' : 'Play timeline'} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#142016] text-white shadow-[0_12px_24px_-16px_rgba(20,32,22,.8)] transition hover:bg-[#24352a]">
-                      {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                    </button>
-                    <button type="button" onClick={() => setTimelineIndex((value) => Math.min(timeline.length - 1, value + 1))} aria-label="Next timeline step" className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f7065] transition hover:bg-[#eef2ea] hover:text-[#142016]">
-                      <ArrowRight className="h-3.5 w-3.5" />
+            {!analysisPoint ? (
+              <div className="absolute inset-x-3 bottom-3 z-20">
+                <div className="mx-auto w-full max-w-[720px] rounded-[20px] border border-white/90 bg-white/90 p-3 shadow-[0_24px_60px_-32px_rgba(20,32,22,.5)] backdrop-blur-xl">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-0.5">
+                      <button type="button" onClick={() => setTimelineIndex((value) => Math.max(0, value - 1))} aria-label="Previous timeline step" className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f7065] transition hover:bg-[#eef2ea] hover:text-[#142016]">
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => setPlaying((value) => !value)} aria-label={playing ? 'Pause timeline' : 'Play timeline'} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#142016] text-white shadow-[0_12px_24px_-16px_rgba(20,32,22,.8)] transition hover:bg-[#24352a]">
+                        {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                      </button>
+                      <button type="button" onClick={() => setTimelineIndex((value) => Math.min(timeline.length - 1, value + 1))} aria-label="Next timeline step" className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f7065] transition hover:bg-[#eef2ea] hover:text-[#142016]">
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-semibold text-[#142016]">
+                        {current.label === 'Current' ? 'Now' : `${current.label} frame`}
+                        <span className="font-normal text-[#8a938b]"> · {formatDate(current.date.toISOString())}</span>
+                      </p>
+                      <p className="truncate text-[8.5px] uppercase tracking-[0.12em] text-[#8a938b]">
+                        {current.offset === 0 ? 'Latest available frame' : current.offset > 0 ? 'Forecast · not confirmed' : 'Archived observations'} · click map to analyse
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setTimelineIndex(4); setPlaying(false); }}
+                      className={classNames(
+                        'shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-semibold transition',
+                        current.offset === 0 ? 'border-[#cfe2c4] bg-[#eef7e8] text-[#3f6b2d]' : 'border-[#e7eae3] bg-white text-[#5f7065] hover:text-[#142016]',
+                      )}
+                    >
+                      Now
                     </button>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold text-[#142016]">
-                      {current.label === 'Current' ? 'Now' : `${current.label} frame`}
-                      <span className="font-normal text-[#8a938b]"> · {formatDate(current.date.toISOString())}</span>
-                    </p>
-                    <p className="truncate text-[8.5px] uppercase tracking-[0.12em] text-[#8a938b]">
-                      {current.offset === 0 ? 'Latest available frame' : current.offset > 0 ? 'Forecast · not confirmed' : 'Archived observations'} · click map to analyse
-                    </p>
+                  <div className="mt-2.5 flex items-center gap-2.5">
+                    <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#a0a8a0]">−24h</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={timeline.length - 1}
+                      value={timelineIndex}
+                      onChange={(e) => { setTimelineIndex(Number(e.target.value)); setPlaying(false); }}
+                      style={{ background: `linear-gradient(90deg,#4DA42A 0 ${timelinePct}%,#e6eae2 ${timelinePct}% 100%)` }}
+                      className="map-range min-w-0 flex-1"
+                      aria-label="Map timeline"
+                    />
+                    <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#a0a8a0]">+6h</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setTimelineIndex(4); setPlaying(false); }}
-                    className={classNames(
-                      'shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-semibold transition',
-                      current.offset === 0 ? 'border-[#cfe2c4] bg-[#eef7e8] text-[#3f6b2d]' : 'border-[#e7eae3] bg-white text-[#5f7065] hover:text-[#142016]',
-                    )}
-                  >
-                    Now
-                  </button>
-                </div>
-                <div className="mt-2.5 flex items-center gap-2.5">
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#a0a8a0]">−24h</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={timeline.length - 1}
-                    value={timelineIndex}
-                    onChange={(e) => { setTimelineIndex(Number(e.target.value)); setPlaying(false); }}
-                    style={{ background: `linear-gradient(90deg,#4DA42A 0 ${timelinePct}%,#e6eae2 ${timelinePct}% 100%)` }}
-                    className="map-range min-w-0 flex-1"
-                    aria-label="Map timeline"
-                  />
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#a0a8a0]">+6h</span>
                 </div>
               </div>
-            </div>
+            ) : null}
+            {analysisPoint ? (
+              <PlaceInsight
+                point={analysisPoint}
+                category={category}
+                onClose={() => { setAnalysisPoint(null); setFullAnalysisPoint(null); }}
+                onOpenFull={() => setFullAnalysisPoint(analysisPoint)}
+              />
+            ) : null}
             {loading ? <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/40 backdrop-blur-[1px]"><Spinner className="text-[#4e9b3f]" /></div> : null}
           </div>
         </div>
@@ -1516,10 +1529,11 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
         onStationSelect={(id) => { setSelectedSourceId(null); setSelectedStationId(id); }}
       />
       <LocationDrawer
-        point={analysisPoint}
+        point={fullAnalysisPoint}
         category={category}
-        onClose={() => setAnalysisPoint(null)}
+        onClose={() => setFullAnalysisPoint(null)}
         onOpenStation={(stationId) => {
+          setFullAnalysisPoint(null);
           setAnalysisPoint(null);
           setSelectedSourceId(null);
           setSelectedStationId(stationId);
