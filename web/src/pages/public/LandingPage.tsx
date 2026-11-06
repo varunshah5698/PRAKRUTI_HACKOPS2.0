@@ -31,6 +31,7 @@ import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { PublicBadge, Button, PublicInput, PublicLabel, PublicSelect, PublicTextarea } from '../../components/ui';
 import { api } from '../../lib/api';
 import { AQI_COLORS, number, timeAgo } from '../../lib/format';
+import { useNow } from '../../lib/liveFeed';
 
 interface Overview {
   demoMode: boolean;
@@ -173,9 +174,28 @@ export function LandingPage() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [reportCategory, setReportCategory] = useState('air');
   const [reportLocality, setReportLocality] = useState('');
+  const now = useNow(60_000);
 
   useEffect(() => {
-    api.get<Overview>('/public/overview').then(setOverview).catch(() => setOverview(null));
+    let active = true;
+    const load = () => {
+      api.get<Overview>('/public/overview')
+        .then((data) => {
+          if (active) setOverview(data);
+        })
+        .catch(() => undefined);
+    };
+    load();
+    const reloadIfVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    const timer = window.setInterval(reloadIfVisible, 60_000);
+    document.addEventListener('visibilitychange', reloadIfVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', reloadIfVisible);
+    };
   }, []);
 
   const stations: MapStation[] = (overview?.stations ?? []).map((station) => ({
@@ -232,7 +252,7 @@ export function LandingPage() {
                     </span>
                     <span className="text-[9px] text-ink/45">
                       {overview.weather.provider ?? 'provider'} · {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'forecast' : 'observed'}{' '}
-                      {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at)}
+                      {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at, now)}
                     </span>
                   </div>
                   <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">

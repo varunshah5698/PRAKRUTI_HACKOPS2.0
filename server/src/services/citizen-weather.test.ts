@@ -1,5 +1,54 @@
-import { describe, expect, it } from 'vitest';
-import { classifyWeather, eventKey, locationKey } from './citizen-weather.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { classifyWeather, eventKey, fetchMetNoCurrent, locationKey } from './citizen-weather.js';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('MET Norway current conditions', () => {
+  it('normalises wind direction, pressure and the hourly precipitation forecast', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          properties: {
+            timeseries: [
+              {
+                time: '2026-11-06T14:00:00Z',
+                data: {
+                  instant: {
+                    details: {
+                      air_temperature: 31.5,
+                      relative_humidity: 47.8,
+                      wind_speed: 4.8,
+                      wind_speed_of_gust: 7.2,
+                      wind_from_direction: 332.5,
+                      air_pressure_at_sea_level: 1012.8,
+                    },
+                  },
+                  next_1_hours: {
+                    summary: { symbol_code: 'clearsky_night' },
+                    details: { precipitation_amount: 0 },
+                  },
+                },
+              },
+            ],
+          },
+        }),
+      })),
+    );
+
+    const reading = await fetchMetNoCurrent({ latitude: 19.076, longitude: 72.8777 });
+    expect(reading?.sourceId).toBe('met-no-weather');
+    expect(reading?.observedAt).toBe('2026-11-06T14:00:00Z');
+    expect(reading?.windDirectionDeg).toBe(332.5);
+    expect(reading?.pressureHpa).toBe(1012.8);
+    expect(reading?.windSpeedKmh).toBeCloseTo(17.28, 2);
+    expect(reading?.precipitationMm).toBe(0);
+    expect(reading?.weatherCode).toBe(0);
+  });
+});
 
 describe('citizen weather classification', () => {
   it('returns NORMAL when no threshold is crossed', () => {

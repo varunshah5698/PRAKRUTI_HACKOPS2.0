@@ -115,13 +115,15 @@ interface WeatherGroup {
   citizens: Array<{ id: string; name: string; email: string; locationLabel: string }>;
 }
 
-interface CurrentWeather {
+export interface CurrentWeather {
   observedAt: string;
   temperatureC: number | null;
   relativeHumidity: number | null;
   precipitationMm: number | null;
   windSpeedKmh: number | null;
   windGustKmh: number | null;
+  windDirectionDeg?: number | null;
+  pressureHpa?: number | null;
   weatherCode: number | null;
   sourceId: string;
   raw: Record<string, unknown>;
@@ -147,7 +149,7 @@ function symbolToWeatherCode(symbol: string): number {
   return 0;
 }
 
-async function fetchMetNo(point: { latitude: number; longitude: number }): Promise<CurrentWeather | null> {
+export async function fetchMetNoCurrent(point: { latitude: number; longitude: number }): Promise<CurrentWeather | null> {
   const url = new URL('https://api.met.no/weatherapi/locationforecast/2.0/compact');
   url.searchParams.set('lat', String(point.latitude));
   url.searchParams.set('lon', String(point.longitude));
@@ -181,6 +183,8 @@ async function fetchMetNo(point: { latitude: number; longitude: number }): Promi
     precipitationMm: Number.isFinite(next?.details?.precipitation_amount) ? next!.details!.precipitation_amount! : null,
     windSpeedKmh: Number.isFinite(windMs) ? windMs * 3.6 : null,
     windGustKmh: Number.isFinite(gustMs) ? gustMs * 3.6 : null,
+    windDirectionDeg: Number.isFinite(details.wind_from_direction) ? details.wind_from_direction : null,
+    pressureHpa: Number.isFinite(details.air_pressure_at_sea_level) ? details.air_pressure_at_sea_level : null,
     weatherCode: next?.summary?.symbol_code ? symbolToWeatherCode(next.summary.symbol_code) : null,
     sourceId: 'met-no-weather',
     raw: entry as unknown as Record<string, unknown>,
@@ -227,7 +231,7 @@ async function fetchWeather(points: Array<{ latitude: number; longitude: number 
   }
   return Promise.all(
     results.map(async (reading, index) =>
-      reading ?? fetchMetNo(points[index]).then(
+      reading ?? fetchMetNoCurrent(points[index]).then(
         (value) => {
           if (value) void recordSuccess('provider:met-no-weather', { latitude: points[index].latitude, longitude: points[index].longitude });
           return value;

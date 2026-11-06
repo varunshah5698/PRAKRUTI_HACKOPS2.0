@@ -222,8 +222,8 @@ ML_SERVICE_URL=http://ml:8000 docker compose --profile ml up --build
 
 The API runs a live polling service:
 
-- Open-Meteo current weather every 60 seconds (upstream values change every 900 seconds; polling only shortens detection delay).
-- CAMS modelled PM2.5/PM10 every 300 seconds.
+- Open-Meteo current weather every 900 seconds, matching the provider's 900-second current-conditions cadence. If the free daily quota is exhausted, the worker falls back to MET Norway's hourly forecast at most once an hour.
+- CAMS modelled PM2.5/PM10 every 900 seconds.
 - In demo mode, simulation-labelled station readings tick every 60 seconds for the seeded demo screens. The map excludes them; its station layer is real-only.
 - The map shows real OpenAQ station records even when their last reading is stale, with an amber age ring and the last-observed timestamp. Add `OPENAQ_API_KEY` or `DATA_GOV_IN_API_KEY` to resume live CPCB/OpenAQ ingestion.
 - Risk evaluation runs every 5 minutes.

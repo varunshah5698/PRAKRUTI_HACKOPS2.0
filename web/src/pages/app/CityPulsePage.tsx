@@ -155,7 +155,7 @@ function pointQuery(point: CityPoint) {
   return `lat=${point.lat.toFixed(5)}&lng=${point.lng.toFixed(5)}`;
 }
 
-function useApi<T>(path: string | null) {
+function useApi<T>(path: string | null, refreshMs = 0) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(Boolean(path));
   const [error, setError] = useState<string | null>(null);
@@ -187,6 +187,19 @@ function useApi<T>(path: string | null) {
       cancelled = true;
     };
   }, [path, nonce]);
+
+  useEffect(() => {
+    if (!path || refreshMs <= 0) return;
+    const reloadIfVisible = () => {
+      if (document.visibilityState === 'visible') setNonce((value) => value + 1);
+    };
+    const timer = window.setInterval(reloadIfVisible, refreshMs);
+    document.addEventListener('visibilitychange', reloadIfVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', reloadIfVisible);
+    };
+  }, [path, refreshMs]);
 
   return { data, loading, error, reload: () => setNonce((value) => value + 1) };
 }
@@ -280,14 +293,15 @@ export function CityPulsePage() {
   const [planetTab, setPlanetTab] = useState<'events' | 'earthquakes'>('events');
   const [copied, setCopied] = useState<string | null>(null);
 
-  const overview = useApi<CityOverview>(`/city/overview?${pointQuery(point)}`);
-  const marine = useApi<MarineConditions>(`/city/marine?${pointQuery(point)}`);
-  const flood = useApi<FloodConditions>(`/city/flood?${pointQuery(point)}`);
-  const events = useApi<PlanetEvents>(`/city/events?${pointQuery(point)}`);
+  const overview = useApi<CityOverview>(`/city/overview?${pointQuery(point)}`, 5 * 60_000);
+  const marine = useApi<MarineConditions>(`/city/marine?${pointQuery(point)}`, 10 * 60_000);
+  const flood = useApi<FloodConditions>(`/city/flood?${pointQuery(point)}`, 30 * 60_000);
+  const events = useApi<PlanetEvents>(`/city/events?${pointQuery(point)}`, 60 * 60_000);
   const nearby = useApi<{ items: NearbyPlace[]; source: string; note: string }>(nearbyPath);
   const archive = useApi<ArchiveDay>(archivePath);
   const compare = useApi<{ rows: CityComparisonRow[] }>(
     `/city/compare?points=${PRESETS.map((preset) => `${preset.lat.toFixed(4)},${preset.lng.toFixed(4)}`).join(';')}`,
+    10 * 60_000,
   );
 
   useEffect(() => {
@@ -382,6 +396,13 @@ export function CityPulsePage() {
 
   const data = overview.data;
   const current = data?.current;
+  const observedAt = current?.time
+    ? /[zZ]|[+-]\d{2}:?\d{2}$/.test(current.time)
+      ? current.time
+      : `${current.time}+05:30`
+    : null;
+  const observedAge = observedAt ? timeAgo(observedAt) : null;
+  const observedAgeMinutes = observedAt ? Math.max(0, Math.round((Date.now() - new Date(observedAt).getTime()) / 60_000)) : null;
   const air = data?.air;
   const hourly = data?.hourly ?? [];
   const daily = data?.daily ?? [];
@@ -496,7 +517,13 @@ export function CityPulsePage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="green" dot>Keyless open data</Badge>
             <Badge tone="amber">CAMS modelled air</Badge>
-            <Badge tone="neutral">{overview.loading ? 'Updating…' : `Updated ${timeAgo(data.generatedAt)}`}</Badge>
+            <Badge tone={observedAgeMinutes !== null && observedAgeMinutes > 90 ? 'amber' : 'neutral'}>
+              {overview.loading
+                ? 'Refreshing weather…'
+                : current?.time
+                  ? `Observed ${hhmm(current.time)} IST · ${observedAge}`
+                  : `Updated ${timeAgo(data.generatedAt)}`}
+            </Badge>
           </div>
           <h1 className="display mt-2 text-[30px] font-bold leading-[1.02] tracking-[-0.05em] text-[#142016] sm:text-[38px]">
             Mumbai, hour by hour.

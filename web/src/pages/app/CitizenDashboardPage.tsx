@@ -137,6 +137,10 @@ export function CitizenDashboardPage() {
       .get<{ items: NewsItem[] }>('/news')
       .then((result) => setNews(result.items.slice(0, 5)))
       .catch(() => setNews([]));
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, 5 * 60_000);
+    return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

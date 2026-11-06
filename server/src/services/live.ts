@@ -1,6 +1,7 @@
 import { env } from '../config/env.js';
 import { query } from '../db/pool.js';
 import { calculateAqi } from './aqi.js';
+import { fetchMetNoCurrent } from './citizen-weather.js';
 import { emitEvent } from '../lib/events.js';
 import { markSourceAttempt, markSourceFailure, markSourceSuccess } from './sources.js';
 import { recordFailure, recordSuccess } from './telemetry.js';
@@ -96,6 +97,87 @@ async function liveStations(): Promise<LiveStation[]> {
   );
 }
 
+const MET_NO_COOLDOWN_MS = 60 * 60_000;
+let lastMetNoFallbackAt = 0;
+
+/**
+ * Open-Meteo's free daily quota can run out. MET Norway is the documented
+ * keyless fallback; its location forecast is hourly, so fetch it at most once
+ * an hour rather than on every failed 15-minute weather poll.
+ */
+async function pollMetNoFallback(stations: LiveStation[]): Promise<{ records: number; message?: string }> {
+  const sourceId = 'met-no-weather';
+  if (Date.now() - lastMetNoFallbackAt < MET_NO_COOLDOWN_MS) {
+    return { records: 0, message: 'MET Norway fallback is cooling down.' };
+  }
+  lastMetNoFallbackAt = Date.now();
+  await markSourceAttempt(sourceId);
+  let records = 0;
+  let failures = 0;
+  try {
+    for (const group of chunk(stations, 4)) {
+      const readings = await Promise.all(
+        group.map((station) =>
+          fetchMetNoCurrent({ latitude: station.lat, longitude: station.lng }).catch(() => null),
+        ),
+      );
+      for (let index = 0; index < group.length; index += 1) {
+        const station = group[index];
+        const reading = readings[index];
+        if (!reading?.observedAt) {
+          failures += 1;
+          continue;
+        }
+        await query(
+          `INSERT INTO weather_observations
+             (station_id, locality_id, location, observed_at, retrieved_at, kind, temperature_c,
+              relative_humidity, wind_speed_kmh, wind_direction_deg, precipitation_mm, pressure_hpa,
+              source_id, is_simulated, raw)
+           VALUES ($1,$2,ST_SetSRID(ST_MakePoint($3,$4),4326)::geography,$5,now(),'OBSERVATION',$6,$7,$8,$9,$10,$11,$12,false,$13::jsonb)
+           ON CONFLICT (station_id, observed_at, kind, source_id) DO UPDATE SET
+             retrieved_at=now(), temperature_c=EXCLUDED.temperature_c,
+             relative_humidity=EXCLUDED.relative_humidity, wind_speed_kmh=EXCLUDED.wind_speed_kmh,
+             wind_direction_deg=EXCLUDED.wind_direction_deg, precipitation_mm=EXCLUDED.precipitation_mm,
+             pressure_hpa=EXCLUDED.pressure_hpa, raw=EXCLUDED.raw`,
+          [
+            station.id,
+            station.locality_id,
+            station.lng,
+            station.lat,
+            reading.observedAt,
+            reading.temperatureC,
+            reading.relativeHumidity,
+            reading.windSpeedKmh,
+            reading.windDirectionDeg ?? null,
+            reading.precipitationMm,
+            reading.pressureHpa ?? null,
+            sourceId,
+            JSON.stringify(reading.raw),
+          ],
+        );
+        records += 1;
+      }
+    }
+    if (records === 0) {
+      const message = 'MET Norway returned no current weather.';
+      await markSourceFailure(sourceId, message);
+      await recordFailure('provider:met-no-weather', message);
+      return { records, message };
+    }
+    await markSourceSuccess(sourceId, records);
+    await recordSuccess('provider:met-no-weather', { points: stations.length, records });
+    return {
+      records,
+      message: failures > 0 ? `${failures} station(s) had no MET Norway reading.` : undefined,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'MET Norway fallback failed';
+    await markSourceFailure(sourceId, message);
+    await recordFailure('provider:met-no-weather', message);
+    return { records, message };
+  }
+}
+
 /** One batched request for every station instead of one request per station. */
 export async function pollLiveWeather(): Promise<{ records: number; message?: string }> {
   const sourceId = 'open-meteo-weather';
@@ -103,6 +185,7 @@ export async function pollLiveWeather(): Promise<{ records: number; message?: st
   if (stations.length === 0) return { records: 0, message: 'No stations available.' };
   await markSourceAttempt(sourceId);
   let records = 0;
+  let openMeteoError: string | null = null;
   try {
     for (const group of chunk(stations, 50)) {
       const url = new URL(`${env.OPEN_METEO_BASE_URL}/v1/forecast`);
@@ -153,11 +236,18 @@ export async function pollLiveWeather(): Promise<{ records: number; message?: st
     await recordSuccess('provider:open-meteo-weather', { points: stations.length, records });
     return { records };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Live weather poll failed';
-    await markSourceFailure(sourceId, message);
-    await recordFailure('provider:open-meteo-weather', message);
-    return { records, message };
+    openMeteoError = error instanceof Error ? error.message : 'Live weather poll failed';
+    await markSourceFailure(sourceId, openMeteoError);
+    await recordFailure('provider:open-meteo-weather', openMeteoError);
   }
+
+  // Keep live conditions moving on the fallback provider instead of leaving
+  // every station on a stale Open-Meteo row until the daily quota resets.
+  const fallback = await pollMetNoFallback(stations);
+  return {
+    records: records + fallback.records,
+    message: [openMeteoError, fallback.message].filter(Boolean).join(' · '),
+  };
 }
 
 /** CAMS modelled PM context for localities that host an air station. */

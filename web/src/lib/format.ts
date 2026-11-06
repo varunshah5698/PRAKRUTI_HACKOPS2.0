@@ -59,11 +59,11 @@ export function formatTime(value?: string | null): string {
   });
 }
 
-export function timeAgo(value?: string | null): string {
+export function timeAgo(value?: string | null, now = Date.now()): string {
   if (!value) return '—';
-  const ms = Date.now() - new Date(value).getTime();
+  const ms = now - new Date(value).getTime();
   if (!Number.isFinite(ms)) return '—';
-  const minutes = Math.round(ms / 60_000);
+  const minutes = Math.max(0, Math.round(ms / 60_000));
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.round(minutes / 60);

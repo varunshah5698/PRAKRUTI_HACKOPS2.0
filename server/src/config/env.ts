@@ -33,8 +33,8 @@ const EnvSchema = z.object({
   // current weather has a 900 s interval), so polling faster only detects the new
   // value sooner — it never invents readings.
   LIVE_ENABLED: z.string().default('true').transform((v) => v.toLowerCase() === 'true'),
-  LIVE_WEATHER_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
-  LIVE_AQI_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(300),
+  LIVE_WEATHER_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(900),
+  LIVE_AQI_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(900),
   LIVE_SIMULATION_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
   // CPCB/CAAQMS and OpenAQ republish on an hourly clock, so a 15-minute poll
   // detects a new value without hammering the provider.
