@@ -98,9 +98,11 @@ export function DataSourcesPage() {
         </p>
         <h2>Weather and modelled air quality</h2>
         <p>
-          Weather observations and forecasts are from Open-Meteo at station coordinates. CAMS PM2.5 and PM10 values via the
-          Open-Meteo air-quality API are modelled regional context. They are never presented as CPCB station readings or an
-          official AQI.
+          Weather observations and forecasts are from Open-Meteo at station coordinates. If the free daily quota is
+          exhausted, the live worker falls back to MET Norway's hourly forecast and labels it as a forecast. Rain radar
+          is the past two hours from RainViewer at ten-minute intervals; the free radar tiles are regional and shown as
+          broad context, not a street-level nowcast. CAMS PM2.5 and PM10 values via the Open-Meteo air-quality API are
+          modelled regional context. They are never presented as CPCB station readings or an official AQI.
         </p>
         <h2>Missing integrations</h2>
         <p>
@@ -112,6 +114,8 @@ export function DataSourcesPage() {
           <PublicBadge tone="soft">OpenFreeMap · © OpenMapTiles</PublicBadge>
           <PublicBadge tone="soft">Data © OpenStreetMap contributors (ODbL)</PublicBadge>
           <PublicBadge tone="soft">Weather by Open-Meteo (CC BY 4.0)</PublicBadge>
+          <PublicBadge tone="soft">MET Norway fallback (CC BY 4.0 / NLOD)</PublicBadge>
+          <PublicBadge tone="soft">Rain radar by RainViewer</PublicBadge>
           <PublicBadge tone="soft">CAMS via Open-Meteo</PublicBadge>
         </div>
       </Prose>

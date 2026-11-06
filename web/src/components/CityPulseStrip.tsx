@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Cloud, CloudLightning, CloudRain, CloudSun, RefreshCw, Sun, Wind } from 'lucide-react';
 import { Badge, Card } from './ui';
+import { FreshnessPill } from './FreshnessPill';
 import { api } from '../lib/api';
 import { aqiColor, weatherLabel, weatherMood, type CityOverview } from '../lib/city';
-import { number, timeAgo, windDirection } from '../lib/format';
+import { number, windDirection } from '../lib/format';
 
 /**
  * A compact live strip on the dashboard. It deliberately uses the same
@@ -46,6 +47,13 @@ export function CityPulseStrip() {
   const color = aqiColor(aqi.category);
   const mood = weatherMood(current.weatherCode);
   const WeatherIcon = mood === 'rain' ? CloudRain : mood === 'storm' ? CloudLightning : mood === 'partly' ? CloudSun : mood === 'cloud' || mood === 'fog' ? Cloud : Sun;
+  const observedAt = current.time
+    ? /[zZ]|[+-]\d{2}:?\d{2}$/.test(current.time)
+      ? current.time
+      : `${current.time}+05:30`
+    : null;
+  const freshness = !observedAt || Date.now() - Date.parse(observedAt) > 90 * 60_000 ? 'STALE' : 'LIVE';
+  const provider = data.weatherProvider === 'met-no' ? 'MET Norway' : 'Open-Meteo';
 
   return (
     <Card className="overflow-hidden">
@@ -57,10 +65,12 @@ export function CityPulseStrip() {
           <span>
             <span className="flex items-center gap-1.5">
               <span className="text-[12px] font-semibold text-[#142016]">Mumbai right now</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-[#5da341]" />
             </span>
-            <span className="block text-[9px] text-[#66766b]">
-              {number(current.temperatureC, 0)}°C · {weatherLabel(current.weatherCode)} · {timeAgo(data.generatedAt)}
+            <span className="mt-0.5 block text-[9px] text-[#66766b]">
+              {number(current.temperatureC, 0)}°C · {weatherLabel(current.weatherCode)}
+            </span>
+            <span className="mt-0.5 block">
+              <FreshnessPill status={freshness} observedAt={observedAt} provider={provider} />
             </span>
           </span>
         </Link>

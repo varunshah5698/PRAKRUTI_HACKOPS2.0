@@ -34,7 +34,7 @@ This is a working demonstration application, not a static dashboard. It connects
 | Email | **SMTP transport verified; no recipient configured** — adding `SMTP_USER` and `SMTP_PASSWORD` (with `EMAIL_PROVIDER=gmail` for Gmail) enables real delivery. Without them, records remain `SIMULATED` and nothing is sent. Critical alerts are broadcast to every active account. |
 | Evidence storage | **LOCAL_PRIVATE** — authenticated access only |
 | Map tiles | **OpenFreeMap** public instance (free, no API key, attribution required) |
-| Live City open data | **LIVE / MODELLED, LABELLED** — Open-Meteo weather, CAMS air, marine, flood and archive layers; MET Norway weather fallback; OpenStreetMap Nominatim/Overpass; Valhalla walking routes; NASA EONET; USGS. Context only, never station evidence. |
+| Live City open data | **LIVE / MODELLED, LABELLED** — Open-Meteo weather, CAMS air, marine, flood and archive layers; MET Norway weather fallback; RainViewer past radar; OpenStreetMap Nominatim/Overpass; Valhalla walking routes; NASA EONET; USGS. Context only, never station evidence. |
 | Industrial source screen | **REAL OSM LOCATIONS, SCREENING ONLY** — 13 named OpenStreetMap facilities. Corridors and monitor shares are a distance/wind screening estimate; OSM has no stack height or emission measurement for these features. Not a measured apportionment or regulatory finding. |
 | Database | PostgreSQL 18 + PostGIS 3.7 |
 
@@ -421,7 +421,7 @@ Authority registration creates a `PENDING_APPROVAL` account with no authority pe
 
 ## Key routes
 
-Public: `/`, `/about`, `/data-sources`, `/privacy`, `/terms`, `/report`, `/login`, `/register`, `/forgot-password`, `/reset-password`.
+Public: `/`, `/about`, `/status`, `/data-sources`, `/privacy`, `/terms`, `/report`, `/login`, `/register`, `/forgot-password`, `/reset-password`.
 
 Application: `/dashboard`, `/city`, `/news`, `/atmosphere`, `/map`, `/map/stations/:id`, `/intelligence/predictions`, `/ai-analyst`, `/reports`, `/reports/:id`, `/alerts`, `/alerts/:id`, `/incidents`, `/incidents/:id`, `/compliance`, `/compliance/documents`, `/notifications`, `/simulation`, `/simulation/:id`, `/settings`, `/profile`.
 

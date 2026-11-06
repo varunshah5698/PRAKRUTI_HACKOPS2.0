@@ -20,6 +20,7 @@ let lastState: WeatherWatchdogState | null = null;
 let lastAlertAt = 0;
 let lastFailureRecordedAt = 0;
 let timer: NodeJS.Timeout | null = null;
+let initialTimer: NodeJS.Timeout | null = null;
 
 async function postWebhook(state: WeatherWatchdogState): Promise<void> {
   if (!env.OPS_ALERT_WEBHOOK_URL) return;
@@ -147,12 +148,17 @@ export function getWeatherWatchdogState(): WeatherWatchdogState | null {
 
 export function startWeatherWatchdog(): void {
   if (timer) return;
-  void runCheck();
+  // Let the first live cycle finish before judging freshness; otherwise every
+  // restart on a sleeping host would alert on the pre-restart stale row.
+  initialTimer = setTimeout(() => void runCheck(), 60_000);
+  initialTimer.unref();
   timer = setInterval(() => void runCheck(), CHECK_INTERVAL_MS);
   timer.unref();
 }
 
 export function stopWeatherWatchdog(): void {
+  if (initialTimer) clearTimeout(initialTimer);
   if (timer) clearInterval(timer);
+  initialTimer = null;
   timer = null;
 }

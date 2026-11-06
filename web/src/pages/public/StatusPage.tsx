@@ -22,10 +22,11 @@ interface StatusPayload {
     isLive: boolean;
   } | null;
   air: {
-    status: 'LIVE' | 'STALE' | 'UNAVAILABLE';
+    status: 'LIVE' | 'STALE' | 'UNAVAILABLE' | 'DEMO';
     sourceId: string | null;
     observedAt: string | null;
     ageSeconds: number | null;
+    isSimulated: boolean;
   };
   feeds: Array<{
     id: string;
@@ -57,7 +58,7 @@ interface StatusPayload {
 
 function stateTone(status: string): 'lime' | 'soft' | 'outline' {
   if (status === 'OK' || status === 'LIVE' || status === 'CONNECTED') return 'lime';
-  if (status === 'DEGRADED' || status === 'STALE' || status === 'FAILED') return 'soft';
+  if (status === 'DEGRADED' || status === 'STALE' || status === 'FAILED' || status === 'DEMO') return 'soft';
   return 'outline';
 }
 
@@ -170,6 +171,7 @@ export function StatusPage() {
               </div>
               <p className="mt-3 text-[12px] leading-relaxed text-ink/55">
                 {data.air.sourceId ?? 'No source'} · latest reading {ageLabel(data.air.ageSeconds)}
+                {data.air.isSimulated ? ' · simulation-labelled' : ''}
               </p>
               <p className="mt-1 text-[11px] text-ink/40">{data.air.observedAt ? formatDate(data.air.observedAt) : 'No timestamp'}</p>
             </div>

@@ -155,8 +155,8 @@ publicRouter.get('/status', async (_req, res, next) => {
          ORDER BY observed_at DESC LIMIT 1`,
         [env.DEMO_MODE],
       ),
-      query<{ observed_at: string; source_id: string }>(
-        `SELECT observed_at, source_id FROM environmental_observations
+      query<{ observed_at: string; source_id: string; is_simulated: boolean }>(
+        `SELECT observed_at, source_id, is_simulated FROM environmental_observations
          WHERE quality_state <> 'INVALID' AND (is_simulated=false OR $1)
          ORDER BY observed_at DESC LIMIT 1`,
         [env.DEMO_MODE],
@@ -181,7 +181,17 @@ publicRouter.get('/status', async (_req, res, next) => {
       : null;
     const airRow = airRows[0] ?? null;
     const airAgeSeconds = airRow ? Math.max(0, Math.round((Date.now() - Date.parse(airRow.observed_at)) / 1000)) : null;
-    const airStatus = airAgeSeconds === null ? 'UNAVAILABLE' : airAgeSeconds <= 3 * 3600 ? 'LIVE' : airAgeSeconds <= 24 * 3600 ? 'STALE' : 'UNAVAILABLE';
+    const airStatus = !airRow
+      ? 'UNAVAILABLE'
+      : airRow.is_simulated
+        ? 'DEMO'
+        : airAgeSeconds === null
+          ? 'UNAVAILABLE'
+          : airAgeSeconds <= 3 * 3600
+            ? 'LIVE'
+            : airAgeSeconds <= 24 * 3600
+              ? 'STALE'
+              : 'UNAVAILABLE';
 
     const feedIds = new Set([
       'open-meteo-weather',
@@ -205,13 +215,15 @@ publicRouter.get('/status', async (_req, res, next) => {
         attribution: source.attribution ?? null,
         notes: source.notes ?? null,
       }));
-    const criticalFeedFailed = feeds.some(
-      (feed) => ['open-meteo-weather', 'met-no-weather', 'open-meteo-cams', 'openaq'].includes(feed.id) && feed.status === 'FAILED',
+    const criticalFeedDegraded = feeds.some(
+      (feed) =>
+        ['open-meteo-weather', 'met-no-weather', 'open-meteo-cams', 'openaq'].includes(feed.id) &&
+        (feed.status === 'FAILED' || feed.status === 'STALE'),
     );
     const overall =
       weatherCheck?.status === 'UNAVAILABLE' || airStatus === 'UNAVAILABLE'
         ? 'OUTAGE'
-        : weatherCheck?.status !== 'LIVE' || airStatus !== 'LIVE' || criticalFeedFailed
+        : weatherCheck?.status !== 'LIVE' || airStatus !== 'LIVE' || criticalFeedDegraded
           ? 'DEGRADED'
           : 'OK';
 
@@ -240,8 +252,9 @@ publicRouter.get('/status', async (_req, res, next) => {
             sourceId: airRow.source_id,
             observedAt: airRow.observed_at,
             ageSeconds: airAgeSeconds,
+            isSimulated: airRow.is_simulated,
           }
-        : { status: 'UNAVAILABLE', sourceId: null, observedAt: null, ageSeconds: null },
+        : { status: 'UNAVAILABLE', sourceId: null, observedAt: null, ageSeconds: null, isSimulated: false },
       feeds,
       watchdog: getWeatherWatchdogState(),
       live: liveStatus(),
