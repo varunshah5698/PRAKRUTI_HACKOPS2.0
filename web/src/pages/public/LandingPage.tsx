@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
-  ArrowRight,
   ArrowUpRight,
   BadgeCheck,
   BellRing,
@@ -10,15 +9,19 @@ import {
   Building2,
   Camera,
   CheckCircle2,
+  CloudSun,
+  Compass,
   Droplets,
   Factory,
   FileSearch,
+  FileWarning,
   Flame,
   Gauge,
   Layers3,
   MapPin,
   Scale,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Wind,
 } from 'lucide-react';
@@ -216,49 +219,103 @@ export function LandingPage() {
               A unified environmental intelligence platform connecting monitoring data, predictive insights, citizen
               observations and compliance workflows across Greater Mumbai.
             </p>
-            <div className="mt-8 grid max-w-[560px] grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <Link to="/dashboard">
-                <Button variant="lime" size="lg" className="w-full border border-ink/10">
-                  Explore intelligence <ArrowUpRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/report">
-                <Button variant="outline" size="lg" className="w-full border-ink/20">
-                  Report a concern
-                </Button>
-              </Link>
-              <Link to="/citizen/login">
-                <Button variant="outline" size="lg" className="w-full border-ink/20">
-                  Citizen weather <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="outline" size="lg" className="w-full border-ink/20">
-                  Authority login <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-            {overview?.weather ? (
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink/15 bg-white/70 px-3 py-1.5 text-[11px] font-semibold text-ink/65">
-                  <span className={`h-1.5 w-1.5 rounded-full ${overview.weather.status === 'LIVE' ? 'bg-[#32a879]' : overview.weather.status === 'STALE' ? 'bg-[#c69218]' : 'bg-[#c94a50]'}`} />
-                  {overview.weather.status === 'LIVE' ? 'Live weather' : overview.weather.status === 'STALE' ? 'Stale weather' : 'Weather unavailable'}
-                </span>
-                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[11px] text-ink/65">
-                  <Gauge className="h-3 w-3 text-ink/45" /> {number(overview.weather.temperature_c, 0)}°C
-                </span>
-                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[11px] text-ink/65">
-                  <Droplets className="h-3 w-3 text-ink/45" /> {number(overview.weather.relative_humidity, 0)}%
-                </span>
-                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[11px] text-ink/65">
-                  <Wind className="h-3 w-3 text-ink/45" /> {number(overview.weather.wind_speed_kmh)} km/h
-                </span>
-                <span className="basis-full text-[10px] text-ink/50 sm:basis-auto">
-                  {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'Forecast valid' : 'Observed'}{' '}
-                  {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at)} · {overview.weather.provider ?? 'provider'}
-                </span>
+            <div className="relative mt-8 max-w-[600px] overflow-hidden rounded-[26px] border border-[#cfdcc7] bg-[#fbfcf7] shadow-[0_26px_60px_-46px_rgba(23,61,42,.55)]">
+              {overview?.weather ? (
+                <div className="relative border-b border-[#dfe8d9] px-5 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <span className="inline-flex items-center gap-2 text-[10px] font-semibold text-[#25412b]">
+                      <span className="relative flex h-2 w-2">
+                        <span className={`absolute inline-flex h-full w-full rounded-full opacity-35 motion-reduce:animate-none ${overview.weather.status === 'LIVE' ? 'animate-ping bg-[#32a879]' : 'bg-[#c69218]'}`} />
+                        <span className={`relative inline-flex h-2 w-2 rounded-full ${overview.weather.status === 'LIVE' ? 'bg-[#32a879]' : overview.weather.status === 'STALE' ? 'bg-[#c69218]' : 'bg-[#c94a50]'}`} />
+                      </span>
+                      {overview.weather.status === 'LIVE' ? 'Live field conditions' : overview.weather.status === 'STALE' ? 'Stale field conditions' : 'Weather unavailable'}
+                    </span>
+                    <span className="text-[9px] text-ink/45">
+                      {overview.weather.provider ?? 'provider'} · {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'forecast' : 'observed'}{' '}
+                      {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at)}
+                    </span>
+                  </div>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span className="flex items-baseline gap-1.5">
+                      <Gauge className="h-3.5 w-3.5 text-[#6f8a6b]" />
+                      <span className="display text-[15px] font-semibold text-[#1b2a1f]">{number(overview.weather.temperature_c, 0)}°C</span>
+                      <span className="text-[9px] text-ink/50">air</span>
+                    </span>
+                    <span className="h-4 w-px bg-[#d8e3cf]" />
+                    <span className="flex items-baseline gap-1.5">
+                      <Droplets className="h-3.5 w-3.5 text-[#6f8a6b]" />
+                      <span className="display text-[15px] font-semibold text-[#1b2a1f]">{number(overview.weather.relative_humidity, 0)}%</span>
+                      <span className="text-[9px] text-ink/50">humidity</span>
+                    </span>
+                    <span className="h-4 w-px bg-[#d8e3cf]" />
+                    <span className="flex items-baseline gap-1.5">
+                      <Wind className="h-3.5 w-3.5 text-[#6f8a6b]" />
+                      <span className="display text-[15px] font-semibold text-[#1b2a1f]">{number(overview.weather.wind_speed_kmh)} km/h</span>
+                      <span className="text-[9px] text-ink/50">wind</span>
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+              <div className="relative">
+                <Link
+                  to="/dashboard"
+                  className="group relative flex items-center justify-between gap-4 overflow-hidden bg-[#173d2a] px-5 py-4 text-white transition hover:bg-[#1c472f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b9ff66] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fbfcf7]"
+                >
+                  <svg viewBox="0 0 140 100" className="pointer-events-none absolute -right-3 -top-8 h-32 w-32 opacity-25" fill="none" aria-hidden>
+                    <path d="M12 86c14-28 42-46 78-44M18 96c16-30 44-48 80-45M32 108c16-24 40-38 68-37" stroke="#b9ff66" strokeWidth="1.1" strokeLinecap="round" />
+                    <path d="M104 10c-8 14-8 28 0 42 8-14 8-28 0-42Z" stroke="#b9ff66" strokeWidth="1.1" />
+                  </svg>
+                  <span className="relative flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b9ff66] text-[#173d2a] shadow-[0_10px_24px_-14px_rgba(185,255,102,.8)]">
+                      <Compass className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="display block text-[14px] font-semibold leading-tight">Explore intelligence</span>
+                      <span className="mt-0.5 block text-[10px] text-white/65">Live map, air, water and risk</span>
+                    </span>
+                  </span>
+                  <ArrowUpRight className="relative h-4 w-4 shrink-0 text-[#b9ff66] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </Link>
+                <div className="grid grid-cols-1 divide-y divide-[#e1e9db] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                  <Link to="/report" className="group flex min-h-[92px] flex-col justify-between gap-3 px-4 py-3.5 transition hover:bg-[#f0f7e8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4e7a4a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fbfcf7]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#d4e2ca] bg-[#edf6e4] text-[#3f6b3d]">
+                      <FileWarning className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex items-end justify-between gap-2">
+                      <span>
+                        <span className="display block text-[12px] font-semibold leading-tight text-[#1b2a1f]">Report a concern</span>
+                        <span className="mt-0.5 block text-[9px] text-ink/45">Citizen evidence</span>
+                      </span>
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[#6f8a6b] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                  <Link to="/citizen/login" className="group flex min-h-[92px] flex-col justify-between gap-3 px-4 py-3.5 transition hover:bg-[#f0f7e8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4e7a4a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fbfcf7]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#d4e2ca] bg-[#edf6e4] text-[#3f6b3d]">
+                      <CloudSun className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex items-end justify-between gap-2">
+                      <span>
+                        <span className="display block text-[12px] font-semibold leading-tight text-[#1b2a1f]">Citizen weather</span>
+                        <span className="mt-0.5 block text-[9px] text-ink/45">Hyperlocal forecast</span>
+                      </span>
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[#6f8a6b] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                  <Link to="/login" className="group flex min-h-[92px] flex-col justify-between gap-3 px-4 py-3.5 transition hover:bg-[#f0f7e8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4e7a4a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fbfcf7]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#d4e2ca] bg-[#edf6e4] text-[#3f6b3d]">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex items-end justify-between gap-2">
+                      <span>
+                        <span className="display block text-[12px] font-semibold leading-tight text-[#1b2a1f]">Authority login</span>
+                        <span className="mt-0.5 block text-[9px] text-ink/45">Officer workspace</span>
+                      </span>
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[#6f8a6b] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                </div>
               </div>
-            ) : null}
+            </div>
             <div className="mt-8 grid max-w-[540px] grid-cols-3 gap-4 border-t border-ink/15 pt-5">
               <div>
                 <p className="display text-2xl font-bold">{number(demoStations, 0)}</p>
