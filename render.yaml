@@ -102,6 +102,10 @@ services:
       # The monitor runs inside this web process. Render's free plan suspends
       # idle services, which also stops alerts; use an always-on plan for the
       # production guarantee.
+      - key: LIVE_WEATHER_INTERVAL_SECONDS
+        value: '900'
+      - key: LIVE_AQI_INTERVAL_SECONDS
+        value: '900'
       - key: CITIZEN_MONITOR_ENABLED
         value: 'true'
       - key: CITIZEN_MONITOR_INTERVAL_SECONDS
