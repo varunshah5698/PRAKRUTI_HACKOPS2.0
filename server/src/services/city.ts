@@ -382,6 +382,7 @@ function weatherUrl(point: CityPoint): string {
   );
   url.searchParams.set('timezone', 'Asia/Kolkata');
   url.searchParams.set('forecast_days', '7');
+  url.searchParams.set('past_days', '1');
   return url.toString();
 }
 
@@ -464,6 +465,15 @@ export interface CityOverview {
     pressureHpa: number | null;
     isDay: boolean | null;
   };
+  previous: {
+    time: string;
+    temperatureC: number | null;
+    relativeHumidity: number | null;
+    windSpeedKmh: number | null;
+    precipitationMm: number | null;
+    pm25: number | null;
+    aqi: number | null;
+  } | null;
   air: {
     time: string | null;
     pm25: number | null;
@@ -578,6 +588,28 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
 
     const currentHourKey = `${String(weatherCurrent.time).slice(0, 13)}:00`;
     const start = Math.max(0, hourlyTime.findIndex((time) => time >= currentHourKey));
+    const previousIndex = start - 24;
+    const previousTime = previousIndex >= 0 ? hourlyTime[previousIndex] : null;
+    const previousAirIndex = previousTime ? airByHour.get(previousTime.slice(0, 13)) : undefined;
+    const previousSummary = aqiFromValues({
+      pm25: previousAirIndex === undefined ? null : airPm25[previousAirIndex] ?? null,
+      pm10: previousAirIndex === undefined ? null : airPm10[previousAirIndex] ?? null,
+      no2: previousAirIndex === undefined ? null : airNo2[previousAirIndex] ?? null,
+      so2: previousAirIndex === undefined ? null : airSo2[previousAirIndex] ?? null,
+      co: previousAirIndex === undefined ? null : airCo[previousAirIndex] ?? null,
+      o3: previousAirIndex === undefined ? null : airO3[previousAirIndex] ?? null,
+    });
+    const previous = previousTime
+      ? {
+          time: previousTime,
+          temperatureC: hourlyTemp[previousIndex] ?? null,
+          relativeHumidity: hourlyHumidity[previousIndex] ?? null,
+          windSpeedKmh: hourlyWind[previousIndex] ?? null,
+          precipitationMm: hourlyPrecip[previousIndex] ?? null,
+          pm25: previousAirIndex === undefined ? null : airPm25[previousAirIndex] ?? null,
+          aqi: previousSummary.aqi,
+        }
+      : null;
     const hourly = hourlyTime.slice(start, start + 72).map((time, offset) => {
       const index = start + offset;
       const airIndex = airByHour.get(time.slice(0, 13));
@@ -616,6 +648,7 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
       };
     });
 
+    const today = String(weatherCurrent.time).slice(0, 10);
     const dailyTime = timeList(weather.daily?.time);
     const daily = dailyTime.map((date, index) => {
       const aggregate = airDates.get(date);
@@ -637,9 +670,8 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
         aqiMean: mean(aggregate?.aqiValues ?? []),
         aqiMax: aggregate?.aqiValues.length ? Math.max(...aggregate.aqiValues) : null,
       };
-    });
+    }).filter((day) => day.date >= today);
 
-    const today = String(weatherCurrent.time).slice(0, 10);
     const history = [...airDates.entries()]
       .filter(([date]) => date < today)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -685,6 +717,7 @@ export async function getCityOverview(lat: number, lng: number): Promise<CityOve
         pressureHpa: num(weatherCurrent.surface_pressure),
         isDay: typeof weatherCurrent.is_day === 'number' ? Boolean(weatherCurrent.is_day) : null,
       },
+      previous,
       air: {
         time: airCurrent.time ? String(airCurrent.time) : null,
         pm25: num(airCurrent.pm2_5),

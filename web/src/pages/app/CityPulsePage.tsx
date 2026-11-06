@@ -221,6 +221,20 @@ function hourLabel(value: string): string {
   return `${shortDate(value)} · ${hhmm(value)}`;
 }
 
+function deltaText(
+  current: number | null | undefined,
+  previous: number | null | undefined,
+  unit: string,
+  digits = 1,
+): string {
+  if (current === null || current === undefined || previous === null || previous === undefined) {
+    return 'No 24h comparison';
+  }
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.5 * 10 ** -digits) return 'Unchanged vs yesterday';
+  return `${diff > 0 ? '+' : ''}${number(diff, digits)} ${unit} vs yesterday`;
+}
+
 function WeatherGlyph({ code, isDay, className = 'h-6 w-6' }: { code: number | null; isDay?: boolean | null; className?: string }) {
   const mood = weatherMood(code);
   if (mood === 'clear') return isDay === false ? <Moon className={className} /> : <Sun className={className} />;
@@ -397,6 +411,7 @@ export function CityPulsePage() {
 
   const data = overview.data;
   const current = data?.current;
+  const previous = data?.previous ?? null;
   const observedAt = current?.time
     ? /[zZ]|[+-]\d{2}:?\d{2}$/.test(current.time)
       ? current.time
@@ -722,6 +737,25 @@ export function CityPulsePage() {
           </div>
         </Card>
       </div>
+
+      {previous ? (
+        <Card className="overflow-hidden">
+          <SectionHeader
+            title="Since yesterday"
+            detail={`Same point, compared with ${hourLabel(previous.time)}`}
+            badge={<Badge tone="neutral">24h delta</Badge>}
+          />
+          <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
+            <Metric label="Temperature" value={`${number(current?.temperatureC)}°C`} note={deltaText(current?.temperatureC, previous.temperatureC, '°C')} />
+            <Metric label="Humidity" value={`${number(current?.relativeHumidity, 0)}%`} note={deltaText(current?.relativeHumidity, previous.relativeHumidity, '%', 0)} />
+            <Metric label="Wind" value={`${number(current?.windSpeedKmh)} km/h`} note={deltaText(current?.windSpeedKmh, previous.windSpeedKmh, 'km/h')} />
+            <Metric label="PM2.5" value={`${number(air?.pm25)} µg/m³`} note={deltaText(air?.pm25, previous.pm25, 'µg/m³')} />
+          </div>
+          <p className="border-t border-dashed border-[#dbe5d6] px-4 py-2 text-[9px] text-[#7a8b7e]">
+            Compared with the same hour yesterday at this point. The delta is context, not a trend prediction.
+          </p>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-12">
         <Card className="overflow-hidden xl:col-span-8">

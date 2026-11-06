@@ -73,6 +73,15 @@ export interface CityOverview {
     pressureHpa: number | null;
     isDay: boolean | null;
   };
+  previous: {
+    time: string;
+    temperatureC: number | null;
+    relativeHumidity: number | null;
+    windSpeedKmh: number | null;
+    precipitationMm: number | null;
+    pm25: number | null;
+    aqi: number | null;
+  } | null;
   air: {
     time: string | null;
     pm25: number | null;
