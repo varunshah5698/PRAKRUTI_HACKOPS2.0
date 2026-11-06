@@ -5,6 +5,7 @@ import { getSourceStatuses } from '../services/sources.js';
 import { getStationSnapshots } from '../services/station-data.js';
 import { getDashboard } from '../services/dashboard.js';
 import { weatherIntegrity, weatherRecommendation } from '../services/weather-status.js';
+import { getWeatherWatchdogState } from '../services/weather-watchdog.js';
 import { liveStatus } from '../services/live.js';
 
 export const publicRouter = Router();
@@ -241,6 +242,7 @@ publicRouter.get('/status', async (_req, res, next) => {
           }
         : { status: 'UNAVAILABLE', sourceId: null, observedAt: null, ageSeconds: null },
       feeds,
+      watchdog: getWeatherWatchdogState(),
       live: liveStatus(),
     });
   } catch (error) {

@@ -39,6 +39,7 @@ const EnvSchema = z.object({
   // CPCB/CAAQMS and OpenAQ republish on an hourly clock, so a 15-minute poll
   // detects a new value without hammering the provider.
   LIVE_AIR_QUALITY_INTERVAL_SECONDS: z.coerce.number().int().min(15).max(3600).default(900),
+  OPS_ALERT_WEBHOOK_URL: z.string().default(''),
   ML_SERVICE_URL: z.string().default(''),
   ML_SERVICE_API_KEY: z.string().default(''),
   AI_EVIDENCE_CHAR_LIMIT: z.coerce.number().int().min(10_000).max(400_000).default(120_000),

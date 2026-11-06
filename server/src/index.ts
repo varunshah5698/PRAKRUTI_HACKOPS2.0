@@ -36,6 +36,7 @@ import { getDashboard } from './services/dashboard.js';
 import { syncSourceCatalogue } from './services/sources.js';
 import { ingestOpenMeteoWeather } from './services/ingest.js';
 import { startLiveScheduler, stopLiveScheduler } from './services/live.js';
+import { startWeatherWatchdog, stopWeatherWatchdog } from './services/weather-watchdog.js';
 import { startCitizenWeatherScheduler, stopCitizenWeatherScheduler } from './services/citizen-weather.js';
 import { startNewsAlertScheduler, stopNewsAlertScheduler } from './services/news-alerts.js';
 import { evaluateAllStations, evaluateWasteLocalities } from './services/risk.js';
@@ -212,6 +213,7 @@ async function startSchedulers() {
   );
   await syncSourceCatalogue();
   startLiveScheduler();
+  startWeatherWatchdog();
   startCitizenWeatherScheduler();
   startNewsAlertScheduler();
   // Hourly forecast grids: the providers republish them on the hour, so a
@@ -263,6 +265,7 @@ const server = app.listen(env.PORT, () => {
 async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
   stopLiveScheduler();
+  stopWeatherWatchdog();
   stopCitizenWeatherScheduler();
   stopNewsAlertScheduler();
   closeEventClients();

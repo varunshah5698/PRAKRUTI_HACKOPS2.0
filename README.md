@@ -227,6 +227,7 @@ The API runs a live polling service:
 - In demo mode, simulation-labelled station readings tick every 60 seconds for the seeded demo screens. The map excludes them; its station layer is real-only.
 - The map shows real OpenAQ station records even when their last reading is stale, with an amber age ring and the last-observed timestamp. Add `OPENAQ_API_KEY` or `DATA_GOV_IN_API_KEY` to resume live CPCB/OpenAQ ingestion.
 - Risk evaluation runs every 5 minutes.
+- A weather watchdog checks every 5 minutes. If the latest real observation leaves its live window, it records a service-health failure and posts to `OPS_ALERT_WEBHOOK_URL` (when set) at most once every 30 minutes. The current state is exposed publicly at `/status` and `/api/v1/public/status`.
 
 Configure with `LIVE_ENABLED`, `LIVE_WEATHER_INTERVAL_SECONDS`, `LIVE_AQI_INTERVAL_SECONDS` and `LIVE_SIMULATION_INTERVAL_SECONDS`. Every row keeps `observed_at` (upstream validity) and `retrieved_at` (fetch time).
 
