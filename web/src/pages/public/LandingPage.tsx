@@ -30,8 +30,8 @@ import { Footer } from '../../components/Footer';
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { PublicBadge, Button, PublicInput, PublicLabel, PublicSelect, PublicTextarea } from '../../components/ui';
 import { api } from '../../lib/api';
-import { AQI_COLORS, number, timeAgo } from '../../lib/format';
-import { useNow } from '../../lib/liveFeed';
+import { AQI_COLORS, number } from '../../lib/format';
+import { FreshnessPill } from '../../components/FreshnessPill';
 
 interface Overview {
   demoMode: boolean;
@@ -174,7 +174,6 @@ export function LandingPage() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [reportCategory, setReportCategory] = useState('air');
   const [reportLocality, setReportLocality] = useState('');
-  const now = useNow(60_000);
 
   useEffect(() => {
     let active = true;
@@ -242,17 +241,14 @@ export function LandingPage() {
             <div className="relative mt-8 max-w-[600px] overflow-hidden rounded-[26px] border border-[#cfdcc7] bg-[#fbfcf7] shadow-[0_26px_60px_-46px_rgba(23,61,42,.55)]">
               {overview?.weather ? (
                 <div className="relative border-b border-[#dfe8d9] px-5 py-4">
-                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                    <span className="inline-flex items-center gap-2 text-[10px] font-semibold text-[#25412b]">
-                      <span className="relative flex h-2 w-2">
-                        <span className={`absolute inline-flex h-full w-full rounded-full opacity-35 motion-reduce:animate-none ${overview.weather.status === 'LIVE' ? 'animate-ping bg-[#32a879]' : 'bg-[#c69218]'}`} />
-                        <span className={`relative inline-flex h-2 w-2 rounded-full ${overview.weather.status === 'LIVE' ? 'bg-[#32a879]' : overview.weather.status === 'STALE' ? 'bg-[#c69218]' : 'bg-[#c94a50]'}`} />
-                      </span>
-                      {overview.weather.status === 'LIVE' ? 'Live field conditions' : overview.weather.status === 'STALE' ? 'Stale field conditions' : 'Weather unavailable'}
-                    </span>
-                    <span className="text-[9px] text-ink/45">
-                      {overview.weather.provider ?? 'provider'} · {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'forecast' : 'observed'}{' '}
-                      {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at, now)}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <FreshnessPill
+                      status={overview.weather.status}
+                      observedAt={overview.weather.observationTime ?? overview.weather.observed_at}
+                      provider={overview.weather.provider}
+                    />
+                    <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ink/40">
+                      {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'Hourly forecast' : 'Current conditions'}
                     </span>
                   </div>
                   <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">

@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { Badge, Button, Card, CardHeader, CardTitle } from '../../components/ui';
+import { FreshnessPill } from '../../components/FreshnessPill';
 import { api, ApiError } from '../../lib/api';
 import { timeAgo } from '../../lib/format';
 
@@ -216,19 +217,14 @@ export function CitizenDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Weather at your location</CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge className={SEVERITY_STYLE[severity]}>{severity}</Badge>
-              <Badge
-                className={
-                  weather?.status === 'LIVE'
-                    ? 'bg-[#edf5e7] text-[#356b2a] border-[#bfe0ae]'
-                    : weather?.status === 'STALE'
-                      ? 'bg-[#fff7df] text-[#8a5a08] border-[#ecd79a]'
-                      : 'bg-[#fff0ee] text-[#8a2f2a] border-[#e8b7b1]'
-                }
-              >
-                {weather?.status ?? 'UNAVAILABLE'}
-              </Badge>
+              <FreshnessPill
+                status={weather?.status ?? 'UNAVAILABLE'}
+                observedAt={weather?.observation_time ?? weather?.observed_at}
+                provider={weather?.provider}
+                sourceId={weather?.source_id}
+              />
             </div>
           </CardHeader>
           <div className="px-5 py-5">

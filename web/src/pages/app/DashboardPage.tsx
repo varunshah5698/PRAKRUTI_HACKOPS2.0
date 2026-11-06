@@ -28,6 +28,7 @@ import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Char
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { MumbaiWeatherScene } from '../../components/MumbaiWeatherScene';
 import { CityPulseStrip } from '../../components/CityPulseStrip';
+import { FreshnessPill } from '../../components/FreshnessPill';
 import { RiskBadge, SourceBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock } from '../../components/ui';
 import { api } from '../../lib/api';
@@ -831,9 +832,12 @@ export function DashboardPage() {
             <Badge tone={data.dataMode.stationObservations === 'SIMULATION' ? 'amber' : data.dataMode.stationObservations === 'MIXED' ? 'teal' : 'green'} dot>
               {data.dataMode.stationObservations === 'SIMULATION' ? 'Simulation data' : data.dataMode.stationObservations === 'MIXED' ? 'Mixed sources' : 'Connected source'}
             </Badge>
-            <Badge tone={data.weather?.status === 'LIVE' ? 'green' : data.weather?.status === 'STALE' ? 'amber' : 'neutral'}>
-              {data.weather?.status ?? 'UNAVAILABLE'} weather
-            </Badge>
+            <FreshnessPill
+              status={data.weather?.status ?? 'UNAVAILABLE'}
+              observedAt={data.weather?.observationTime ?? data.weather?.observed_at}
+              provider={data.weather?.provider}
+              sourceId={data.weather?.source_id}
+            />
             <Badge tone="amber">{mlActive ? 'ML active' : 'ML baseline'}</Badge>
           </div>
         </div>

@@ -67,11 +67,13 @@ export function Badge({
   tone = 'neutral',
   className,
   dot,
+  title,
 }: {
   children: React.ReactNode;
   tone?: 'neutral' | 'green' | 'lime' | 'amber' | 'red' | 'teal' | 'outline' | 'dark';
   className?: string;
   dot?: boolean;
+  title?: string;
 }) {
   const tones: Record<string, string> = {
     neutral: 'bg-white/70 text-[#53645a] border-[#d9e3d5]',
@@ -85,6 +87,7 @@ export function Badge({
   };
   return (
     <span
+      title={title}
       className={classNames(
         'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]',
         tones[tone],

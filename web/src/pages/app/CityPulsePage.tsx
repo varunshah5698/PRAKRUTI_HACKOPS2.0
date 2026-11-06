@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Chart';
+import { FreshnessPill } from '../../components/FreshnessPill';
 import {
   Badge,
   Button,
@@ -401,8 +402,9 @@ export function CityPulsePage() {
       ? current.time
       : `${current.time}+05:30`
     : null;
-  const observedAge = observedAt ? timeAgo(observedAt) : null;
   const observedAgeMinutes = observedAt ? Math.max(0, Math.round((Date.now() - new Date(observedAt).getTime()) / 60_000)) : null;
+  const weatherFreshness = !current?.time ? 'UNAVAILABLE' : observedAgeMinutes !== null && observedAgeMinutes > 90 ? 'STALE' : 'LIVE';
+  const weatherProvider = data?.weatherProvider === 'met-no' ? 'MET Norway' : 'Open-Meteo';
   const air = data?.air;
   const hourly = data?.hourly ?? [];
   const daily = data?.daily ?? [];
@@ -517,13 +519,7 @@ export function CityPulsePage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="green" dot>Keyless open data</Badge>
             <Badge tone="amber">CAMS modelled air</Badge>
-            <Badge tone={observedAgeMinutes !== null && observedAgeMinutes > 90 ? 'amber' : 'neutral'}>
-              {overview.loading
-                ? 'Refreshing weather…'
-                : current?.time
-                  ? `Observed ${hhmm(current.time)} IST · ${observedAge}`
-                  : `Updated ${timeAgo(data.generatedAt)}`}
-            </Badge>
+            <FreshnessPill status={weatherFreshness} observedAt={observedAt} provider={weatherProvider} />
           </div>
           <h1 className="display mt-2 text-[30px] font-bold leading-[1.02] tracking-[-0.05em] text-[#142016] sm:text-[38px]">
             Mumbai, hour by hour.

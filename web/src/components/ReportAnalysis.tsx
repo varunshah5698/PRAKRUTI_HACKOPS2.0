@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ReportScene3D, type ReportSceneHandle, type SceneSelection } from './ReportScene3D';
+import { FreshnessPill, type FreshnessStatus } from './FreshnessPill';
 import { Badge, Card, CardHeader, CardTitle, DataLabel, ProgressBar } from './ui';
 import { CATEGORY_LABELS, categoryLabel, formatDate, number, timeAgo } from '../lib/format';
 import {
@@ -449,6 +450,13 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
   }, [playing, step, primaryStation?.id, firstCommunity?.id]);
 
   const weather = analysis.weather;
+  const weatherStatus: FreshnessStatus = weather
+    ? weather.raw.is_simulated
+      ? 'DEMO'
+      : Date.now() - Date.parse(weather.raw.observed_at) > 90 * 60_000
+        ? 'STALE'
+        : 'LIVE'
+    : 'UNAVAILABLE';
 
   const categoryNote =
     analysis.category === 'air'
@@ -773,7 +781,11 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
             <div className="mt-4 border-t border-dashed border-[#dbe5d6] pt-3">
               <div className="flex items-center justify-between">
                 <DataLabel>Weather context</DataLabel>
-                <span className="text-[8px] text-[#718277]">{weather ? formatDate(weather.raw.observed_at) : 'Unavailable'}</span>
+                <FreshnessPill
+                  status={weatherStatus}
+                  observedAt={weather?.raw.observed_at}
+                  sourceId={weather?.raw.source_id}
+                />
               </div>
               {weather ? (
                 <>
