@@ -16,7 +16,8 @@
     "ml:register": "tsx src/db/register-models.ts",
     "simulations:backfill": "tsx src/scripts/backfill-simulations.ts",
     "integrations:check": "tsx src/scripts/check-integrations.ts",
-    "data:import-openaq": "tsx src/scripts/import-openaq-archive.ts"
+    "data:import-openaq": "tsx src/scripts/import-openaq-archive.ts",
+    "db:seed-authorities": "tsx src/scripts/seed-authorities.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

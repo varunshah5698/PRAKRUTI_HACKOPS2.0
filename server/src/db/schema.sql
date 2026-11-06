@@ -826,3 +826,103 @@ CREATE TABLE IF NOT EXISTS recommendation_evidence (
   evidence_id uuid NOT NULL REFERENCES event_evidence(id) ON DELETE CASCADE,
   PRIMARY KEY (recommendation_id, evidence_id)
 );
+
+-- Phase 4: verified authority directory, memberships and per-authority event
+-- lifecycle. No direct government API is claimed; channels are manual/internal.
+CREATE TABLE IF NOT EXISTS authority_directory (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE,
+  name text NOT NULL,
+  abbreviation text,
+  level text NOT NULL CHECK (level IN ('NATIONAL','STATE','DISTRICT','MUNICIPAL','LOCAL','OTHER')),
+  parent_id uuid REFERENCES authority_directory(id) ON DELETE SET NULL,
+  official_url text,
+  official_contacts jsonb NOT NULL DEFAULT '{}'::jsonb,
+  reporting_channels jsonb NOT NULL DEFAULT '[]'::jsonb,
+  data_feeds jsonb NOT NULL DEFAULT '[]'::jsonb,
+  coverage_country text DEFAULT 'India',
+  coverage_state text,
+  coverage_district text,
+  coverage_city text,
+  jurisdiction_area geography(MultiPolygon,4326),
+  verification_status text NOT NULL DEFAULT 'PARTIALLY_VERIFIED'
+    CHECK (verification_status IN ('SOURCE_VERIFIED','PARTIALLY_VERIFIED','UNVERIFIED','DISPUTED')),
+  verified_at timestamptz,
+  source_url text,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS authority_directory_coverage_idx ON authority_directory (coverage_state, coverage_district, coverage_city);
+CREATE INDEX IF NOT EXISTS authority_directory_jurisdiction_gix ON authority_directory USING gist (jurisdiction_area);
+
+CREATE TABLE IF NOT EXISTS authority_memberships (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  authority_id uuid NOT NULL REFERENCES authority_directory(id) ON DELETE CASCADE,
+  membership_role text NOT NULL CHECK (membership_role IN ('VIEWER','OFFICER','ADMIN')),
+  status text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','ACTIVE','SUSPENDED','REVOKED')),
+  verified_at timestamptz,
+  verification_source text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, authority_id)
+);
+CREATE INDEX IF NOT EXISTS authority_memberships_authority_idx ON authority_memberships (authority_id, status);
+
+CREATE TABLE IF NOT EXISTS event_authority (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  authority_id uuid NOT NULL REFERENCES authority_directory(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'READY_FOR_REVIEW' CHECK (status IN (
+    'READY_FOR_REVIEW','AUTHORITY_NOTIFIED','ACKNOWLEDGED','VERIFIED','ACTION_INITIATED',
+    'RESOLVED','CLOSED','REJECTED','NOTIFICATION_FAILED','AWAITING_ACKNOWLEDGEMENT',
+    'UNDER_INVESTIGATION','ESCALATED','UNRESOLVED'
+  )),
+  assigned_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  assigned_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (event_id, authority_id)
+);
+CREATE INDEX IF NOT EXISTS event_authority_authority_idx ON event_authority (authority_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS event_authority_event_idx ON event_authority (event_id, status);
+
+CREATE TABLE IF NOT EXISTS event_authority_actions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_authority_id uuid NOT NULL REFERENCES event_authority(id) ON DELETE CASCADE,
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  authority_id uuid NOT NULL REFERENCES authority_directory(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  actor_type text NOT NULL CHECK (actor_type IN ('AUTHORITY_USER','SYSTEM')),
+  action_type text NOT NULL CHECK (action_type IN (
+    'NOTIFICATION_SENT','NOTIFICATION_FAILED','ACKNOWLEDGE','VERIFY','START_ACTION','RESOLVE',
+    'CLOSE','REJECT','ESCALATE','MARK_UNRESOLVED','NOTE'
+  )),
+  previous_status text,
+  new_status text,
+  channel text,
+  delivery_reference text,
+  response text,
+  evidence_ids uuid[] NOT NULL DEFAULT '{}',
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS event_authority_actions_event_idx ON event_authority_actions (event_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS event_authority_actions_authority_idx ON event_authority_actions (authority_id, created_at DESC);
+
+CREATE OR REPLACE FUNCTION reject_authority_action_mutation() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'event_authority_actions is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS event_authority_actions_immutable ON event_authority_actions;
+CREATE TRIGGER event_authority_actions_immutable
+  BEFORE UPDATE OR DELETE ON event_authority_actions
+  FOR EACH ROW EXECUTE FUNCTION reject_authority_action_mutation();
+
+ALTER TABLE event_timeline DROP CONSTRAINT IF EXISTS event_timeline_entry_type_check;
+ALTER TABLE event_timeline ADD CONSTRAINT event_timeline_entry_type_check CHECK (entry_type IN (
+  'EVENT_CREATED','EVIDENCE_ADDED','SOURCE_LINKED','CORRELATION_ADDED','STATUS_CHANGED',
+  'AUTHORITY_ACTION','NOTE','VALIDATION'
+));

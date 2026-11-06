@@ -28,6 +28,7 @@ import {
 import { ingestDisasterFeeds } from '../services/event-ingest.js';
 import { analyzeEvent, getAnalyses, getForecasts } from '../services/event-analysis.js';
 import { generateRecommendations, listRecommendations } from '../services/event-recommendations.js';
+import { assignEventAuthorities, autoMapAuthorities, getEventAuthorities } from '../services/authority.js';
 import { RECOMMENDATION_AUDIENCES } from '../types.js';
 
 export const eventIntelligenceRouter = Router();
@@ -129,6 +130,33 @@ eventIntelligenceRouter.get('/:id/recommendations', async (req, res, next) => {
     const id = z.string().uuid().parse(req.params.id);
     const audience = z.enum(RECOMMENDATION_AUDIENCES).optional().parse(req.query.audience);
     res.json({ recommendations: await listRecommendations(id, audience ?? null, req.user!.role) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+eventIntelligenceRouter.get('/:id/authorities', async (req, res, next) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    res.json({ authorities: await getEventAuthorities(id) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+eventIntelligenceRouter.post('/:id/authorities', mutationLimiter, requireRole('SYSTEM_ADMIN'), async (req, res, next) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const body = z
+      .object({ authorityIds: z.array(z.string().uuid()).max(50).optional(), autoMap: z.boolean().optional() })
+      .strict()
+      .parse(req.body);
+    if (body.autoMap) {
+      res.status(201).json(await autoMapAuthorities(id, actor(req)));
+      return;
+    }
+    if (!body.authorityIds?.length) throw badRequest('authorityIds or autoMap is required.');
+    res.status(201).json(await assignEventAuthorities(id, body.authorityIds, actor(req)));
   } catch (error) {
     next(error);
   }

@@ -111,6 +111,7 @@ export const EVENT_TIMELINE_ENTRY_TYPES = [
   'SOURCE_LINKED',
   'CORRELATION_ADDED',
   'STATUS_CHANGED',
+  'AUTHORITY_ACTION',
   'NOTE',
   'VALIDATION',
 ] as const;
@@ -127,6 +128,68 @@ export type RecommendationUrgency = (typeof RECOMMENDATION_URGENCIES)[number];
 
 export const RECOMMENDATION_STATUSES = ['PROPOSED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED', 'EXPIRED'] as const;
 export type RecommendationStatus = (typeof RECOMMENDATION_STATUSES)[number];
+
+export const AUTHORITY_LEVELS = ['NATIONAL', 'STATE', 'DISTRICT', 'MUNICIPAL', 'LOCAL', 'OTHER'] as const;
+export type AuthorityLevel = (typeof AUTHORITY_LEVELS)[number];
+
+export const AUTHORITY_MEMBERSHIP_ROLES = ['VIEWER', 'OFFICER', 'ADMIN'] as const;
+export type AuthorityMembershipRole = (typeof AUTHORITY_MEMBERSHIP_ROLES)[number];
+
+export const AUTHORITY_MEMBERSHIP_STATUSES = ['PENDING', 'ACTIVE', 'SUSPENDED', 'REVOKED'] as const;
+export type AuthorityMembershipStatus = (typeof AUTHORITY_MEMBERSHIP_STATUSES)[number];
+
+export const EVENT_AUTHORITY_STATUSES = [
+  'READY_FOR_REVIEW',
+  'AUTHORITY_NOTIFIED',
+  'ACKNOWLEDGED',
+  'VERIFIED',
+  'ACTION_INITIATED',
+  'RESOLVED',
+  'CLOSED',
+  'REJECTED',
+  'NOTIFICATION_FAILED',
+  'AWAITING_ACKNOWLEDGEMENT',
+  'UNDER_INVESTIGATION',
+  'ESCALATED',
+  'UNRESOLVED',
+] as const;
+export type EventAuthorityStatus = (typeof EVENT_AUTHORITY_STATUSES)[number];
+
+export const EVENT_AUTHORITY_TRANSITIONS: Record<EventAuthorityStatus, EventAuthorityStatus[]> = {
+  READY_FOR_REVIEW: ['AUTHORITY_NOTIFIED', 'NOTIFICATION_FAILED', 'REJECTED'],
+  AUTHORITY_NOTIFIED: ['ACKNOWLEDGED', 'AWAITING_ACKNOWLEDGEMENT', 'NOTIFICATION_FAILED', 'REJECTED'],
+  AWAITING_ACKNOWLEDGEMENT: ['ACKNOWLEDGED', 'NOTIFICATION_FAILED', 'ESCALATED'],
+  ACKNOWLEDGED: ['VERIFIED', 'UNDER_INVESTIGATION', 'ESCALATED', 'REJECTED'],
+  UNDER_INVESTIGATION: ['VERIFIED', 'ESCALATED', 'REJECTED'],
+  VERIFIED: ['ACTION_INITIATED', 'RESOLVED', 'ESCALATED', 'REJECTED'],
+  ACTION_INITIATED: ['RESOLVED', 'UNRESOLVED', 'ESCALATED'],
+  UNRESOLVED: ['ACTION_INITIATED', 'CLOSED'],
+  ESCALATED: ['ACKNOWLEDGED', 'UNDER_INVESTIGATION', 'CLOSED'],
+  RESOLVED: ['CLOSED'],
+  CLOSED: [],
+  REJECTED: [],
+  NOTIFICATION_FAILED: ['AUTHORITY_NOTIFIED', 'REJECTED'],
+};
+
+export const AUTHORITY_ACTION_TYPES = [
+  'NOTIFICATION_SENT',
+  'NOTIFICATION_FAILED',
+  'ACKNOWLEDGE',
+  'VERIFY',
+  'START_ACTION',
+  'RESOLVE',
+  'CLOSE',
+  'REJECT',
+  'ESCALATE',
+  'MARK_UNRESOLVED',
+  'NOTE',
+] as const;
+export type AuthorityActionType = (typeof AUTHORITY_ACTION_TYPES)[number];
+
+export function canTransitionAuthorityStatus(current: EventAuthorityStatus, next: EventAuthorityStatus): boolean {
+  return EVENT_AUTHORITY_TRANSITIONS[current]?.includes(next) ?? false;
+}
+
 
 
 /**
