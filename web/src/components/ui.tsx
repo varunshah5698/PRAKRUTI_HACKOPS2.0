@@ -108,7 +108,7 @@ export function PublicBadge({ children, tone = 'outline', className }: { childre
     soft: 'bg-[#efefe7] text-ink/70 border-ink/10',
   };
   return (
-    <span className={classNames('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]', tones[tone] ?? tones.outline, className)}>
+    <span className={classNames('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]', tones[tone] ?? tones.outline, className)}>
       {children}
     </span>
   );

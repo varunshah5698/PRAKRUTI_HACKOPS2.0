@@ -30,6 +30,7 @@ export function Footer() {
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#3f7d2a]">Information</p>
           <ul className="space-y-2.5 text-sm text-ink/55">
             <li><Link to="/about" className="hover:text-ink">About</Link></li>
+            <li><Link to="/status" className="hover:text-ink">Status</Link></li>
             <li><Link to="/data-sources" className="hover:text-ink">Data sources</Link></li>
             <li><Link to="/privacy" className="hover:text-ink">Privacy</Link></li>
             <li><Link to="/terms" className="hover:text-ink">Terms</Link></li>

@@ -6,7 +6,6 @@ import { Button, PublicBadge } from './ui';
 import { useAuth } from '../store/auth';
 
 const links = [
-  { to: '/about', label: 'About' },
   { to: '/status', label: 'Status' },
   { to: '/data-sources', label: 'Data sources' },
   { to: '/#how-it-works', label: 'How it works' },
@@ -23,7 +22,7 @@ export function PublicNav() {
         <nav className="hidden items-center gap-8 lg:flex">
           {links.map((link) =>
             link.to.startsWith('/#') ? (
-              <a key={link.label} href={link.to} className="text-[13px] font-medium text-ink/65 transition hover:text-ink">
+              <a key={link.label} href={link.to} className="whitespace-nowrap text-[13px] font-medium text-ink/65 transition hover:text-ink">
                 {link.label}
               </a>
             ) : (
@@ -31,7 +30,7 @@ export function PublicNav() {
                 key={link.label}
                 to={link.to}
                 className={({ isActive }) =>
-                  `text-[13px] font-medium transition ${isActive ? 'text-ink' : 'text-ink/65 hover:text-ink'}`
+                  `whitespace-nowrap text-[13px] font-medium transition ${isActive ? 'text-ink' : 'text-ink/65 hover:text-ink'}`
                 }
               >
                 {link.label}

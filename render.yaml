@@ -106,6 +106,8 @@ services:
         value: '900'
       - key: LIVE_AQI_INTERVAL_SECONDS
         value: '900'
+      - key: OPS_ALERT_WEBHOOK_URL
+        sync: false
       - key: CITIZEN_MONITOR_ENABLED
         value: 'true'
       - key: CITIZEN_MONITOR_INTERVAL_SECONDS
