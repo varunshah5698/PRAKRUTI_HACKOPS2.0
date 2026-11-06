@@ -606,3 +606,223 @@ CREATE INDEX IF NOT EXISTS notifications_news_idx
   ON notifications (created_at DESC) WHERE template = 'NEWS_ALERT';
 CREATE INDEX IF NOT EXISTS notifications_retry_idx
   ON notifications (next_retry_at) WHERE status = 'FAILED' AND next_retry_at IS NOT NULL;
+
+-- Event intelligence foundation (Phase 1). Additive only: no existing table is
+-- altered, renamed or dropped. Authority workflow tables arrive in Phase 4.
+CREATE TABLE IF NOT EXISTS disaster_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_key text NOT NULL UNIQUE,
+  category text NOT NULL CHECK (category IN (
+    'EXTREME_RAINFALL','URBAN_FLOOD','RIVER_FLOOD','HEATWAVE','EXTREME_TEMPERATURE',
+    'CYCLONE','SEVERE_STORM','DROUGHT','LANDSLIDE','EARTHQUAKE','AIR_POLLUTION','WILDFIRE','OTHER'
+  )),
+  title text NOT NULL,
+  description text,
+  severity text NOT NULL DEFAULT 'UNKNOWN' CHECK (severity IN ('NORMAL','MODERATE','HIGH','CRITICAL','UNKNOWN')),
+  status text NOT NULL DEFAULT 'DETECTED' CHECK (status IN (
+    'DETECTED','EVIDENCE_COLLECTED','READY_FOR_REVIEW','AUTHORITY_NOTIFIED','ACKNOWLEDGED',
+    'VERIFIED','ACTION_INITIATED','RESOLVED','CLOSED','NOTIFICATION_FAILED',
+    'AWAITING_ACKNOWLEDGEMENT','REJECTED','DUPLICATE','UNDER_INVESTIGATION','ESCALATED','UNRESOLVED'
+  )),
+  confidence numeric(3,2) CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+  data_quality text,
+  detection_source text,
+  start_at timestamptz,
+  last_observed_at timestamptz,
+  detected_at timestamptz NOT NULL DEFAULT now(),
+  closed_at timestamptz,
+  primary_location geography(Point,4326),
+  affected_area geography(MultiPolygon,4326),
+  admin_area text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS disaster_events_status_idx ON disaster_events (status, detected_at DESC);
+CREATE INDEX IF NOT EXISTS disaster_events_category_idx ON disaster_events (category, detected_at DESC);
+CREATE INDEX IF NOT EXISTS disaster_events_start_idx ON disaster_events (start_at DESC);
+CREATE INDEX IF NOT EXISTS disaster_events_location_gix ON disaster_events USING gist (primary_location);
+CREATE INDEX IF NOT EXISTS disaster_events_area_gix ON disaster_events USING gist (affected_area);
+
+-- Phase 2 adds EARTHQUAKE for USGS/GDACS seismic events. This only touches the
+-- Phase 1 table, never an existing production table.
+ALTER TABLE disaster_events DROP CONSTRAINT IF EXISTS disaster_events_category_check;
+ALTER TABLE disaster_events ADD CONSTRAINT disaster_events_category_check CHECK (category IN (
+  'EXTREME_RAINFALL','URBAN_FLOOD','RIVER_FLOOD','HEATWAVE','EXTREME_TEMPERATURE',
+  'CYCLONE','SEVERE_STORM','DROUGHT','LANDSLIDE','EARTHQUAKE','AIR_POLLUTION','WILDFIRE','OTHER'
+));
+
+CREATE TABLE IF NOT EXISTS event_links (
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  entity_type text NOT NULL CHECK (entity_type IN (
+    'ALERT','INCIDENT','REPORT','WEATHER_OBSERVATION','ENVIRONMENTAL_OBSERVATION','EXTERNAL'
+  )),
+  entity_id text NOT NULL,
+  relationship text NOT NULL,
+  confidence numeric(3,2) CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+  created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (event_id, entity_type, entity_id)
+);
+CREATE INDEX IF NOT EXISTS event_links_entity_idx ON event_links (entity_type, entity_id);
+
+CREATE TABLE IF NOT EXISTS event_evidence (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  evidence_type text NOT NULL CHECK (evidence_type IN (
+    'OFFICIAL_WARNING','WEATHER_OBSERVATION','SATELLITE','HISTORICAL_DATASET',
+    'NEWS','CITIZEN_REPORT','AUTHORITY_UPDATE','MODEL_OUTPUT','OTHER'
+  )),
+  source_id text,
+  source_name text,
+  source_url text,
+  source_record_id text,
+  source_entity_type text,
+  source_entity_id text,
+  title text,
+  raw_content jsonb,
+  content_hash text,
+  observed_at timestamptz,
+  published_at timestamptz,
+  retrieved_at timestamptz NOT NULL DEFAULT now(),
+  location geography(Point,4326),
+  verification_status text NOT NULL DEFAULT 'SOURCE_REPORTED' CHECK (verification_status IN (
+    'OFFICIAL_VERIFIED','INDEPENDENTLY_CORROBORATED','SOURCE_REPORTED',
+    'CITIZEN_UNVERIFIED','MODEL_GENERATED','DISPUTED','UNAVAILABLE'
+  )),
+  reliability_class text NOT NULL DEFAULT 'UNKNOWN' CHECK (reliability_class IN (
+    'OFFICIAL','PRIMARY_OBSERVATION','INDEPENDENT_CORROBORATION','AGGREGATOR','NEWS','CITIZEN','MODEL','UNKNOWN'
+  )),
+  freshness_status text NOT NULL DEFAULT 'UNKNOWN' CHECK (freshness_status IN ('LIVE','STALE','HISTORICAL','UNKNOWN')),
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS event_evidence_event_idx ON event_evidence (event_id, observed_at DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS event_evidence_location_gix ON event_evidence USING gist (location);
+CREATE UNIQUE INDEX IF NOT EXISTS event_evidence_source_record_idx
+  ON event_evidence (event_id, source_id, source_record_id) WHERE source_record_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS event_evidence_content_hash_idx
+  ON event_evidence (event_id, source_id, content_hash) WHERE content_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS event_evidence_null_source_record_idx
+  ON event_evidence (event_id, source_record_id) WHERE source_id IS NULL AND source_record_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS event_evidence_null_source_hash_idx
+  ON event_evidence (event_id, content_hash) WHERE source_id IS NULL AND content_hash IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS event_correlations (
+  event_a_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  event_b_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  relationship text NOT NULL,
+  distance_m numeric,
+  time_delta_seconds integer,
+  confidence numeric(3,2) CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+  reason text,
+  created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (event_a_id < event_b_id),
+  PRIMARY KEY (event_a_id, event_b_id)
+);
+CREATE INDEX IF NOT EXISTS event_correlations_b_idx ON event_correlations (event_b_id);
+
+CREATE TABLE IF NOT EXISTS event_timeline (
+  id bigserial PRIMARY KEY,
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  entry_type text NOT NULL CHECK (entry_type IN (
+    'EVENT_CREATED','EVIDENCE_ADDED','SOURCE_LINKED','CORRELATION_ADDED','STATUS_CHANGED','NOTE','VALIDATION'
+  )),
+  actor_type text NOT NULL CHECK (actor_type IN ('SYSTEM','USER')),
+  actor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  summary text NOT NULL,
+  detail jsonb,
+  evidence_ids uuid[] NOT NULL DEFAULT '{}',
+  occurred_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  dedupe_key text UNIQUE
+);
+CREATE INDEX IF NOT EXISTS event_timeline_event_idx ON event_timeline (event_id, occurred_at, id);
+CREATE INDEX IF NOT EXISTS event_timeline_type_idx ON event_timeline (entry_type, occurred_at DESC);
+
+CREATE OR REPLACE FUNCTION reject_event_timeline_mutation() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'event_timeline is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS event_timeline_immutable ON event_timeline;
+CREATE TRIGGER event_timeline_immutable
+  BEFORE UPDATE OR DELETE ON event_timeline
+  FOR EACH ROW EXECUTE FUNCTION reject_event_timeline_mutation();
+
+-- Phase 2: evidence-linked analysis and forecasts. Additive only.
+CREATE TABLE IF NOT EXISTS event_analysis (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  stage text NOT NULL CHECK (stage IN ('PAST','PRESENT','FUTURE')),
+  summary text NOT NULL,
+  conclusions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  confidence numeric(3,2) CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+  methodology text,
+  model_name text,
+  model_version text,
+  limitations text,
+  generated_by text NOT NULL DEFAULT 'SYSTEM',
+  valid_from timestamptz,
+  valid_to timestamptz,
+  generated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS event_analysis_event_idx ON event_analysis (event_id, stage, generated_at DESC);
+
+CREATE TABLE IF NOT EXISTS event_analysis_evidence (
+  analysis_id uuid NOT NULL REFERENCES event_analysis(id) ON DELETE CASCADE,
+  evidence_id uuid NOT NULL REFERENCES event_evidence(id) ON DELETE CASCADE,
+  PRIMARY KEY (analysis_id, evidence_id)
+);
+
+CREATE TABLE IF NOT EXISTS event_forecasts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  analysis_id uuid REFERENCES event_analysis(id) ON DELETE SET NULL,
+  evidence_id uuid REFERENCES event_evidence(id) ON DELETE SET NULL,
+  horizon_hours integer NOT NULL,
+  valid_from timestamptz,
+  valid_to timestamptz,
+  summary text NOT NULL,
+  variables jsonb NOT NULL DEFAULT '[]'::jsonb,
+  uncertainty text,
+  source_id text,
+  model_name text,
+  generated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS event_forecasts_event_idx ON event_forecasts (event_id, horizon_hours, generated_at DESC);
+
+-- Phase 3: event-specific, evidence-backed recommendations. Recommendations are
+-- decision support, not official orders. Authority acceptance workflow is Phase 4.
+CREATE TABLE IF NOT EXISTS action_recommendations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES disaster_events(id) ON DELETE CASCADE,
+  audience text NOT NULL CHECK (audience IN ('CITIZEN','AUTHORITY')),
+  recommendation_key text NOT NULL,
+  title text NOT NULL,
+  action text NOT NULL,
+  reason text NOT NULL,
+  urgency text NOT NULL CHECK (urgency IN ('LOW','MEDIUM','HIGH','CRITICAL')),
+  location_label text,
+  admin_area text,
+  location geography(Point,4326),
+  timeframe text NOT NULL,
+  confidence numeric(3,2) CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+  status text NOT NULL DEFAULT 'PROPOSED' CHECK (status IN ('PROPOSED','ACCEPTED','IN_PROGRESS','COMPLETED','REJECTED','EXPIRED')),
+  generated_by text NOT NULL DEFAULT 'RULE_ENGINE',
+  methodology text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (event_id, audience, recommendation_key)
+);
+CREATE INDEX IF NOT EXISTS action_recommendations_event_idx ON action_recommendations (event_id, audience, urgency, created_at DESC);
+CREATE INDEX IF NOT EXISTS action_recommendations_status_idx ON action_recommendations (status, urgency);
+CREATE INDEX IF NOT EXISTS action_recommendations_location_gix ON action_recommendations USING gist (location);
+
+CREATE TABLE IF NOT EXISTS recommendation_evidence (
+  recommendation_id uuid NOT NULL REFERENCES action_recommendations(id) ON DELETE CASCADE,
+  evidence_id uuid NOT NULL REFERENCES event_evidence(id) ON DELETE CASCADE,
+  PRIMARY KEY (recommendation_id, evidence_id)
+);

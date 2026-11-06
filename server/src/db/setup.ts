@@ -52,6 +52,7 @@ export async function main() {
       console.log('Dropping application tables…');
       await client.query(`
         DROP TABLE IF EXISTS
+          recommendation_evidence, action_recommendations, event_forecasts, event_analysis_evidence, event_analysis, event_timeline, event_correlations, event_evidence, event_links, disaster_events,
           audit_logs, simulation_events, simulation_sessions, ingestion_jobs,
           notification_events, notifications, regulatory_standards, regulatory_documents,
           corrective_actions, investigation_notes, incident_assignments, environmental_incidents,
