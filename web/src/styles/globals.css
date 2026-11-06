@@ -488,6 +488,17 @@ textarea {
   pointer-events: none;
   background: radial-gradient(52% 42% at 50% 100%, rgba(42, 125, 145, 0.12), transparent 74%);
 }
+.ra-scene {
+  background:
+    radial-gradient(58% 48% at 50% 40%, rgba(255, 255, 255, 0.98) 0%, rgba(245, 251, 248, 0.72) 42%, rgba(232, 244, 238, 0) 78%),
+    radial-gradient(90% 70% at 50% 108%, rgba(105, 173, 138, 0.18), transparent 62%),
+    linear-gradient(180deg, #f8fcfb 0%, #eaf4ee 55%, #deece5 100%);
+}
+.ra-scene::after {
+  background:
+    radial-gradient(52% 42% at 50% 100%, rgba(42, 125, 145, 0.1), transparent 74%),
+    radial-gradient(85% 70% at 50% 45%, transparent 54%, rgba(35, 81, 66, 0.1) 100%);
+}
 .atmo-stage {
   --atmo-fit: 1;
   position: absolute;
@@ -1059,3 +1070,121 @@ textarea {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Report detail: airy weather-dashboard surface (reference: Airy analytics) */
+.report-airy {
+  position: relative;
+}
+.report-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background:
+    radial-gradient(ellipse 72% 52% at 72% 0%, rgba(204, 227, 236, 0.58), transparent 62%),
+    linear-gradient(180deg, rgba(232, 242, 246, 0.96) 0%, rgba(255, 255, 255, 0.94) 46%, rgba(239, 247, 242, 0.86) 100%);
+  box-shadow: 0 28px 80px -48px rgba(23, 42, 29, 0.45);
+  padding: 22px;
+}
+@media (min-width: 1024px) {
+  .report-hero { padding: 28px 30px 30px; }
+}
+.report-hero-sky {
+  position: absolute;
+  inset: -45% -12% auto -12%;
+  height: 95%;
+  background:
+    radial-gradient(ellipse 22% 40% at 16% 34%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.62) 48%, transparent 72%),
+    radial-gradient(ellipse 28% 45% at 48% 18%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.5) 50%, transparent 74%),
+    radial-gradient(ellipse 20% 34% at 78% 40%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.4) 50%, transparent 74%),
+    radial-gradient(ellipse 36% 48% at 96% 18%, rgba(255, 250, 220, 0.8) 0%, transparent 68%);
+  filter: blur(2px);
+  pointer-events: none;
+}
+.report-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -12% -50% 40%;
+  height: 80%;
+  background: radial-gradient(ellipse at 70% 80%, rgba(185, 255, 102, 0.14), transparent 65%);
+  pointer-events: none;
+}
+.report-kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #78919a;
+}
+.report-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  color: #557480;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: color 180ms ease;
+}
+.report-back:hover { color: #173d4a; }
+.report-summary-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  padding: 16px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 18px 44px -40px rgba(23, 42, 29, 0.5);
+  backdrop-filter: blur(14px);
+}
+.report-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.report-summary-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #78919a;
+}
+.report-summary-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #2d7c94;
+}
+.report-summary-value {
+  margin-top: 12px;
+  font-family: 'Space Grotesk Variable', 'Space Grotesk', Inter, sans-serif;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: #142016;
+}
+.report-summary-unit {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #6f7f74;
+}
+.report-summary-meta {
+  margin-top: 6px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #6f7f74;
+}
+.report-airy .text-\[8px\] { font-size: 10px; line-height: 1.45; }
+.report-airy .text-\[9px\] { font-size: 11px; line-height: 1.5; }
+.report-airy .text-\[10px\] { font-size: 12px; line-height: 1.5; }
+.report-airy .text-\[11px\] { font-size: 13px; line-height: 1.55; }
+.report-airy .text-\[12px\] { font-size: 13.5px; line-height: 1.6; }
+
+.report-airy .text-\[8\.5px\] { font-size: 10px; line-height: 1.4; }
+.report-airy .text-\[7px\] { font-size: 9px; line-height: 1.3; }

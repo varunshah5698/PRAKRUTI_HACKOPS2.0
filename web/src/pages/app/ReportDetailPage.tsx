@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   Bot,
   Camera,
   CheckCircle2,
+  CloudSun,
   Link2,
   MapPin,
   RefreshCw,
@@ -53,6 +55,10 @@ interface AiAnswer {
   sections: { observed: string[]; predicted: string[]; reported: string[]; estimated: string[]; standards: string[]; limitations: string[]; nextActions: string[] };
   citations: Array<{ title: string; section: string; authority: string; url: string | null }>;
   disclaimer: string;
+}
+
+function sentenceCase(value: string) {
+  return value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
 export function ReportDetailPage() {
@@ -150,28 +156,99 @@ export function ReportDetailPage() {
     isSimulated: data.report.is_simulated,
   }];
 
+  const nearestStation = data.enrichment.stations?.[0] ?? null;
+  const nearestReadingEntry = nearestStation?.latest_readings ? Object.entries(nearestStation.latest_readings)[0] ?? null : null;
+  const nearestReading = nearestReadingEntry?.[1] ?? null;
+  const nearestReadingCode = nearestReadingEntry?.[0]?.replace(/_/g, ' ') ?? null;
+  const weather = data.enrichment.weather;
+  const incidentTitle = sentenceCase(data.report.incident_type);
+  const readingValue = nearestReading ? `${Math.round(nearestReading.value * 10) / 10}` : 'No reading';
+  const readingUnit = nearestReading?.unit ?? '';
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="neutral">{data.report.public_ref}</Badge>
-            <Badge tone={data.report.verification_state === 'VERIFIED' ? 'green' : data.report.verification_state === 'REJECTED' ? 'red' : 'amber'}>{data.report.verification_state}</Badge>
-            <Badge tone="neutral">{data.report.status.replace(/_/g, ' ')}</Badge>
-            {data.report.is_simulated ? <Badge tone="amber">Simulation data</Badge> : null}
+    <div className="report-airy space-y-5">
+      <section className="report-hero">
+        <div className="report-hero-sky" aria-hidden="true" />
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link to="/reports" className="report-back"><ArrowLeft className="h-3.5 w-3.5" /> All reports</Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral">{data.report.public_ref}</Badge>
+              <Badge tone={data.report.verification_state === 'VERIFIED' ? 'green' : data.report.verification_state === 'REJECTED' ? 'red' : 'amber'}>{data.report.verification_state}</Badge>
+              <Badge tone="neutral">{data.report.status.replace(/_/g, ' ')}</Badge>
+              {data.report.is_simulated ? <Badge tone="amber">Simulation data</Badge> : null}
+            </div>
           </div>
-          <h2 className="display mt-2 text-[26px] font-bold tracking-[-0.04em]">{data.report.incident_type.replace(/_/g, ' ')}</h2>
-          <p className="mt-1 text-[11px] text-[#6f7f74]">{categoryLabel(data.report.category)} · {data.report.locality_name ?? 'Mumbai'} · submitted {formatDate(data.report.submitted_at)}</p>
+
+          <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="report-kicker">{categoryLabel(data.report.category)} · {data.report.locality_name ?? 'Mumbai'} · submitted {formatDate(data.report.submitted_at)}</p>
+              <h1 className="display mt-2 max-w-[15ch] text-[38px] font-bold leading-[0.94] tracking-[-0.05em] text-[#142016] sm:text-[48px] lg:text-[54px]">{incidentTitle}</h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {isAuthority() && ['SUBMITTED', 'AI_ASSESSED', 'AWAITING_VERIFICATION'].includes(data.report.status) ? (
+                <>
+                  <Button variant="lime" size="sm" onClick={() => setStatus('VERIFIED')} disabled={working}><CheckCircle2 className="h-3.5 w-3.5" /> Verify</Button>
+                  <Button variant="danger" size="sm" onClick={() => setStatus('UNVERIFIED')} disabled={working}>Mark unverified</Button>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="report-summary-card">
+              <div className="report-summary-top">
+                <span className="report-summary-label">Verification</span>
+                <span className="report-summary-icon"><ShieldCheck className="h-4 w-4" /></span>
+              </div>
+              <p className="report-summary-value">{sentenceCase(data.report.verification_state)}</p>
+              <p className="report-summary-meta">{sentenceCase(data.report.status)} · AI vision {sentenceCase(data.report.ai_vision_status)}</p>
+            </div>
+
+            <div className="report-summary-card">
+              <div className="report-summary-top">
+                <span className="report-summary-label">Nearest monitor</span>
+                <span className="report-summary-icon"><Activity className="h-4 w-4" /></span>
+              </div>
+              <p className="report-summary-value">{readingValue}{nearestReading ? <span className="report-summary-unit"> {readingUnit}</span> : null}</p>
+              <p className="report-summary-meta">
+                {nearestStation
+                  ? `${nearestReadingCode ? `${nearestReadingCode.toUpperCase()} · ` : ''}${nearestStation.name} · ${Math.round(nearestStation.distance_m)} m`
+                  : 'No category-matched monitor within 3 km'}
+              </p>
+            </div>
+
+            <div className="report-summary-card">
+              <div className="report-summary-top">
+                <span className="report-summary-label">Weather now</span>
+                <span className="report-summary-icon"><CloudSun className="h-4 w-4" /></span>
+              </div>
+              <p className="report-summary-value">{weather ? `${Math.round(weather.temperature_c)}°C` : 'No weather'}</p>
+              <p className="report-summary-meta">
+                {weather
+                  ? `${Math.round(weather.relative_humidity)}% humidity · ${Math.round(weather.wind_speed_kmh)} km/h wind${Number(weather.precipitation_mm) > 0 ? ` · ${weather.precipitation_mm} mm rain` : ''}`
+                  : 'No nearby weather observation'}
+              </p>
+            </div>
+
+            <div className="report-summary-card">
+              <div className="report-summary-top">
+                <span className="report-summary-label">Evidence</span>
+                <span className="report-summary-icon"><Camera className="h-4 w-4" /></span>
+              </div>
+              <p className="report-summary-value">{data.evidence.length} {data.evidence.length === 1 ? 'photo' : 'photos'}</p>
+              <p className="report-summary-meta">{data.aiAssessments.length} AI assessment{data.aiAssessments.length === 1 ? '' : 's'} · consent {data.report.consent ? 'recorded' : 'not recorded'}</p>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to="/reports"><Button variant="dark" size="sm"><ArrowLeft className="h-3.5 w-3.5" /> All reports</Button></Link>
-          {isAuthority() && ['SUBMITTED', 'AI_ASSESSED', 'AWAITING_VERIFICATION'].includes(data.report.status) ? (
-            <>
-              <Button variant="lime" size="sm" onClick={() => setStatus('VERIFIED')} disabled={working}><CheckCircle2 className="h-3.5 w-3.5" /> Verify</Button>
-              <Button variant="danger" size="sm" onClick={() => setStatus('UNVERIFIED')} disabled={working}>Mark unverified</Button>
-            </>
-          ) : null}
+      </section>
+
+      <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+        <div>
+          <p className="report-kicker">Evidence</p>
+          <h2 className="display mt-1 text-[24px] font-bold tracking-[-0.04em] text-[#142016]">Forensic dossier</h2>
         </div>
+        <p className="max-w-[44ch] text-[11px] leading-relaxed text-[#6f7f74]">A guided, evidence-bound read of the site, environmental context, dispersion and community signals.</p>
       </div>
 
       <ReportAnalysisPanel

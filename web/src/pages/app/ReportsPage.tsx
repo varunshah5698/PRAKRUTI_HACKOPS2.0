@@ -42,7 +42,7 @@ export function ReportsPage() {
   useEffect(load, [page, category, status, verification]);
 
   return (
-    <div className="space-y-4">
+    <div className="report-airy space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2"><Badge tone="amber" dot>Evidence</Badge><Badge tone="neutral">{isAuthority() ? 'All reports' : 'Your reports'}</Badge></div>

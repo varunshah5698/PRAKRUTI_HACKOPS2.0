@@ -520,11 +520,11 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
           <span className="ml-auto hidden text-[8px] text-[#78919a] sm:block">Select a monitor or pin to inspect</span>
         </div>
 
-                        <div className="grid lg:grid-cols-[1fr_320px]">
-          <div className="atmo-scene ra-scene h-[470px] sm:h-[540px]">
+                        <div className="grid lg:grid-cols-[1fr_380px]">
+          <div className="atmo-scene ra-scene h-[500px] sm:h-[580px]">
             <div className="atmo-axis left-4 top-4">
               <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#557480]">Site model · {report.public_ref}</p>
-              <p className="mt-0.5 text-[10px] text-[#78919a]">True relative positions within 3 km · drag to orbit</p>
+              <p className="mt-0.5 text-[10px] text-[#78919a]">True positions within 3 km · taller column = stronger signal · drag to orbit</p>
             </div>
             <div className="atmo-axis right-4 top-4 flex items-center gap-1.5 rounded-full border border-white/80 bg-white/70 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#557480] backdrop-blur">
               <Compass className="h-3 w-3" /> N
@@ -576,7 +576,7 @@ export function ReportAnalysisPanel(props: AnalysisInput) {
             </div>
           </div>
 
-<aside className="scrollbar-thin border-t border-dashed border-[#dbe5d6] p-4 lg:max-h-[520px] lg:overflow-y-auto lg:border-l lg:border-t-0">
+<aside className="scrollbar-thin border-t border-dashed border-[#dbe5d6] p-5 lg:max-h-[580px] lg:overflow-y-auto lg:border-l lg:border-t-0">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <DataLabel>Guided analysis</DataLabel>
