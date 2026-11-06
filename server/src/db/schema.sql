@@ -881,6 +881,12 @@ CREATE TABLE IF NOT EXISTS event_authority (
   )),
   assigned_by uuid REFERENCES users(id) ON DELETE SET NULL,
   assigned_at timestamptz NOT NULL DEFAULT now(),
+  notified_at timestamptz,
+  acknowledgement_due_at timestamptz,
+  resolution_due_at timestamptz,
+  withdrawn_at timestamptz,
+  withdrawn_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  withdrawal_reason text,
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (event_id, authority_id)
 );
@@ -926,3 +932,19 @@ ALTER TABLE event_timeline ADD CONSTRAINT event_timeline_entry_type_check CHECK 
   'EVENT_CREATED','EVIDENCE_ADDED','SOURCE_LINKED','CORRELATION_ADDED','STATUS_CHANGED',
   'AUTHORITY_ACTION','NOTE','VALIDATION'
 ));
+
+-- Phase 4 follow-up: operational notification links, SLA tracking and
+-- withdrawal history. Additive and idempotent for databases that already ran
+-- the Phase 4 tables.
+ALTER TABLE event_authority ADD COLUMN IF NOT EXISTS notified_at timestamptz;
+ALTER TABLE event_authority ADD COLUMN IF NOT EXISTS acknowledgement_due_at timestamptz;
+ALTER TABLE event_authority ADD COLUMN IF NOT EXISTS resolution_due_at timestamptz;
+ALTER TABLE event_authority ADD COLUMN IF NOT EXISTS withdrawn_at timestamptz;
+ALTER TABLE event_authority ADD COLUMN IF NOT EXISTS withdrawn_by uuid REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE event_authority ADD COLUMN IF NOT EXISTS withdrawal_reason text;
+CREATE INDEX IF NOT EXISTS event_authority_active_idx ON event_authority (authority_id, status) WHERE withdrawn_at IS NULL;
+
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS disaster_event_id uuid REFERENCES disaster_events(id) ON DELETE SET NULL;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS event_authority_id uuid REFERENCES event_authority(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS notifications_disaster_event_idx ON notifications (disaster_event_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS notifications_event_authority_idx ON notifications (event_authority_id, created_at DESC);

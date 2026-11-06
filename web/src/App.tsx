@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './store/auth';
 import { AppShell } from './components/AppShell';
@@ -35,6 +35,8 @@ const ComplianceDocumentsPage = lazy(() => import('./pages/app/CompliancePages')
 const NotificationsPage = lazy(() => import('./pages/app/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const SimulationPage = lazy(() => import('./pages/app/SimulationPages').then((m) => ({ default: m.SimulationPage })));
 const SimulationSessionPage = lazy(() => import('./pages/app/SimulationPages').then((m) => ({ default: m.SimulationSessionPage })));
+const AuthorityPage = lazy(() => import('./pages/app/AuthorityPage').then((m) => ({ default: m.AuthorityPage })));
+const AuthorityAdminPage = lazy(() => import('./pages/app/AuthorityAdminPage').then((m) => ({ default: m.AuthorityAdminPage })));
 const SourcesPage = lazy(() => import('./pages/app/SourcesPage').then((m) => ({ default: m.SourcesPage })));
 const SettingsPage = lazy(() => import('./pages/app/SettingsPages').then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import('./pages/app/SettingsPages').then((m) => ({ default: m.ProfilePage })));
@@ -50,6 +52,15 @@ function Splash() {
       </div>
     </div>
   );
+}
+
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname, hash]);
+  return null;
 }
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -80,6 +91,24 @@ function AccessGate({ access, children }: { access: 'authority' | 'citizen'; chi
   const allowed = access === 'authority' ? isAuthority() : user?.role === 'PUBLIC';
   if (!allowed) return <Navigate to={access === 'authority' ? '/dashboard' : '/reports'} replace />;
   return <>{children}</>;
+}
+
+function SystemAdminGate({ children }: { children: React.ReactNode }) {
+  const { user, initialized } = useAuth();
+  if (!initialized) return <Splash />;
+  if (user?.role !== 'SYSTEM_ADMIN') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+function AuthorityDeskRoute() {
+  const { user, initialized } = useAuth();
+  if (!initialized) return <Splash />;
+  if (user?.role === 'SYSTEM_ADMIN') return <Navigate to="/authority/admin" replace />;
+  return (
+    <AccessGate access="authority">
+      <AuthorityPage />
+    </AccessGate>
+  );
 }
 
 function DataSourcesRoute() {
@@ -116,8 +145,10 @@ export default function App() {
   }, [loadMe]);
 
   return (
-    <Suspense fallback={<Splash />}>
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Suspense fallback={<Splash />}>
+        <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
@@ -155,6 +186,8 @@ export default function App() {
         <Route path="/compliance" element={<AccessGate access="authority"><CompliancePage /></AccessGate>} />
         <Route path="/compliance/documents" element={<AccessGate access="authority"><ComplianceDocumentsPage /></AccessGate>} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/authority" element={<AuthorityDeskRoute />} />
+        <Route path="/authority/admin" element={<SystemAdminGate><AuthorityAdminPage /></SystemAdminGate>} />
         <Route path="/simulation" element={<AccessGate access="authority"><SimulationPage /></AccessGate>} />
         <Route path="/simulation/:sessionId" element={<AccessGate access="authority"><SimulationSessionPage /></AccessGate>} />
         <Route path="/settings" element={<SettingsPage />} />
@@ -163,6 +196,7 @@ export default function App() {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }

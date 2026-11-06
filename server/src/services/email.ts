@@ -533,3 +533,50 @@ export function renderIncidentUpdateEmail(
     ),
   };
 }
+
+export interface AuthorityEventEmailInput {
+  eventId: string;
+  title: string;
+  category: string;
+  severity: string;
+  status: string;
+  adminArea: string | null;
+  detectedAt: string;
+  evidenceCount: number;
+  authorityName: string;
+  appUrl: string;
+}
+
+export function renderAuthorityEventEmail(input: AuthorityEventEmailInput): { subject: string; html: string } {
+  const place = input.adminArea ?? 'Location recorded on the event';
+  const subject = `Authority event assignment · ${input.severity} ${input.category.replace(/_/g, ' ')} · ${place}`;
+  const link = `${input.appUrl.replace(/\/+$/, '')}/authority`;
+  return {
+    subject,
+    html: shell(
+      'Event assigned to your authority',
+      `${input.authorityName} has been assigned an environmental event for review. Open the authority desk to inspect the evidence and record your decision.`,
+      `${detailRows([
+        ['Event', input.title],
+        ['Category', input.category.replace(/_/g, ' ')],
+        ['Severity', input.severity],
+        ['Event status', input.status.replace(/_/g, ' ')],
+        ['Location', place],
+        ['Detected', new Date(input.detectedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })],
+        ['Linked evidence', `${input.evidenceCount} record(s)`],
+        ['Authority', input.authorityName],
+      ])}
+      <p style="margin:18px 0 0">
+        <a href="${escapeHtml(link)}" style="display:inline-block;background:#111310;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600">
+          Open authority desk
+        </a>
+      </p>
+      <div style="background:#f6f8f0;border-left:3px solid #b5e36b;padding:12px 14px;font-size:13px;line-height:1.55;margin-top:18px">
+        <strong>What to do</strong><br>
+        Review the linked evidence and timestamps, acknowledge the event, verify it where field evidence exists, and record actions.
+        This email is a workflow notification, not an official warning, order or regulatory determination.
+      </div>`,
+      'Sent to active members of this authority. Provider acceptance does not prove inbox delivery. Nothing here fabricates an official warning, acknowledgement or field verification.',
+    ),
+  };
+}

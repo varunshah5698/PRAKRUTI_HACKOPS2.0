@@ -10,6 +10,7 @@ import {
   Database,
   FileWarning,
   FlaskConical,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Map,
@@ -20,6 +21,7 @@ import {
   Search,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   UserRound,
   X,
@@ -62,6 +64,8 @@ const groups: Array<{
   {
     label: 'Operations',
     items: [
+      { to: '/authority', label: 'Authority desk', short: 'Authority', icon: ShieldCheck, roles: ['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN'] },
+      { to: '/authority/admin', label: 'Authority administration', short: 'Authority', icon: Landmark, roles: ['SYSTEM_ADMIN'] },
       { to: '/notifications', label: 'Notifications', short: 'Notify', icon: Bell },
       { to: '/simulation', label: 'Simulation & replay', short: 'Simulate', icon: FlaskConical, roles: AUTHORITY_ROLES },
       { to: '/data-sources', label: 'Data sources', short: 'Sources', icon: Database },
@@ -84,6 +88,7 @@ const titles: Array<[string, string]> = [
   ['/incidents', 'Incident & compliance centre'],
   ['/compliance', 'Regulatory intelligence'],
   ['/notifications', 'Notifications'],
+  ['/authority', 'Authority coordination'],
   ['/simulation', 'Simulation & historical replay'],
   ['/data-sources', 'Data sources & ingestion'],
   ['/settings', 'Settings'],

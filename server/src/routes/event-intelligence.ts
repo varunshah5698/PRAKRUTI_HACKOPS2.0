@@ -28,7 +28,13 @@ import {
 import { ingestDisasterFeeds } from '../services/event-ingest.js';
 import { analyzeEvent, getAnalyses, getForecasts } from '../services/event-analysis.js';
 import { generateRecommendations, listRecommendations } from '../services/event-recommendations.js';
-import { assignEventAuthorities, autoMapAuthorities, getEventAuthorities } from '../services/authority.js';
+import {
+  assignEventAuthorities,
+  autoMapAuthorities,
+  getEventAuthorities,
+  notifyEventAuthority,
+  withdrawEventAuthority,
+} from '../services/authority.js';
 import { RECOMMENDATION_AUDIENCES } from '../types.js';
 
 export const eventIntelligenceRouter = Router();
@@ -138,7 +144,8 @@ eventIntelligenceRouter.get('/:id/recommendations', async (req, res, next) => {
 eventIntelligenceRouter.get('/:id/authorities', async (req, res, next) => {
   try {
     const id = z.string().uuid().parse(req.params.id);
-    res.json({ authorities: await getEventAuthorities(id) });
+    const includeWithdrawn = req.user!.role === 'SYSTEM_ADMIN' && req.query.includeWithdrawn === 'true';
+    res.json({ authorities: await getEventAuthorities(id, includeWithdrawn) });
   } catch (error) {
     next(error);
   }
@@ -161,6 +168,37 @@ eventIntelligenceRouter.post('/:id/authorities', mutationLimiter, requireRole('S
     next(error);
   }
 });
+
+eventIntelligenceRouter.post(
+  '/:id/authorities/:authorityId/notify',
+  mutationLimiter,
+  requireRole('SYSTEM_ADMIN'),
+  async (req, res, next) => {
+    try {
+      const id = z.string().uuid().parse(req.params.id);
+      const authorityId = z.string().uuid().parse(req.params.authorityId);
+      res.json(await notifyEventAuthority(id, authorityId, actor(req)));
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+eventIntelligenceRouter.post(
+  '/:id/authorities/:authorityId/withdraw',
+  mutationLimiter,
+  requireRole('SYSTEM_ADMIN'),
+  async (req, res, next) => {
+    try {
+      const id = z.string().uuid().parse(req.params.id);
+      const authorityId = z.string().uuid().parse(req.params.authorityId);
+      const body = z.object({ reason: z.string().trim().min(5).max(2000) }).strict().parse(req.body);
+      res.json(await withdrawEventAuthority(id, authorityId, body.reason, actor(req)));
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 eventIntelligenceRouter.post('/:id/recommendations', mutationLimiter, requireRole('SYSTEM_ADMIN'), async (req, res, next) => {
   try {

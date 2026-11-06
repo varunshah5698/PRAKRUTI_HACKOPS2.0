@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   X,
 } from 'lucide-react';
@@ -80,6 +81,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       { label: 'Atmosphere lab', to: '/atmosphere', detail: '3D air intelligence', icon: CloudSun, roles: AUTHORITY_ROLES, keywords: 'air 3d' },
       { label: 'Predictive intelligence', to: '/intelligence/predictions', detail: 'Forecasts and risk', icon: BrainCircuit, roles: AUTHORITY_ROLES, keywords: 'forecast prediction' },
       { label: 'AI analyst', to: '/ai-analyst', detail: 'Ask the evidence assistant', icon: Sparkles, roles: AUTHORITY_ROLES, keywords: 'ai explain' },
+      { label: 'Authority desk', to: '/authority', detail: 'Assigned events, acknowledgements and actions', icon: ShieldCheck, roles: ['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN'], keywords: 'authority acknowledge verify respond event' },
+      { label: 'Authority administration', to: '/authority/admin', detail: 'Directory, memberships, routing and dispatch', icon: ShieldCheck, roles: ['SYSTEM_ADMIN'], keywords: 'authority directory membership assign notify email' },
       { label: 'Alerts', to: '/alerts', detail: 'Open environmental alerts', icon: ShieldAlert, keywords: 'risk warning' },
       { label: 'Reports', to: isAuthority() ? '/reports' : '/my-reports', detail: isAuthority() ? 'Citizen evidence queue' : 'Your submitted reports', icon: FileWarning, keywords: 'citizen report complaint' },
       { label: 'Data sources', to: '/data-sources', detail: 'Connectors, licences and health', icon: Database, keywords: 'api open data attribution' },

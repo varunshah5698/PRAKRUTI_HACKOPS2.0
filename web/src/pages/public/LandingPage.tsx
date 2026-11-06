@@ -216,44 +216,44 @@ export function LandingPage() {
               A unified environmental intelligence platform connecting monitoring data, predictive insights, citizen
               observations and compliance workflows across Greater Mumbai.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 grid max-w-[560px] grid-cols-1 gap-2.5 sm:grid-cols-2">
               <Link to="/dashboard">
-                <Button variant="lime" size="lg" className="w-full border border-ink/10 sm:w-auto">
-                  Explore environmental intelligence <ArrowUpRight className="h-4 w-4" />
+                <Button variant="lime" size="lg" className="w-full border border-ink/10">
+                  Explore intelligence <ArrowUpRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/report">
-                <Button variant="outline" size="lg" className="w-full border-ink/20 sm:w-auto">
-                  Report an environmental concern
+                <Button variant="outline" size="lg" className="w-full border-ink/20">
+                  Report a concern
                 </Button>
               </Link>
               <Link to="/citizen/login">
-                <Button variant="outline" size="lg" className="w-full border-ink/20 sm:w-auto">
-                  Citizen weather portal <ArrowRight className="h-4 w-4" />
+                <Button variant="outline" size="lg" className="w-full border-ink/20">
+                  Citizen weather <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/login">
-                <Button variant="ghost" size="lg" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full border-ink/20">
                   Authority login <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
             {overview?.weather ? (
               <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white/70 px-3 py-1.5 text-[10px] font-semibold text-ink/65">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink/15 bg-white/70 px-3 py-1.5 text-[11px] font-semibold text-ink/65">
                   <span className={`h-1.5 w-1.5 rounded-full ${overview.weather.status === 'LIVE' ? 'bg-[#32a879]' : overview.weather.status === 'STALE' ? 'bg-[#c69218]' : 'bg-[#c94a50]'}`} />
                   {overview.weather.status === 'LIVE' ? 'Live weather' : overview.weather.status === 'STALE' ? 'Stale weather' : 'Weather unavailable'}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[10px] text-ink/60">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[11px] text-ink/65">
                   <Gauge className="h-3 w-3 text-ink/45" /> {number(overview.weather.temperature_c, 0)}°C
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[10px] text-ink/60">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[11px] text-ink/65">
                   <Droplets className="h-3 w-3 text-ink/45" /> {number(overview.weather.relative_humidity, 0)}%
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[10px] text-ink/60">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-ink/10 bg-white/55 px-2.5 py-1.5 text-[11px] text-ink/65">
                   <Wind className="h-3 w-3 text-ink/45" /> {number(overview.weather.wind_speed_kmh)} km/h
                 </span>
-                <span className="text-[9px] text-ink/35">
+                <span className="basis-full text-[10px] text-ink/50 sm:basis-auto">
                   {overview.weather.dataSourceType === 'HOURLY_FORECAST' ? 'Forecast valid' : 'Observed'}{' '}
                   {timeAgo(overview.weather.observationTime ?? overview.weather.observed_at)} · {overview.weather.provider ?? 'provider'}
                 </span>

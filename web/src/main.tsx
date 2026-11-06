@@ -5,6 +5,10 @@ import { Toaster } from 'sonner';
 import App from './App';
 import './styles/globals.css';
 
+// Browsers otherwise restore the previous scroll offset before React mounts,
+// which can hide the start of a landing-page headline behind the sticky nav.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>

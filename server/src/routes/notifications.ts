@@ -65,19 +65,22 @@ notificationsRouter.get('/', async (req, res, next) => {
     const page = Math.max(1, Number(req.query.page ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize ?? 30)));
     const rows = await query<Record<string, unknown>>(
-      `SELECT n.id, n.alert_id, n.incident_id, n.report_id, n.audience, n.channel, n.template, n.subject, n.status,
+      `SELECT n.id, n.alert_id, n.incident_id, n.report_id, n.disaster_event_id, n.event_authority_id,
+              n.audience, n.channel, n.template, n.subject, n.status,
               n.provider_message_id, n.sent_at, n.delivered_at, n.error, n.is_simulated, n.created_at,
               n.acknowledged_at,
-              COALESCE(a.public_ref, i.public_ref, r.public_ref) AS alert_ref,
-              COALESCE(a.category, i.category, r.category) AS alert_category,
-              COALESCE(a.level, i.risk_level) AS alert_level,
-              COALESCE(a.trigger_type, 'INCIDENT_UPDATE') AS trigger_type,
+              COALESCE(a.public_ref, i.public_ref, r.public_ref, e.event_key) AS alert_ref,
+              COALESCE(a.category, i.category, r.category, e.category) AS alert_category,
+              COALESCE(a.level, i.risk_level, e.severity) AS alert_level,
+              COALESCE(a.trigger_type, CASE WHEN e.id IS NOT NULL THEN 'EVENT' ELSE 'INCIDENT_UPDATE' END) AS trigger_type,
               r.status AS report_status,
+              e.title AS event_title, e.severity AS event_severity,
               COALESCE(l.name, il.name, rl.name) AS locality_name
        FROM notifications n
        LEFT JOIN environmental_alerts a ON a.id=n.alert_id
        LEFT JOIN environmental_incidents i ON i.id=n.incident_id
        LEFT JOIN environmental_reports r ON r.id=n.report_id
+       LEFT JOIN disaster_events e ON e.id=n.disaster_event_id
        LEFT JOIN localities l ON l.id=a.locality_id
        LEFT JOIN localities il ON il.id=i.locality_id
        LEFT JOIN localities rl ON rl.id=r.locality_id

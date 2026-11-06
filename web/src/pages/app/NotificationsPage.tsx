@@ -8,11 +8,12 @@ import { CATEGORY_LABELS, categoryLabel, formatDate, timeAgo } from '../../lib/f
 import { useAuth } from '../../store/auth';
 
 interface NotificationRow {
-  id: string; alert_id: string | null; incident_id: string | null; report_id: string | null; audience: string; channel: string; template: string;
+  id: string; alert_id: string | null; incident_id: string | null; report_id: string | null; disaster_event_id: string | null;
+  event_authority_id: string | null; audience: string; channel: string; template: string;
   subject: string; status: string; provider_message_id: string | null; sent_at: string | null; delivered_at: string | null;
   error: string | null; is_simulated: boolean; created_at: string; acknowledged_at: string | null;
   alert_ref: string | null; alert_category: string | null; alert_level: string | null; trigger_type: string | null;
-  report_status: string | null;
+  report_status: string | null; event_title: string | null; event_severity: string | null;
   locality_name: string | null;
 }
 interface Locality { id: string; name: string }
@@ -156,6 +157,9 @@ export function NotificationsPage() {
                         {notification.is_simulated && notification.status !== 'SIMULATED' ? <Badge tone="amber">Simulated</Badge> : null}
                       </div>
                       <p className="mt-2 text-[12px] font-semibold text-[#1b2a1f]">{notification.subject}</p>
+                      {notification.event_title ? (
+                        <p className="mt-1 text-[10px] font-medium text-[#2f6a24]">Event: {notification.event_title}</p>
+                      ) : null}
                       <p className="mt-1 text-[9px] text-[#66766b]">
                         {notification.alert_ref ?? '—'} · {notification.alert_category ? categoryLabel(notification.alert_category) : '—'} · {notification.locality_name ?? 'Mumbai'} · {timeAgo(notification.created_at)}
                       </p>
@@ -165,6 +169,11 @@ export function NotificationsPage() {
                       </p>
                     </div>
                     <div className="flex gap-1.5">
+                      {notification.disaster_event_id ? (
+                        <Link to={user?.role === 'SYSTEM_ADMIN' ? '/authority/admin' : '/authority'}>
+                          <Button variant="teal" size="sm"><ShieldAlert className="h-3.5 w-3.5" /> Authority desk</Button>
+                        </Link>
+                      ) : null}
                       {notification.report_id && notification.template === 'REPORT_STATUS_UPDATE' ? (
                         <Link to={isAuthority() ? `/reports/${notification.report_id}` : '/my-reports'}>
                           <Button variant="dark" size="sm"><FileWarning className="h-3.5 w-3.5" /> {isAuthority() ? 'Open report' : 'Track my report'}</Button>

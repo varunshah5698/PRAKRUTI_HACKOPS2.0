@@ -17,6 +17,7 @@ import {
   createMembership,
   getAuthority,
   listAuthorities,
+  listAuthorityMemberships,
   membershipsForUser,
   recordAuthorityAction,
 } from '../services/authority.js';
@@ -60,6 +61,14 @@ authoritiesRouter.get('/', async (_req, res, next) => {
 authoritiesRouter.get('/:id', async (req, res, next) => {
   try {
     res.json({ authority: await getAuthority(z.string().uuid().parse(req.params.id)) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authoritiesRouter.get('/:id/memberships', requireRole('SYSTEM_ADMIN'), async (req, res, next) => {
+  try {
+    res.json({ memberships: await listAuthorityMemberships(z.string().uuid().parse(req.params.id)) });
   } catch (error) {
     next(error);
   }

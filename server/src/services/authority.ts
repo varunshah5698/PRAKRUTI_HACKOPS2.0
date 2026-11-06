@@ -1,7 +1,20 @@
 import { withTransaction, query, one } from '../db/pool.js';
+import { env, emailConfigured } from '../config/env.js';
 import { audit } from '../lib/audit.js';
 import { badRequest, conflict, forbidden, notFound } from '../middleware/errors.js';
 import { appendTimeline, getEventOrThrow, type EventActor } from './event-intelligence.js';
+import {
+  deliverEmail,
+  markNotificationStatus,
+  recordNotificationEvent,
+  renderAuthorityEventEmail,
+} from './email.js';
+import {
+  authorityDeadlines,
+  matchAuthorities,
+  type AuthorityMatch,
+  type AuthorityMatchCandidate,
+} from './authority-policy.js';
 import {
   AUTHORITY_LEVELS,
   AUTHORITY_MEMBERSHIP_ROLES,
@@ -13,6 +26,7 @@ import {
   type AuthorityMembershipStatus,
   type AuthorityActionType,
   type EventAuthorityStatus,
+  type EventSeverity,
 } from '../types.js';
 
 export interface AuthorityInput {
@@ -218,6 +232,17 @@ export async function membershipsForUser(userId: string): Promise<Record<string,
   );
 }
 
+export async function listAuthorityMemberships(authorityId: string): Promise<Record<string, unknown>[]> {
+  await getAuthority(authorityId);
+  return query<Record<string, unknown>>(
+    `SELECT m.id, m.user_id, u.name AS user_name, u.email, u.role::text AS user_role,
+            m.membership_role, m.status, m.verified_at, m.verification_source, m.created_at, m.updated_at
+     FROM authority_memberships m JOIN users u ON u.id=m.user_id
+     WHERE m.authority_id=$1 ORDER BY m.status, u.name`,
+    [authorityId],
+  );
+}
+
 async function activeMembership(userId: string, authorityId: string, requireWrite = false) {
   const row = await one<{ id: string; membership_role: AuthorityMembershipRole; status: string }>(
     `SELECT id, membership_role, status FROM authority_memberships
@@ -233,39 +258,67 @@ export async function assignEventAuthorities(
   eventId: string,
   authorityIds: string[],
   actor: EventActor = { type: 'SYSTEM' },
-): Promise<{ assigned: number; existing: number; authorities: Record<string, unknown>[] }> {
+): Promise<{ assigned: number; reactivated: number; existing: number; authorities: Record<string, unknown>[] }> {
   await getEventOrThrow(eventId);
   if (authorityIds.length === 0) throw badRequest('At least one authority is required.');
   const unique = [...new Set(authorityIds)];
   let assigned = 0;
+  let reactivated = 0;
   let existing = 0;
   await withTransaction(async (client) => {
     for (const authorityId of unique) {
       const authority = await client.query('SELECT 1 FROM authority_directory WHERE id=$1', [authorityId]);
       if (authority.rowCount === 0) throw notFound(`Authority ${authorityId} not found.`);
-      const inserted = await client.query<{ id: string }>(
-        `INSERT INTO event_authority (event_id, authority_id, assigned_by)
-         VALUES ($1,$2,$3)
-         ON CONFLICT (event_id, authority_id) DO NOTHING
-         RETURNING id`,
-        [eventId, authorityId, actor.id ?? null],
+      const current = await client.query<{ id: string; withdrawn_at: string | null }>(
+        `SELECT id, withdrawn_at FROM event_authority
+         WHERE event_id=$1 AND authority_id=$2 FOR UPDATE`,
+        [eventId, authorityId],
       );
-      if (inserted.rows[0]) {
-        assigned += 1;
+      if (current.rows[0] && !current.rows[0].withdrawn_at) {
+        existing += 1;
+        continue;
+      }
+      if (current.rows[0]) {
+        await client.query(
+          `UPDATE event_authority
+           SET withdrawn_at=NULL, withdrawn_by=NULL, withdrawal_reason=NULL, status='READY_FOR_REVIEW',
+               assigned_by=$2, assigned_at=now(), notified_at=NULL, acknowledgement_due_at=NULL,
+               resolution_due_at=NULL, updated_at=now()
+           WHERE id=$1`,
+          [current.rows[0].id, actor.id ?? null],
+        );
+        reactivated += 1;
         await client.query(
           `INSERT INTO event_timeline (event_id, entry_type, actor_type, actor_user_id, summary, detail, dedupe_key)
-           VALUES ($1,'AUTHORITY_ACTION',$2,$3,'Authority assigned',$4::jsonb,$5)`,
+           VALUES ($1,'AUTHORITY_ACTION',$2,$3,'Authority re-assigned',$4::jsonb,$5)`,
           [
             eventId,
             actor.type,
             actor.id ?? null,
-            JSON.stringify({ authorityId, authorityEventId: inserted.rows[0].id }),
-            `authority-assigned:${eventId}:${authorityId}`,
+            JSON.stringify({ authorityId, authorityEventId: current.rows[0].id }),
+            `authority-reassigned:${current.rows[0].id}:${new Date().toISOString()}`,
           ],
         );
-      } else {
-        existing += 1;
+        continue;
       }
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO event_authority (event_id, authority_id, assigned_by)
+         VALUES ($1,$2,$3)
+         RETURNING id`,
+        [eventId, authorityId, actor.id ?? null],
+      );
+      assigned += 1;
+      await client.query(
+        `INSERT INTO event_timeline (event_id, entry_type, actor_type, actor_user_id, summary, detail, dedupe_key)
+         VALUES ($1,'AUTHORITY_ACTION',$2,$3,'Authority assigned',$4::jsonb,$5)`,
+        [
+          eventId,
+          actor.type,
+          actor.id ?? null,
+          JSON.stringify({ authorityId, authorityEventId: inserted.rows[0].id }),
+          `authority-assigned:${eventId}:${authorityId}`,
+        ],
+      );
     }
   });
   await audit({
@@ -273,41 +326,124 @@ export async function assignEventAuthorities(
     action: 'EVENT_AUTHORITIES_ASSIGNED',
     entityType: 'disaster_event',
     entityId: eventId,
-    after: { authorityIds: unique, assigned, existing },
+    after: { authorityIds: unique, assigned, reactivated, existing },
   });
-  return { assigned, existing, authorities: await getEventAuthorities(eventId) };
+  return { assigned, reactivated, existing, authorities: await getEventAuthorities(eventId) };
 }
 
-export async function autoMapAuthorities(eventId: string, actor: EventActor = { type: 'SYSTEM' }) {
+export async function autoMapAuthorities(
+  eventId: string,
+  actor: EventActor = { type: 'SYSTEM' },
+): Promise<{
+  assigned: number;
+  reactivated: number;
+  existing: number;
+  authorities: Record<string, unknown>[];
+  matches: AuthorityMatch[];
+  note?: string;
+}> {
   const event = await getEventOrThrow(eventId);
-  const rows = await query<{ id: string }>(
-    `SELECT id FROM authority_directory
+  const candidates = await query<AuthorityMatchCandidate>(
+    `SELECT id, code, name, level, coverage_state, coverage_district, coverage_city,
+            CASE WHEN jurisdiction_area IS NOT NULL
+                  AND $1::float8 IS NOT NULL AND $2::float8 IS NOT NULL
+                  AND ST_Contains(jurisdiction_area::geometry, ST_SetSRID(ST_MakePoint($2,$1),4326))
+                 THEN true ELSE false END AS polygon_match
+     FROM authority_directory
      WHERE verification_status IN ('SOURCE_VERIFIED','PARTIALLY_VERIFIED')
-       AND (
-         (jurisdiction_area IS NOT NULL AND $1::float8 IS NOT NULL AND $2::float8 IS NOT NULL
-           AND ST_Contains(jurisdiction_area::geometry, ST_SetSRID(ST_MakePoint($2,$1),4326)))
-         OR ($3::text IS NOT NULL AND coverage_city IS NOT NULL AND $3 ILIKE '%' || coverage_city || '%')
-         OR ($3::text IS NOT NULL AND coverage_district IS NOT NULL AND $3 ILIKE '%' || coverage_district || '%')
-         OR ($3::text IS NOT NULL AND coverage_state IS NOT NULL AND $3 ILIKE '%' || coverage_state || '%')
-       )
      ORDER BY level, name`,
-    [event.primary_latitude, event.primary_longitude, event.admin_area],
+    [event.primary_latitude, event.primary_longitude],
   );
-  if (rows.length === 0) {
-    return { assigned: 0, existing: 0, authorities: await getEventAuthorities(eventId), note: 'No authority coverage matched; assign manually.' };
+  const matches = matchAuthorities(
+    {
+      adminArea: event.admin_area ?? null,
+      latitude: event.primary_latitude ?? null,
+      longitude: event.primary_longitude ?? null,
+    },
+    candidates,
+  );
+  if (matches.length === 0) {
+    return {
+      assigned: 0,
+      reactivated: 0,
+      existing: 0,
+      authorities: await getEventAuthorities(eventId),
+      matches,
+      note: 'No exact coverage match. Assign an authority manually; substring matching is intentionally disabled.',
+    };
   }
-  return assignEventAuthorities(eventId, rows.map((row) => row.id), actor);
+  const result = await assignEventAuthorities(
+    eventId,
+    matches.map((match) => match.authorityId),
+    actor,
+  );
+  return { ...result, matches };
 }
 
-export async function getEventAuthorities(eventId: string): Promise<Record<string, unknown>[]> {
+export async function withdrawEventAuthority(
+  eventId: string,
+  authorityId: string,
+  reason: string,
+  actor: EventActor = { type: 'SYSTEM' },
+): Promise<Record<string, unknown>> {
+  if (reason.trim().length < 5) throw badRequest('A withdrawal reason of at least 5 characters is required.');
+  await getEventOrThrow(eventId);
+  const assignment = await one<{ id: string; withdrawn_at: string | null }>(
+    `SELECT id, withdrawn_at FROM event_authority WHERE event_id=$1 AND authority_id=$2`,
+    [eventId, authorityId],
+  );
+  if (!assignment) throw notFound('Event is not assigned to this authority.');
+  if (assignment.withdrawn_at) throw conflict('Authority assignment is already withdrawn.');
+  await withTransaction(async (client) => {
+    await client.query(
+      `UPDATE event_authority
+       SET withdrawn_at=now(), withdrawn_by=$2, withdrawal_reason=$3, updated_at=now()
+       WHERE id=$1`,
+      [assignment.id, actor.id ?? null, reason.trim()],
+    );
+    await client.query(
+      `INSERT INTO event_timeline (event_id, entry_type, actor_type, actor_user_id, summary, detail, dedupe_key)
+       VALUES ($1,'AUTHORITY_ACTION',$2,$3,'Authority withdrawn from event',$4::jsonb,$5)`,
+      [
+        eventId,
+        actor.type,
+        actor.id ?? null,
+        JSON.stringify({ authorityId, authorityEventId: assignment.id, reason: reason.trim() }),
+        `authority-withdrawn:${assignment.id}:${new Date().toISOString()}`,
+      ],
+    );
+  });
+  await audit({
+    actorId: actor.id ?? null,
+    action: 'EVENT_AUTHORITY_WITHDRAWN',
+    entityType: 'event_authority',
+    entityId: assignment.id,
+    after: { eventId, authorityId, reason: reason.trim() },
+  });
+  return { withdrawn: true, authorityId, reason: reason.trim(), authorities: await getEventAuthorities(eventId) };
+}
+
+export async function getEventAuthorities(
+  eventId: string,
+  includeWithdrawn = false,
+): Promise<Record<string, unknown>[]> {
   await getEventOrThrow(eventId);
   return query<Record<string, unknown>>(
     `SELECT ea.id, ea.event_id, ea.authority_id, a.name AS authority_name, a.code AS authority_code,
-            a.level, a.official_url, ea.status, ea.assigned_at, ea.updated_at,
-            (SELECT COUNT(*)::int FROM event_authority_actions x WHERE x.event_authority_id=ea.id) AS action_count
+            a.level, a.official_url, ea.status, ea.assigned_at, ea.notified_at,
+            ea.acknowledgement_due_at, ea.resolution_due_at, ea.updated_at,
+            ea.withdrawn_at, ea.withdrawal_reason,
+            (ea.status='AUTHORITY_NOTIFIED' AND ea.acknowledgement_due_at IS NOT NULL
+              AND ea.acknowledgement_due_at < now()) AS acknowledgement_overdue,
+            (ea.status NOT IN ('RESOLVED','CLOSED','REJECTED') AND ea.resolution_due_at IS NOT NULL
+              AND ea.resolution_due_at < now()) AS resolution_overdue,
+            (SELECT COUNT(*)::int FROM event_authority_actions x WHERE x.event_authority_id=ea.id) AS action_count,
+            (SELECT MAX(x.created_at) FROM event_authority_actions x WHERE x.event_authority_id=ea.id) AS last_action_at,
+            (SELECT COUNT(*)::int FROM event_evidence ev WHERE ev.event_id=ea.event_id) AS evidence_count
      FROM event_authority ea JOIN authority_directory a ON a.id=ea.authority_id
-     WHERE ea.event_id=$1 ORDER BY a.level, a.name`,
-    [eventId],
+     WHERE ea.event_id=$1 AND ($2::boolean OR ea.withdrawn_at IS NULL)
+     ORDER BY ea.withdrawn_at NULLS FIRST, a.level, a.name`,
+    [eventId, includeWithdrawn],
   );
 }
 
@@ -324,14 +460,23 @@ export async function authorityEvents(userId: string, status?: EventAuthoritySta
   return query<Record<string, unknown>>(
     `SELECT ea.id, ea.event_id, ea.authority_id, a.name AS authority_name, ea.status AS authority_status,
             e.title, e.category, e.severity, e.status AS event_status, e.detected_at, e.last_observed_at,
-            e.admin_area,
+            e.admin_area, ea.assigned_at, ea.notified_at, ea.acknowledgement_due_at, ea.resolution_due_at,
+            ea.updated_at,
+            (ea.status='AUTHORITY_NOTIFIED' AND ea.acknowledgement_due_at IS NOT NULL
+              AND ea.acknowledgement_due_at < now()) AS acknowledgement_overdue,
+            (ea.status NOT IN ('RESOLVED','CLOSED','REJECTED') AND ea.resolution_due_at IS NOT NULL
+              AND ea.resolution_due_at < now()) AS resolution_overdue,
+            (SELECT COUNT(*)::int FROM event_authority_actions x WHERE x.event_authority_id=ea.id) AS action_count,
+            (SELECT MAX(x.created_at) FROM event_authority_actions x WHERE x.event_authority_id=ea.id) AS last_action_at,
+            (SELECT COUNT(*)::int FROM event_evidence ev WHERE ev.event_id=ea.event_id) AS evidence_count,
             ST_Y(e.primary_location::geometry)::float8 AS latitude,
             ST_X(e.primary_location::geometry)::float8 AS longitude
      FROM event_authority ea
      JOIN authority_directory a ON a.id=ea.authority_id
      JOIN disaster_events e ON e.id=ea.event_id
-     WHERE ea.authority_id = ANY($1::uuid[])${statusClause}
-     ORDER BY CASE ea.status WHEN 'READY_FOR_REVIEW' THEN 0 WHEN 'AUTHORITY_NOTIFIED' THEN 1 WHEN 'ACKNOWLEDGED' THEN 2 ELSE 3 END,
+     WHERE ea.authority_id = ANY($1::uuid[]) AND ea.withdrawn_at IS NULL${statusClause}
+     ORDER BY acknowledgement_overdue DESC,
+              CASE ea.status WHEN 'READY_FOR_REVIEW' THEN 0 WHEN 'AUTHORITY_NOTIFIED' THEN 1 WHEN 'ACKNOWLEDGED' THEN 2 ELSE 3 END,
               ea.updated_at DESC`,
     params,
   );
@@ -340,10 +485,15 @@ export async function authorityEvents(userId: string, status?: EventAuthoritySta
 export async function authorityEventDetail(userId: string, eventId: string, authorityId: string) {
   await activeMembership(userId, authorityId);
   const assignment = await one<Record<string, unknown>>(
-    `SELECT ea.id, ea.event_id, ea.authority_id, ea.status, ea.assigned_at, ea.updated_at,
+    `SELECT ea.id, ea.event_id, ea.authority_id, ea.status, ea.assigned_at, ea.notified_at,
+            ea.acknowledgement_due_at, ea.resolution_due_at, ea.updated_at,
+            (ea.status='AUTHORITY_NOTIFIED' AND ea.acknowledgement_due_at IS NOT NULL
+              AND ea.acknowledgement_due_at < now()) AS acknowledgement_overdue,
+            (ea.status NOT IN ('RESOLVED','CLOSED','REJECTED') AND ea.resolution_due_at IS NOT NULL
+              AND ea.resolution_due_at < now()) AS resolution_overdue,
             a.name AS authority_name, a.official_url
      FROM event_authority ea JOIN authority_directory a ON a.id=ea.authority_id
-     WHERE ea.event_id=$1 AND ea.authority_id=$2`,
+     WHERE ea.event_id=$1 AND ea.authority_id=$2 AND ea.withdrawn_at IS NULL`,
     [eventId, authorityId],
   );
   if (!assignment) throw notFound('Event is not assigned to this authority.');
@@ -354,7 +504,21 @@ export async function authorityEventDetail(userId: string, eventId: string, auth
      FROM event_authority_actions WHERE event_id=$1 AND authority_id=$2 ORDER BY created_at ASC`,
     [eventId, authorityId],
   );
-  return { event, authority: assignment, actions };
+  const evidence = await query<Record<string, unknown>>(
+    `SELECT id, evidence_type, source_name, source_url, title, observed_at, published_at,
+            verification_status, reliability_class, freshness_status
+     FROM event_evidence WHERE event_id=$1
+     ORDER BY COALESCE(observed_at,published_at,retrieved_at) DESC`,
+    [eventId],
+  );
+  const notifications = await query<Record<string, unknown>>(
+    `SELECT n.id, n.subject, n.status, n.sent_at, n.delivered_at, n.error, n.is_simulated, n.created_at,
+            regexp_replace(u.email, '(^.).*(@.*$)', '\\1***\\2') AS recipient_masked
+     FROM notifications n LEFT JOIN users u ON u.id=n.user_id
+     WHERE n.event_authority_id=$1 ORDER BY n.created_at DESC`,
+    [assignment.id],
+  );
+  return { event, authority: assignment, actions, evidence, notifications };
 }
 
 export async function recordAuthorityAction(
@@ -375,7 +539,9 @@ export async function recordAuthorityAction(
     throw badRequest('NOTIFICATION_SENT requires channel and deliveryReference. This records a manual notification; it does not prove external delivery.');
   }
   if (
-    ['REJECT', 'ESCALATE', 'MARK_UNRESOLVED'].includes(input.actionType) &&
+    ['REJECT', 'ESCALATE', 'MARK_UNRESOLVED', 'VERIFY', 'START_ACTION', 'RESOLVE', 'CLOSE', 'NOTIFICATION_FAILED'].includes(
+      input.actionType,
+    ) &&
     !input.response?.trim() &&
     !input.notes?.trim()
   ) {
@@ -395,22 +561,60 @@ export async function recordAuthorityAction(
       throw badRequest('Every action evidence ID must belong to this event.');
     }
   }
+  if (input.actionType === 'VERIFY') {
+    const eventEvidence = await one<{ count: number }>(
+      'SELECT COUNT(*)::int AS count FROM event_evidence WHERE event_id=$1',
+      [eventId],
+    );
+    if ((eventEvidence?.count ?? 0) === 0 && evidenceIds.length === 0) {
+      throw badRequest('VERIFY requires at least one linked evidence record.');
+    }
+  }
   const target = actionTargetStatus(input.actionType);
   const result = await withTransaction(async (client) => {
-    const assignment = await client.query<{ id: string; status: EventAuthorityStatus }>(
-      `SELECT id, status FROM event_authority WHERE event_id=$1 AND authority_id=$2 FOR UPDATE`,
+    const assignment = await client.query<{
+      id: string;
+      status: EventAuthorityStatus;
+      withdrawn_at: string | null;
+      severity: EventSeverity;
+    }>(
+      `SELECT ea.id, ea.status, ea.withdrawn_at, d.severity
+       FROM event_authority ea JOIN disaster_events d ON d.id=ea.event_id
+       WHERE ea.event_id=$1 AND ea.authority_id=$2 FOR UPDATE OF ea`,
       [eventId, authorityId],
     );
-    if (!assignment.rows[0]) throw notFound('Event is not assigned to this authority.');
-    const current = assignment.rows[0].status;
+    const row = assignment.rows[0];
+    if (!row) throw notFound('Event is not assigned to this authority.');
+    if (row.withdrawn_at) throw conflict('Authority assignment has been withdrawn.');
+    const current = row.status;
     if (target && !canTransitionAuthorityStatus(current, target)) {
       throw conflict(`Invalid authority transition: ${current} → ${target}.`);
     }
     if (target) {
-      await client.query(
-        `UPDATE event_authority SET status=$2, updated_at=now() WHERE id=$1`,
-        [assignment.rows[0].id, target],
-      );
+      if (target === 'AUTHORITY_NOTIFIED') {
+        const deadlines = authorityDeadlines(row.severity);
+        await client.query(
+          `UPDATE event_authority
+           SET status=$2, notified_at=COALESCE(notified_at, now()),
+               acknowledgement_due_at=COALESCE(acknowledgement_due_at, $3),
+               resolution_due_at=COALESCE(resolution_due_at, $4), updated_at=now()
+           WHERE id=$1`,
+          [row.id, target, deadlines.acknowledgementDueAt.toISOString(), deadlines.resolutionDueAt.toISOString()],
+        );
+      } else if (target === 'ACTION_INITIATED') {
+        const deadlines = authorityDeadlines(row.severity);
+        await client.query(
+          `UPDATE event_authority
+           SET status=$2, resolution_due_at=COALESCE(resolution_due_at, $3), updated_at=now()
+           WHERE id=$1`,
+          [row.id, target, deadlines.resolutionDueAt.toISOString()],
+        );
+      } else {
+        await client.query(
+          `UPDATE event_authority SET status=$2, updated_at=now() WHERE id=$1`,
+          [row.id, target],
+        );
+      }
     }
     const action = await client.query<Record<string, unknown>>(
       `INSERT INTO event_authority_actions
@@ -458,4 +662,245 @@ export async function recordAuthorityAction(
     after: { eventId, authorityId, previousStatus: result.current, newStatus: result.target ?? result.current },
   });
   return result.action;
+}
+
+export interface AuthorityNotificationResult {
+  eventAuthorityId: string;
+  authorityStatus: EventAuthorityStatus;
+  delivered: boolean;
+  sent: number;
+  failed: number;
+  simulated: number;
+  skippedRecent: number;
+  demoMode: boolean;
+  notifications: Array<{
+    id: string;
+    status: 'SENT' | 'FAILED' | 'SIMULATED';
+    recipientMasked: string;
+    providerMessageId: string | null;
+    error: string | null;
+  }>;
+  actionId: string;
+}
+
+function maskEmail(value: string): string {
+  return value.replace(/(^.).*(@.*$)/, '$1***$2');
+}
+
+/**
+ * System-dispatched email to active members of an assigned authority. This is
+ * a workflow notification, not an official warning. Provider acceptance is
+ * recorded as SENT; only a provider webhook can record DELIVERED. If the email
+ * provider is not configured, no status is fabricated: the assignment moves to
+ * NOTIFICATION_FAILED and the reason is stored.
+ */
+export async function notifyEventAuthority(
+  eventId: string,
+  authorityId: string,
+  actor: EventActor = { type: 'SYSTEM' },
+): Promise<AuthorityNotificationResult> {
+  const event = await getEventOrThrow(eventId);
+  const authority = await getAuthority(authorityId);
+  if (event.evidence_count === 0) {
+    throw badRequest('Cannot notify an authority about an event with no linked evidence.');
+  }
+  const assignment = await one<{ id: string; status: EventAuthorityStatus; withdrawn_at: string | null }>(
+    `SELECT id, status, withdrawn_at FROM event_authority WHERE event_id=$1 AND authority_id=$2`,
+    [eventId, authorityId],
+  );
+  if (!assignment) throw notFound('Event is not assigned to this authority.');
+  if (assignment.withdrawn_at) throw conflict('Authority assignment has been withdrawn.');
+  if (assignment.status !== 'AUTHORITY_NOTIFIED' && !canTransitionAuthorityStatus(assignment.status, 'AUTHORITY_NOTIFIED')) {
+    throw conflict(`Authority status ${assignment.status} cannot be notified again.`);
+  }
+
+  const recipients = await query<{ id: string; name: string; email: string }>(
+    `SELECT u.id, u.name, u.email
+     FROM authority_memberships m JOIN users u ON u.id=m.user_id
+     WHERE m.authority_id=$1 AND m.status='ACTIVE' AND u.account_status='ACTIVE'
+     ORDER BY u.name`,
+    [authorityId],
+  );
+  if (recipients.length === 0) {
+    throw badRequest('This authority has no active members. Add an active membership before notifying.');
+  }
+
+  const rendered = renderAuthorityEventEmail({
+    eventId,
+    title: String(event.title),
+    category: String(event.category),
+    severity: String(event.severity),
+    status: String(event.status),
+    adminArea: event.admin_area ?? null,
+    detectedAt: String(event.detected_at),
+    evidenceCount: event.evidence_count,
+    authorityName: String(authority.name),
+    appUrl: env.FRONTEND_URL,
+  });
+
+  const results: AuthorityNotificationResult['notifications'] = [];
+  let skippedRecent = 0;
+  for (const recipient of recipients) {
+    const recent = await one<{ id: string }>(
+      `SELECT id FROM notifications
+       WHERE event_authority_id=$1 AND user_id=$2 AND template='AUTHORITY_EVENT_NOTIFICATION'
+         AND created_at > now() - interval '10 minutes'`,
+      [assignment.id, recipient.id],
+    );
+    if (recent) {
+      skippedRecent += 1;
+      continue;
+    }
+    const isSimulated = !emailConfigured || (env.DEMO_MODE && !env.DEMO_EMAIL_RECIPIENT);
+    const inserted = await one<{ id: string }>(
+      `INSERT INTO notifications
+         (user_id, audience, channel, template, subject, body_html, status, is_simulated,
+          disaster_event_id, event_authority_id)
+       VALUES ($1,'AUTHORITY','EMAIL','AUTHORITY_EVENT_NOTIFICATION',$2,$3,'SIMULATED',$4,$5,$6)
+       RETURNING id`,
+      [recipient.id, rendered.subject, rendered.html, isSimulated, eventId, assignment.id],
+    );
+    if (!inserted) continue;
+    await recordNotificationEvent(inserted.id, 'CREATED', {
+      template: 'AUTHORITY_EVENT_NOTIFICATION',
+      eventId,
+      authorityId,
+      recipientMasked: maskEmail(recipient.email),
+      demoMode: env.DEMO_MODE,
+    });
+    const delivery = await deliverEmail({
+      notificationId: inserted.id,
+      to: recipient.email,
+      subject: rendered.subject,
+      html: rendered.html,
+      isSimulated,
+    });
+    await markNotificationStatus(inserted.id, delivery.status, {
+      providerMessageId: delivery.messageId,
+      error: delivery.error,
+    });
+    await recordNotificationEvent(inserted.id, delivery.event, {
+      demoMode: env.DEMO_MODE,
+      recipientMasked: delivery.recipient ? maskEmail(delivery.recipient) : maskEmail(recipient.email),
+    });
+    results.push({
+      id: inserted.id,
+      status: delivery.status,
+      recipientMasked: delivery.recipient ? maskEmail(delivery.recipient) : maskEmail(recipient.email),
+      providerMessageId: delivery.messageId ?? null,
+      error: delivery.error ?? null,
+    });
+  }
+
+  const sent = results.filter((item) => item.status === 'SENT').length;
+  const failed = results.filter((item) => item.status === 'FAILED').length;
+  const simulated = results.filter((item) => item.status === 'SIMULATED').length;
+  if (results.length === 0 && skippedRecent > 0) {
+    throw conflict('A notification was already sent to every active member within the last 10 minutes. Check delivery records before resending.');
+  }
+  const delivered = sent > 0;
+  const actionType = delivered ? 'NOTIFICATION_SENT' : 'NOTIFICATION_FAILED';
+  const summary = delivered
+    ? `Email dispatch accepted for ${sent} recipient(s); ${failed} failed; ${simulated} simulated; ${skippedRecent} skipped as recent duplicates.${env.DEMO_MODE ? ' DEMO_MODE: delivery may be redirected to the demonstration recipient.' : ''} Provider acceptance is not proof of inbox delivery.`
+    : `No email was delivered. ${failed} failed; ${simulated} simulated; ${skippedRecent} skipped as recent duplicates. ${emailConfigured ? 'Check the provider error records.' : 'Email provider is not configured.'}`;
+
+  const outcome = await withTransaction(async (client) => {
+    const current = await client.query<{ id: string; status: EventAuthorityStatus; withdrawn_at: string | null }>(
+      `SELECT id, status, withdrawn_at FROM event_authority
+       WHERE event_id=$1 AND authority_id=$2 FOR UPDATE`,
+      [eventId, authorityId],
+    );
+    const row = current.rows[0];
+    if (!row) throw notFound('Event is not assigned to this authority.');
+    if (row.withdrawn_at) throw conflict('Authority assignment has been withdrawn.');
+    let nextStatus = row.status;
+    if (delivered) {
+      if (row.status === 'AUTHORITY_NOTIFIED' || canTransitionAuthorityStatus(row.status, 'AUTHORITY_NOTIFIED')) {
+        const deadlines = authorityDeadlines(event.severity);
+        await client.query(
+          `UPDATE event_authority
+           SET status='AUTHORITY_NOTIFIED', notified_at=COALESCE(notified_at, now()),
+               acknowledgement_due_at=COALESCE(acknowledgement_due_at, $2),
+               resolution_due_at=COALESCE(resolution_due_at, $3), updated_at=now()
+           WHERE id=$1`,
+          [row.id, deadlines.acknowledgementDueAt.toISOString(), deadlines.resolutionDueAt.toISOString()],
+        );
+        nextStatus = 'AUTHORITY_NOTIFIED';
+      }
+    } else if (
+      row.status !== 'AUTHORITY_NOTIFIED' &&
+      canTransitionAuthorityStatus(row.status, 'NOTIFICATION_FAILED')
+    ) {
+      await client.query(
+        `UPDATE event_authority SET status='NOTIFICATION_FAILED', updated_at=now() WHERE id=$1`,
+        [row.id],
+      );
+      nextStatus = 'NOTIFICATION_FAILED';
+    }
+    const action = await client.query<{ id: string }>(
+      `INSERT INTO event_authority_actions
+         (event_authority_id, event_id, authority_id, user_id, actor_type, action_type, previous_status,
+          new_status, channel, delivery_reference, response, evidence_ids, notes)
+       VALUES ($1,$2,$3,NULL,'SYSTEM',$4,$5,$6,'EMAIL',$7,NULL,'{}'::uuid[], $8)
+       RETURNING id`,
+      [
+        row.id,
+        eventId,
+        authorityId,
+        actionType,
+        row.status,
+        nextStatus,
+        results.map((item) => item.providerMessageId ?? item.id).join(', ').slice(0, 2000) || null,
+        summary,
+      ],
+    );
+    return { actionId: action.rows[0].id, previousStatus: row.status, nextStatus };
+  });
+
+  await appendTimeline(eventId, actor, {
+    entryType: 'AUTHORITY_ACTION',
+    summary: delivered
+      ? `Authority notified by email (${sent} accepted)`
+      : 'Authority email notification failed',
+    detail: {
+      authorityId,
+      eventAuthorityId: assignment.id,
+      actionType,
+      sent,
+      failed,
+      simulated,
+      skippedRecent,
+      demoMode: env.DEMO_MODE,
+    },
+    evidenceIds: [],
+    dedupeKey: `authority-notify:${outcome.actionId}`,
+  });
+  await audit({
+    actorId: actor.id ?? null,
+    action: delivered ? 'AUTHORITY_NOTIFICATION_DISPATCHED' : 'AUTHORITY_NOTIFICATION_FAILED',
+    entityType: 'event_authority',
+    entityId: assignment.id,
+    after: {
+      eventId,
+      authorityId,
+      sent,
+      failed,
+      simulated,
+      skippedRecent,
+      demoMode: env.DEMO_MODE,
+    },
+  });
+
+  return {
+    eventAuthorityId: assignment.id,
+    authorityStatus: outcome.nextStatus,
+    delivered,
+    sent,
+    failed,
+    simulated,
+    skippedRecent,
+    demoMode: env.DEMO_MODE,
+    notifications: results,
+    actionId: outcome.actionId,
+  };
 }

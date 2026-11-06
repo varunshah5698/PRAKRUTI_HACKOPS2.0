@@ -21,4 +21,12 @@ for (let attempt = 1; ; attempt++) {
   }
 }
 
+const { seedAuthorityDirectory } = await import('./db/authority-seed.js');
+try {
+  const seeded = await seedAuthorityDirectory();
+  if (seeded > 0) console.log(`Authority directory seeded with ${seeded} reference entries.`);
+} catch (error) {
+  console.warn(`Authority directory reference seed skipped: ${(error as Error).message}`);
+}
+
 await import('./index.js');

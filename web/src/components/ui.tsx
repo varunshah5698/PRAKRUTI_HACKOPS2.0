@@ -24,9 +24,9 @@ export function Button({
     subtle: 'bg-[#edf2e9] text-[#223328] hover:bg-[#e3ebe0] border border-transparent',
   };
   const sizes: Record<string, string> = {
-    sm: 'h-8 px-3 text-xs rounded-full gap-1.5',
-    md: 'h-10 px-4 text-sm rounded-full gap-2',
-    lg: 'h-12 px-6 text-[15px] rounded-full gap-2',
+    sm: 'min-h-8 px-3 py-1.5 text-xs rounded-full gap-1.5',
+    md: 'min-h-10 px-4 py-2 text-sm rounded-full gap-2',
+    lg: 'min-h-12 px-6 py-3 text-[15px] rounded-full gap-2',
     icon: 'h-9 w-9 rounded-full justify-center',
   };
   return (
