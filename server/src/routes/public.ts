@@ -7,6 +7,7 @@ import { getDashboard } from '../services/dashboard.js';
 import { weatherIntegrity, weatherRecommendation } from '../services/weather-status.js';
 import { getWeatherWatchdogState } from '../services/weather-watchdog.js';
 import { liveStatus } from '../services/live.js';
+import { getRainRadar } from '../services/city.js';
 
 export const publicRouter = Router();
 
@@ -245,6 +246,14 @@ publicRouter.get('/status', async (_req, res, next) => {
       watchdog: getWeatherWatchdogState(),
       live: liveStatus(),
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+publicRouter.get('/radar', async (_req, res, next) => {
+  try {
+    res.json(await getRainRadar());
   } catch (error) {
     next(error);
   }

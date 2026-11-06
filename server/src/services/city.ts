@@ -1345,3 +1345,49 @@ export async function getArchiveDay(lat: number, lng: number, date: string): Pro
     };
   });
 }
+
+export interface RainRadarFrame {
+  time: number;
+  path: string;
+  kind: 'past';
+}
+
+export interface RainRadarPayload {
+  generatedAt: string;
+  providerGeneratedAt: string | null;
+  host: string;
+  maxZoom: number;
+  frames: RainRadarFrame[];
+  attribution: string;
+  note: string;
+}
+
+/**
+ * RainViewer's free tier now publishes only the past two hours (10-minute
+ * frames); future nowcast frames were discontinued in 2026. The tiles are
+ * regional and capped at zoom 7, so the map must label them as overzoomed
+ * context rather than street-level precipitation.
+ */
+export async function getRainRadar(): Promise<RainRadarPayload> {
+  return cached('city:rain-radar', 5 * 60_000, async () => {
+    const payload = await fetchJson<{
+      generated?: number;
+      host?: string;
+      radar?: { past?: Array<{ time?: number; path?: string }> };
+    }>('https://api.rainviewer.com/public/weather-maps.json', {}, 8_000);
+    const frames = (payload.radar?.past ?? [])
+      .filter((frame): frame is { time: number; path: string } => typeof frame.time === 'number' && typeof frame.path === 'string')
+      .slice(-13)
+      .map((frame) => ({ time: frame.time, path: frame.path, kind: 'past' as const }));
+    if (!payload.host || frames.length === 0) throw unavailable('RainViewer returned no radar frames.');
+    return {
+      generatedAt: new Date().toISOString(),
+      providerGeneratedAt: payload.generated ? new Date(payload.generated * 1000).toISOString() : null,
+      host: payload.host,
+      maxZoom: 7,
+      frames,
+      attribution: 'Rain radar by RainViewer (rainviewer.com)',
+      note: 'Past two hours, 10-minute regional radar frames. Free RainViewer tiles stop at zoom 7 and are overzoomed as broad context, not street-level nowcast.',
+    };
+  });
+}

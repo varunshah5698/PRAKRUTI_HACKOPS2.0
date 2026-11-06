@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  CloudRain,
   CloudSun,
   Factory,
   Filter,
@@ -841,6 +842,7 @@ export function MapPage() {
   const [showPlumes, setShowPlumes] = useState(true);
   const [showImpactLinks, setShowImpactLinks] = useState(true);
   const [showModelled, setShowModelled] = useState(true);
+  const [showRadar, setShowRadar] = useState(false);
   const [sourceListExpanded, setSourceListExpanded] = useState(false);
   const [liveTick, setLiveTick] = useState(0);
   const liveFeed = useLiveFeed();
@@ -1041,6 +1043,7 @@ export function MapPage() {
     setShowPlumes(true);
     setShowImpactLinks(true);
     setShowModelled(true);
+    setShowRadar(false);
     setSourceListExpanded(false);
   };
 
@@ -1182,6 +1185,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
               showPlumes={showPlumes}
               showImpactLinks={showImpactLinks}
               showModelled={showModelled}
+              showRadar={showRadar}
               className="h-[calc(100dvh-340px)] min-h-[460px] max-h-[740px] w-full"
               theme="light"
               showBuildings
@@ -1319,6 +1323,7 @@ Measured, predicted and reported signals in one calm view. Real OpenStreetMap fa
                 <LayerToggle active={showPlumes} onClick={() => setShowPlumes((value) => !value)} icon={Wind} label="Corridors" />
                 <LayerToggle active={showImpactLinks} onClick={() => setShowImpactLinks((value) => !value)} icon={Link2} label="Links" />
                 <LayerToggle active={showModelled} onClick={() => setShowModelled((value) => !value)} icon={CloudSun} label="CAMS" />
+                <LayerToggle active={showRadar} onClick={() => setShowRadar((value) => !value)} icon={CloudRain} label="Rain radar" />
               </div>
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-dashed border-[#e7eae3] pt-3 text-[9px] text-[#8a938b]">
                 <span className="inline-flex items-center gap-1.5"><span className={classNames('h-1.5 w-1.5 rounded-full', staleStations ? 'bg-[#b3860f]' : 'bg-[#4DA42A]')} /> {staleStations ? 'Last station report' : 'Updated'} {latestStationAt ? timeAgo(latestStationAt) : 'unavailable'}</span>

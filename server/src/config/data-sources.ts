@@ -97,6 +97,16 @@ export const DATA_SOURCE_CATALOGUE = [
     notes: 'Keyless fallback for the Live City weather layer when Open-Meteo is rate-limited. UV and precipitation probability remain blank when MET Norway does not publish them.',
   },
   {
+    id: 'rainviewer-radar',
+    name: 'RainViewer radar tiles',
+    category: 'weather',
+    provider: 'RainViewer / MeteoLab',
+    documentationUrl: 'https://www.rainviewer.com/api.html',
+    attribution: 'Rain radar by RainViewer (rainviewer.com)',
+    configured: true,
+    notes: 'Past two hours of regional radar tiles at 10-minute intervals. Free tiles are limited to zoom 7 and are shown as overzoomed regional context, not a street-level nowcast.',
+  },
+  {
     id: 'open-meteo-marine',
     name: 'Open-Meteo marine conditions',
     category: 'coastal',

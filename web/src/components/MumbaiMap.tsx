@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { setWorkerUrl } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
-import type { Map as MapLibreMap, Popup } from 'maplibre-gl';
+import type { Map as MapLibreMap, Popup, RasterTileSource } from 'maplibre-gl';
+import { CloudRain, Pause, Play } from 'lucide-react';
 
 setWorkerUrl(workerUrl);
 import type { FeatureCollection } from 'geojson';
 import { classNames } from '../lib/format';
+import { api } from '../lib/api';
 import { impactTone, sourceColor, type SourceImpactSource } from '../lib/sourceImpact';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -78,6 +80,18 @@ export interface MapIncident {
   risk_level?: string;
 }
 
+interface RadarPayload {
+  host: string;
+  maxZoom: number;
+  frames: Array<{ time: number; path: string; kind: 'past' }>;
+  attribution: string;
+  note: string;
+}
+
+function radarTileUrl(host: string, path: string): string {
+  return `${host}${path}/256/{z}/{x}/{y}/2/1_1.png`;
+}
+
 interface Props {
   stations?: MapStation[];
   modelled?: MapModelled[];
@@ -97,6 +111,7 @@ interface Props {
   showPlumes?: boolean;
   showImpactLinks?: boolean;
   showModelled?: boolean;
+  showRadar?: boolean;
   className?: string;
   compact?: boolean;
   theme?: 'dark' | 'light';
@@ -391,6 +406,7 @@ function MumbaiMapInner({
   showPlumes = true,
   showImpactLinks = true,
   showModelled = true,
+  showRadar = false,
   className,
   compact = false,
   theme = 'light',
@@ -408,6 +424,11 @@ function MumbaiMapInner({
   const popupRef = useRef<Popup | null>(null);
   const boundaryBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [radar, setRadar] = useState<RadarPayload | null>(null);
+  const [radarError, setRadarError] = useState<string | null>(null);
+  const [radarIndex, setRadarIndex] = useState(0);
+  const [radarPlaying, setRadarPlaying] = useState(true);
   const [viewMode, setViewMode] = useState<'3d' | 'flat'>(compact ? 'flat' : '3d');
   const handlersRef = useRef({ onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick });
   handlersRef.current = { onStationSelect, onReportSelect, onIncidentSelect, onSourceSelect, onMapClick };
@@ -942,6 +963,7 @@ function MumbaiMapInner({
         };
         flowFrame = requestAnimationFrame(animateFlow);
       }
+      setMapReady(true);
     });
 
     return () => {
@@ -1026,6 +1048,74 @@ function MumbaiMapInner({
   }, [showModelled]);
 
   useEffect(() => {
+    if (!showRadar) return;
+    let cancelled = false;
+    setRadarError(null);
+    api.get<RadarPayload>('/public/radar')
+      .then((payload) => {
+        if (cancelled) return;
+        setRadar(payload);
+        setRadarIndex(0);
+        setRadarPlaying(true);
+      })
+      .catch((err) => {
+        if (!cancelled) setRadarError(err instanceof Error ? err.message : 'Rain radar unavailable');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showRadar]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const layerId = 'ep-rain-radar';
+    if (!showRadar) {
+      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', 'none');
+      return;
+    }
+    if (!radar || radar.frames.length === 0) return;
+    const frame = radar.frames[Math.min(radarIndex, radar.frames.length - 1)];
+    const tiles = [radarTileUrl(radar.host, frame.path)];
+    const source = map.getSource(layerId) as RasterTileSource | undefined;
+    if (source) {
+      source.setTiles(tiles);
+      map.setLayoutProperty(layerId, 'visibility', 'visible');
+    } else {
+      map.addSource(layerId, {
+        type: 'raster',
+        tiles,
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: radar.maxZoom,
+        attribution: radar.attribution,
+      });
+      const beforeId = map.getLayer('ep-station-halo') ? 'ep-station-halo' : undefined;
+      map.addLayer(
+        {
+          id: layerId,
+          type: 'raster',
+          source: layerId,
+          paint: {
+            'raster-opacity': 0.52,
+            'raster-fade-duration': 0,
+            'raster-resampling': 'linear',
+          },
+        },
+        beforeId,
+      );
+    }
+  }, [mapReady, showRadar, radar, radarIndex]);
+
+  useEffect(() => {
+    if (!showRadar || !radar || radar.frames.length < 2 || !radarPlaying) return;
+    const timer = window.setInterval(() => {
+      setRadarIndex((index) => (index + 1) % radar.frames.length);
+    }, 700);
+    return () => window.clearInterval(timer);
+  }, [showRadar, radar, radarPlaying]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map || !loadedRef.current || !selectedSourceId) return;
     const source = dataRef.current.sources.find((item) => item.id === selectedSourceId);
@@ -1058,6 +1148,8 @@ function MumbaiMapInner({
     // Only react to a new selection, not to timeline data refreshes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStationId]);
+
+  const radarFrame = radar?.frames[Math.min(radarIndex, radar.frames.length - 1)] ?? null;
 
   return (
     <div className={classNames('relative overflow-hidden', className)}>
@@ -1102,6 +1194,49 @@ function MumbaiMapInner({
           >
             Flat
           </button>
+        </div>
+      ) : null}
+      {showRadar && !compact ? (
+        <div className="absolute left-1/2 top-3 z-20 w-[min(330px,calc(100%-24px))] -translate-x-1/2 rounded-2xl border border-white/90 bg-white/90 p-2.5 shadow-[0_18px_38px_-26px_rgba(23,42,29,.55)] backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e9f3f6] text-[#4f7f94]">
+              <CloudRain className="h-3.5 w-3.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#557480]">Rain radar · past 2h</p>
+              <p className="truncate text-[9px] text-[#78919a]">
+                {radarFrame
+                  ? `${new Date(radarFrame.time * 1000).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST`
+                  : radarError ?? 'Loading radar frames…'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRadarPlaying((value) => !value)}
+              disabled={!radar || radar.frames.length < 2}
+              aria-label={radarPlaying ? 'Pause rain radar' : 'Play rain radar'}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[#557480] transition hover:bg-[#eef7f9] hover:text-[#173d4a] disabled:opacity-40"
+            >
+              {radarPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={Math.max(0, (radar?.frames.length ?? 1) - 1)}
+            value={radarIndex}
+            onChange={(event) => {
+              setRadarIndex(Number(event.target.value));
+              setRadarPlaying(false);
+            }}
+            disabled={!radar || radar.frames.length < 2}
+            aria-label="Rain radar frame"
+            className="mt-2 h-1 w-full cursor-pointer appearance-none rounded-full bg-[#dce5d8] accent-[#4f7f94] disabled:opacity-40"
+          />
+          <div className="mt-1 flex items-center justify-between gap-2 text-[8px] text-[#8a938b]">
+            <a href="https://www.rainviewer.com/" target="_blank" rel="noreferrer" className="underline underline-offset-2">RainViewer</a>
+            <span>Regional · 10-min frames · not street-level nowcast</span>
+          </div>
         </div>
       ) : null}
       {error ? (

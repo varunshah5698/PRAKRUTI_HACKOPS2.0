@@ -5,6 +5,7 @@ import type { DataSource } from '../config/data-sources.js';
 
 const ON_DEMAND_PUBLIC_SOURCES = new Set([
   'met-no-weather',
+  'rainviewer-radar',
   'open-meteo-marine',
   'open-meteo-flood',
   'open-meteo-archive',
