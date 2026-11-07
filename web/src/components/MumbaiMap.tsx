@@ -143,9 +143,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 const BOUNDARY_URL = '/geo/mumbai-boundary.geojson';
 let boundaryPromise: Promise<FeatureCollection> | null = null;
 
-// shortcut: OpenFreeMap's three US shield layers compare a nullable
-// `ref_length`. Guard them here until the upstream style is fixed.
-const SHIELD_LAYER_IDS = new Set(['highway-shield-non-us', 'highway-shield-us-interstate', 'road_shield_us']);
+// OpenFreeMap shield layers compare a nullable `ref_length`. Guard every
+// filter that reads it, so future shield layers are covered automatically.
+function referencesRefLength(filter: unknown): boolean {
+  if (!Array.isArray(filter)) return false;
+  if (filter[0] === 'get' && filter[1] === 'ref_length') return true;
+  return filter.some(referencesRefLength);
+}
 
 function ringArea(ring: number[][]): number {
   let area = 0;
@@ -447,18 +451,12 @@ function MumbaiMapInner({
       style,
       transformStyle: (_previousStyle, nextStyle) => ({
         ...nextStyle,
-        layers: nextStyle.layers.map((layer) =>
-          SHIELD_LAYER_IDS.has(layer.id)
-            ? ({
-                ...layer,
-                filter: [
-                  'all',
-                  ['has', 'ref_length'],
-                  ...((layer as { filter?: unknown }).filter ? [(layer as { filter?: unknown }).filter] : []),
-                ],
-              } as never)
-            : layer,
-        ),
+        layers: nextStyle.layers.map((layer) => {
+          const filter = (layer as { filter?: unknown }).filter;
+          return referencesRefLength(filter)
+            ? ({ ...layer, filter: ['all', ['has', 'ref_length'], filter] } as never)
+            : layer;
+        }),
       }),
       center: [72.8777, 19.076],
       zoom: initialZoom ?? (compact ? 11.1 : 12.2),
