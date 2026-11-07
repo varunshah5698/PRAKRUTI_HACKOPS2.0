@@ -4,83 +4,83 @@
   "features": [
     {
       "feature": "pm25",
-      "mean_abs_shap": 7.72433091663851
+      "mean_abs_shap": 7.572644720611177
     },
     {
       "feature": "pm25_roll_mean_24",
-      "mean_abs_shap": 2.8934447552039155
+      "mean_abs_shap": 2.6666936814534155
     },
     {
       "feature": "pm25_roll_mean_6",
-      "mean_abs_shap": 2.335561299193245
+      "mean_abs_shap": 2.5613595089655017
     },
     {
       "feature": "pm25_lag_2",
-      "mean_abs_shap": 1.066414752304505
+      "mean_abs_shap": 1.0502764351909986
     },
     {
       "feature": "pm25_lag_6",
-      "mean_abs_shap": 0.8470637026809626
-    },
-    {
-      "feature": "hour",
-      "mean_abs_shap": 0.47905761653660817
+      "mean_abs_shap": 0.6587655742114875
     },
     {
       "feature": "pm25_lag_12",
-      "mean_abs_shap": 0.41243190311237266
+      "mean_abs_shap": 0.4732105241279975
     },
     {
       "feature": "pm25_roll_mean_3",
-      "mean_abs_shap": 0.3974847944183187
+      "mean_abs_shap": 0.457389804168139
     },
     {
-      "feature": "co",
-      "mean_abs_shap": 0.3908067256807528
+      "feature": "hour",
+      "mean_abs_shap": 0.45331756398554385
     },
     {
       "feature": "pm25_lag_3",
-      "mean_abs_shap": 0.3862886448360441
+      "mean_abs_shap": 0.4341818723662327
+    },
+    {
+      "feature": "co",
+      "mean_abs_shap": 0.4118892486584926
     },
     {
       "feature": "no2",
-      "mean_abs_shap": 0.36181235287050745
+      "mean_abs_shap": 0.3563842334104513
     },
     {
       "feature": "precipitation",
-      "mean_abs_shap": 0.27038321415275046
+      "mean_abs_shap": 0.29785970952383756
     },
     {
       "feature": "pm25_lag_1",
-      "mean_abs_shap": 0.23745847058342381
+      "mean_abs_shap": 0.2900437104260241
     },
     {
       "feature": "pm10",
-      "mean_abs_shap": 0.15111947861198938
-    },
-    {
-      "feature": "month",
-      "mean_abs_shap": 0.12653054993739946
+      "mean_abs_shap": 0.18599992261582746
     },
     {
       "feature": "o3",
-      "mean_abs_shap": 0.10062655930477664
+      "mean_abs_shap": 0.1501767479073637
+    },
+    {
+      "feature": "month",
+      "mean_abs_shap": 0.13985039487978723
     },
     {
       "feature": "wind_dir_sin",
-      "mean_abs_shap": 0.08191290107512084
-    },
-    {
-      "feature": "so2",
-      "mean_abs_shap": 0.04785651749614986
-    },
-    {
-      "feature": "humidity",
-      "mean_abs_shap": 0.04126167064797487
+      "mean_abs_shap": 0.08870024284698409
     },
     {
       "feature": "temperature",
-      "mean_abs_shap": 0.03322988174280087
+      "mean_abs_shap": 0.04460671506120173
+    },
+    {
+      "feature": "so2",
+      "mean_abs_shap": 0.039827896944374316
+    },
+    {
+      "feature": "humidity",
+      "mean_abs_shap": 0.03756707678874246
     }
   ]
 }
