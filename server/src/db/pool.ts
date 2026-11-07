@@ -4,6 +4,13 @@ import { env } from '../config/env.js';
 const { Pool } = pg;
 export const pool = new Pool({ connectionString: env.DATABASE_URL, max: 10, connectionTimeoutMillis: 10_000 });
 
+// A transient database restart must not take the web process down. pg emits
+// idle-client errors on the pool; without a listener Node treats them as
+// unhandled and exits.
+pool.on('error', (error) => {
+  console.error('[db] idle client error:', error.message);
+});
+
 export type Queryable = Pick<pg.PoolClient, 'query'>;
 
 export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(
