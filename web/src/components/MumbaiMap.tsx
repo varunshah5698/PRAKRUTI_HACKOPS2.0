@@ -143,6 +143,10 @@ const CATEGORY_COLORS: Record<string, string> = {
 const BOUNDARY_URL = '/geo/mumbai-boundary.geojson';
 let boundaryPromise: Promise<FeatureCollection> | null = null;
 
+// shortcut: OpenFreeMap's three US shield layers compare a nullable
+// `ref_length`. Guard them here until the upstream style is fixed.
+const SHIELD_LAYER_IDS = new Set(['highway-shield-non-us', 'highway-shield-us-interstate', 'road_shield_us']);
+
 function ringArea(ring: number[][]): number {
   let area = 0;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -441,6 +445,21 @@ function MumbaiMapInner({
     const map = new maplibregl.Map({
       container: containerRef.current,
       style,
+      transformStyle: (_previousStyle, nextStyle) => ({
+        ...nextStyle,
+        layers: nextStyle.layers.map((layer) =>
+          SHIELD_LAYER_IDS.has(layer.id)
+            ? ({
+                ...layer,
+                filter: [
+                  'all',
+                  ['has', 'ref_length'],
+                  ...((layer as { filter?: unknown }).filter ? [(layer as { filter?: unknown }).filter] : []),
+                ],
+              } as never)
+            : layer,
+        ),
+      }),
       center: [72.8777, 19.076],
       zoom: initialZoom ?? (compact ? 11.1 : 12.2),
       pitch: initialPitch ?? (compact ? 32 : 55),
