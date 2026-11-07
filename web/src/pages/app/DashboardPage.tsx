@@ -28,6 +28,7 @@ import { Chart, chartAxis, chartGrid, chartTooltip } from '../../components/Char
 import { MumbaiMap, type MapStation } from '../../components/MumbaiMap';
 import { MumbaiWeatherScene } from '../../components/MumbaiWeatherScene';
 import { CityPulseStrip } from '../../components/CityPulseStrip';
+import { subscribeServerEvents } from '../../lib/events';
 import { FreshnessPill } from '../../components/FreshnessPill';
 import { RiskBadge, SourceBadge } from '../../components/Status';
 import { Badge, Button, Card, CardHeader, CardTitle, DataLabel, EmptyState, LoadingBlock } from '../../components/ui';
@@ -718,13 +719,11 @@ export function DashboardPage() {
   useEffect(() => {
     load();
     const interval = setInterval(() => load(true), 60_000);
-    const events = new EventSource('/api/v1/events', { withCredentials: true });
-    const onAlert = () => load(true);
-    events.addEventListener('alert', onAlert);
+    // Shares the app-wide stream instead of opening a second connection.
+    const unsubscribe = subscribeServerEvents({ alert: () => load(true) });
     return () => {
       clearInterval(interval);
-      events.removeEventListener('alert', onAlert);
-      events.close();
+      unsubscribe();
     };
   }, []);
 

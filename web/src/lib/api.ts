@@ -75,8 +75,18 @@ async function request<T>(path: string, options: RequestInit = {}, retry: RetryO
   }
 }
 
+// Identical GETs started in the same tick (React StrictMode remounts in dev,
+// two components mounting together) share one request instead of racing.
+const inflightGets = new Map<string, Promise<unknown>>();
+
 export const api = {
-  get: <T>(path: string, retry?: RetryOptions) => request<T>(path, {}, retry),
+  get: <T>(path: string, retry?: RetryOptions) => {
+    const pending = inflightGets.get(path);
+    if (pending) return pending as Promise<T>;
+    const promise = request<T>(path, {}, retry).finally(() => inflightGets.delete(path));
+    inflightGets.set(path, promise);
+    return promise;
+  },
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),

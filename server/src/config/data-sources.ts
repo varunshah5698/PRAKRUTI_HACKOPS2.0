@@ -246,9 +246,10 @@ export const DATA_SOURCE_CATALOGUE = [
     provider: 'Local Python model service',
     documentationUrl: '/docs/ML_METHODOLOGY.md',
     attribution: 'प्रकृति ML',
-    configured: false,
-    notes:
-      'No verified Mumbai historical training extract has been supplied. Forecasting runs on a clearly labelled persistence baseline instead of claiming ML skill.',
+    configured: Boolean(env.ML_SERVICE_URL),
+    notes: env.ML_SERVICE_URL
+      ? 'Service URL configured. Status is read from the service health check: forecasts only claim ML skill when it reports a complete trained model, otherwise the labelled persistence baseline is shown.'
+      : 'ML_SERVICE_URL is empty. Forecasting runs on a clearly labelled persistence baseline instead of claiming ML skill.',
   },
   {
     id: 'email',

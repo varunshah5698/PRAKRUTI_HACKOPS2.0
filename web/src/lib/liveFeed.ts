@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, API_ORIGIN } from './api';
+import { api } from './api';
+import { subscribeServerEvents } from './events';
 
 export interface LiveValue {
   value: number;
@@ -66,7 +67,7 @@ const EMPTY: LiveState = { generatedAt: null, readings: {}, status: null, transp
 
 let state: LiveState = EMPTY;
 const listeners = new Set<() => void>();
-let stream: EventSource | null = null;
+let unsubscribeStream: (() => void) | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 function notify() {
@@ -101,35 +102,39 @@ function startPolling() {
   }, 30_000);
 }
 
+// The stream is shared with every other listener in the app (lib/events.ts),
+// so a page with its own alert listener does not open a second connection.
 function openStream() {
-  if (stream) return;
+  if (unsubscribeStream) return;
   try {
-    stream = new EventSource(`${API_ORIGIN}/api/v1/events`, { withCredentials: true });
+    unsubscribeStream = subscribeServerEvents(
+      {
+        live: (event) => {
+          try {
+            const payload = JSON.parse(event.data) as {
+              at: string;
+              demoMode: boolean;
+              stations: LiveReading[];
+            };
+            patch({ generatedAt: payload.at, readings: indexByStation(payload.stations), transport: 'stream' });
+          } catch {
+            // Ignore malformed frames; the next poll restores state.
+          }
+        },
+        live_error: () => startPolling(),
+      },
+      {
+        // EventSource retries by itself; polling keeps the panel usable meanwhile.
+        onError: () => startPolling(),
+      },
+    );
   } catch {
     startPolling();
-    return;
   }
-  stream.addEventListener('live', (event) => {
-    try {
-      const payload = JSON.parse((event as MessageEvent<string>).data) as {
-        at: string;
-        demoMode: boolean;
-        stations: LiveReading[];
-      };
-      patch({ generatedAt: payload.at, readings: indexByStation(payload.stations), transport: 'stream' });
-    } catch {
-      // Ignore malformed frames; the next poll restores state.
-    }
-  });
-  stream.addEventListener('live_error', () => startPolling());
-  stream.onerror = () => {
-    // EventSource retries by itself; polling keeps the panel usable meanwhile.
-    startPolling();
-  };
 }
 
 export function ensureLiveFeed() {
-  if (state.transport !== 'idle' && stream) return;
+  if (state.transport !== 'idle' && unsubscribeStream) return;
   openStream();
   fetchSnapshot().catch(() => undefined);
 }

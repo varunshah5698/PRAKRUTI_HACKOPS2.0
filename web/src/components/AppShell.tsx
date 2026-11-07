@@ -31,6 +31,7 @@ import { CommandPalette } from './CommandPalette';
 import { Badge } from './ui';
 import { useAuth } from '../store/auth';
 import { classNames } from '../lib/format';
+import { fetchHealth } from '../lib/health';
 
 const AUTHORITY_ROLES = ['FIELD_OFFICER', 'ENVIRONMENTAL_ANALYST', 'AUTHORITY_ADMIN', 'SYSTEM_ADMIN'];
 
@@ -121,12 +122,9 @@ export function AppShell({ children }: { children?: React.ReactNode } = {}) {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/health')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload: { demoMode?: boolean } | null) => {
-        if (active && typeof payload?.demoMode === 'boolean') setDemoMode(payload.demoMode);
-      })
-      .catch(() => undefined);
+    fetchHealth().then((payload) => {
+      if (active && typeof payload?.demoMode === 'boolean') setDemoMode(payload.demoMode);
+    });
     return () => {
       active = false;
     };

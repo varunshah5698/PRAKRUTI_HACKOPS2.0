@@ -5,6 +5,7 @@ import { fetchMetNoCurrent } from './citizen-weather.js';
 import { emitEvent } from '../lib/events.js';
 import { markSourceAttempt, markSourceFailure, markSourceSuccess } from './sources.js';
 import { recordFailure, recordSuccess } from './telemetry.js';
+import { fetchWithRetry } from '../lib/fetch-retry.js';
 import { ingestDataGovIn, ingestOpenAq } from './ingest.js';
 
 /**
@@ -193,7 +194,7 @@ export async function pollLiveWeather(): Promise<{ records: number; message?: st
       url.searchParams.set('longitude', group.map((s) => s.lng).join(','));
       url.searchParams.set('current', WEATHER_FIELDS);
       url.searchParams.set('timezone', 'UTC');
-      const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      const response = await fetchWithRetry(url, { timeoutMs: 20_000 });
       if (!response.ok) throw new Error(`Open-Meteo weather ${response.status}`);
       const payload = await response.json();
       const results: Array<{ current?: Record<string, number | string> }> = Array.isArray(payload) ? payload : [payload];
@@ -268,7 +269,7 @@ export async function pollLiveAqi(): Promise<{ records: number; message?: string
       url.searchParams.set('longitude', group.map((l) => l.lng).join(','));
       url.searchParams.set('current', 'pm2_5,pm10');
       url.searchParams.set('timezone', 'UTC');
-      const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      const response = await fetchWithRetry(url, { timeoutMs: 20_000 });
       if (!response.ok) throw new Error(`Open-Meteo air quality ${response.status}`);
       const payload = await response.json();
       const results: Array<{ current?: { time?: string; pm2_5?: number; pm10?: number } }> = Array.isArray(payload)

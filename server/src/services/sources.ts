@@ -2,6 +2,7 @@ import { emailConfigured, env, riverConfig, visionConfig } from '../config/env.j
 import { DATA_SOURCE_CATALOGUE } from '../config/data-sources.js';
 import { one, query } from '../db/pool.js';
 import type { DataSource } from '../config/data-sources.js';
+import { mlConfigured, mlHealth } from './ml.js';
 
 const ON_DEMAND_PUBLIC_SOURCES = new Set([
   'met-no-weather',
@@ -22,7 +23,6 @@ export async function syncSourceCatalogue(): Promise<void> {
   for (const source of DATA_SOURCE_CATALOGUE) {
     let status: DataSource['status'] = source.configured ? 'STALE' : 'NOT_CONFIGURED';
     if (source.id === 'demo-network' || source.id === 'openfreemap' || ON_DEMAND_PUBLIC_SOURCES.has(source.id)) status = 'CONNECTED';
-    if (source.id === 'ml-service') status = 'NOT_CONFIGURED';
     if (source.id === 'river-ai' && !riverConfig.configured) status = 'NOT_CONFIGURED';
     if (source.id === 'vision-ai' && !visionConfig.configured) status = 'NOT_CONFIGURED';
     if (source.id === 'email' && !emailConfigured) status = 'NOT_CONFIGURED';
@@ -93,6 +93,9 @@ export async function getSourceStatuses(): Promise<DataSource[]> {
   // is genuinely stale rather than merely slow.
   const weatherWindow = Math.max(5 * 60_000, env.LIVE_WEATHER_INTERVAL_SECONDS * 4 * 1000);
   const aqiWindow = Math.max(15 * 60_000, env.LIVE_AQI_INTERVAL_SECONDS * 4 * 1000);
+  // A configured URL is not evidence that a model is loaded, so read the
+  // service's own report instead of inferring its state from configuration.
+  const ml = mlConfigured ? await mlHealth() : null;
   return rows.map((row) => {
     let status = row.status;
     // Only call a source LIVE when recent successful ingestion is evidenced.
@@ -121,6 +124,17 @@ export async function getSourceStatuses(): Promise<DataSource[]> {
     if (row.id === 'river-ai' && riverConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';
     if (row.id === 'vision-ai' && visionConfig.configured) status = row.status === 'FAILED' ? 'FAILED' : 'CONNECTED';
     if (row.id === 'email' && emailConfigured) status = 'CONNECTED';
+    if (row.id === 'ml-service') {
+      // TRAINED is the only state that actually serves model output; a reachable
+      // service without a complete model is configured-but-stale, not connected.
+      status = !mlConfigured
+        ? 'NOT_CONFIGURED'
+        : ml?.status === 'TRAINED'
+          ? 'CONNECTED'
+          : ml?.status === 'UNAVAILABLE'
+            ? 'FAILED'
+            : 'STALE';
+    }
     return {
       id: row.id,
       name: row.name,
@@ -132,7 +146,7 @@ export async function getSourceStatuses(): Promise<DataSource[]> {
       attribution: row.attribution ?? undefined,
       documentationUrl: row.documentation_url ?? undefined,
       recordCount: row.record_count,
-      errorMessage: row.error_message ?? undefined,
+      errorMessage: row.error_message ?? (row.id === 'ml-service' ? ml?.error : undefined),
       notes: row.notes ?? undefined,
     };
   });

@@ -2,6 +2,7 @@ import { env } from '../config/env.js';
 import { one, query } from '../db/pool.js';
 import { isWithinMumbai } from './geo.js';
 import { markSourceAttempt, markSourceFailure, markSourceSuccess } from './sources.js';
+import { fetchWithRetry } from '../lib/fetch-retry.js';
 
 interface IngestResult {
   records: number;
@@ -61,7 +62,7 @@ export async function ingestOpenMeteoWeather(): Promise<IngestResult> {
       );
       url.searchParams.set('forecast_days', '2');
       url.searchParams.set('timezone', 'UTC');
-      const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      const response = await fetchWithRetry(url, { timeoutMs: 20_000 });
       if (!response.ok) throw new Error(`Open-Meteo ${response.status}`);
       const data = (await response.json()) as {
         current?: Record<string, number | string>;
@@ -164,7 +165,7 @@ export async function ingestOpenMeteoCams(): Promise<IngestResult> {
       url.searchParams.set('longitude', String(locality.lng));
       url.searchParams.set('current', 'pm2_5,pm10');
       url.searchParams.set('timezone', 'UTC');
-      const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      const response = await fetchWithRetry(url, { timeoutMs: 20_000 });
       if (!response.ok) throw new Error(`Open-Meteo air quality ${response.status}`);
       const data = (await response.json()) as {
         current?: { time?: string; pm2_5?: number; pm10?: number };
